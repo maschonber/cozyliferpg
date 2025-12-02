@@ -19,6 +19,51 @@
     </div>
   </section>
 
+  <section class="database-section">
+    <div class="section-header">
+      <h2>🗄️ Live Database Items</h2>
+      @if (dbStats()) {
+        <p class="db-stats">
+          Connected to PostgreSQL • {{ dbStats().items }} items • {{ dbStats().players }} players
+        </p>
+      }
+    </div>
+
+    @if (isLoading()) {
+      <div class="loading">
+        <div class="spinner"></div>
+        <p>Loading items from Railway PostgreSQL...</p>
+      </div>
+    }
+
+    @if (error()) {
+      <div class="error-message">
+        <p>❌ {{ error() }}</p>
+        <button class="btn btn-primary" (click)="loadItems()">Retry</button>
+      </div>
+    }
+
+    @if (!isLoading() && !error() && items().length > 0) {
+      <div class="items-grid">
+        @for (item of items(); track item.id) {
+          <div class="item-card">
+            <div class="item-header">
+              <span class="item-icon">{{ item.icon }}</span>
+              <span class="item-rarity" [style.color]="getRarityColor(item.rarity)">
+                {{ item.rarity }}
+              </span>
+            </div>
+            <h3 class="item-name">{{ item.name }}</h3>
+            <div class="item-details">
+              <span class="item-category">{{ getCategoryLabel(item.category) }}</span>
+              <span class="item-price">{{ item.price }}g</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
   <section class="features-section">
     <h2>Game Features</h2>
     <div class="features-grid">
