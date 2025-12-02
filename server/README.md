@@ -92,6 +92,7 @@ On first deploy, you'll need to initialize the database schema. You can do this 
 
 Or use Railway's CLI to run migrations.
 
+
 ## Project Structure
 
 ```
