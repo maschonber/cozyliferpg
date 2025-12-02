@@ -1,0 +1,39 @@
+<div class="container">
+  <header class="header">
+    <h1 class="title">{{ title() }}</h1>
+    <p class="subtitle">{{ subtitle() }}</p>
+    <div class="badge">
+      <span class="badge-text">Angular 20 Demo</span>
+    </div>
+  </header>
+
+  <section class="counter-section">
+    <h2>Interactive Counter (Angular Signals)</h2>
+    <div class="counter-display">
+      <span class="counter-value">{{ counter() }}</span>
+    </div>
+    <div class="counter-controls">
+      <button class="btn btn-secondary" (click)="decrement()">-</button>
+      <button class="btn btn-primary" (click)="reset()">Reset</button>
+      <button class="btn btn-secondary" (click)="increment()">+</button>
+    </div>
+  </section>
+
+  <section class="features-section">
+    <h2>Game Features</h2>
+    <div class="features-grid">
+      @for (feature of features; track feature.title) {
+        <div class="feature-card">
+          <div class="feature-icon">{{ feature.icon }}</div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-description">{{ feature.description }}</p>
+        </div>
+      }
+    </div>
+  </section>
+
+  <footer class="footer">
+    <p>Built with Angular 20 and TypeScript</p>
+    <p class="footer-tech">Using Signals, Standalone Components, and Control Flow</p>
+  </footer>
+</div>
