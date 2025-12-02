@@ -76,17 +76,61 @@ export async function seedDatabase() {
       return;
     }
 
+    console.log('🌱 Seeding database with demo data...');
+
+    // Seed items
     await client.query(`
       INSERT INTO items (id, name, icon, category, rarity, price) VALUES
       ('item_1', 'Cozy Armchair', '🛋️', 'furniture', 'common', 150),
-      ('item_2', 'Tomato Seeds', '🍅', 'crop', 'common', 10),
-      ('item_3', 'Golden Fishing Rod', '🎣', 'tool', 'epic', 500),
-      ('item_4', 'Rainbow Trout', '🐟', 'fish', 'rare', 75)
+      ('item_2', 'Wooden Bookshelf', '📚', 'furniture', 'common', 200),
+      ('item_3', 'Magical Bed', '🛏️', 'furniture', 'epic', 800),
+      ('item_4', 'Tomato Seeds', '🍅', 'crop', 'common', 10),
+      ('item_5', 'Carrot Seeds', '🥕', 'crop', 'common', 8),
+      ('item_6', 'Pumpkin Seeds', '🎃', 'crop', 'rare', 25),
+      ('item_7', 'Basic Fishing Rod', '🎣', 'tool', 'common', 100),
+      ('item_8', 'Golden Fishing Rod', '⭐', 'tool', 'epic', 500),
+      ('item_9', 'Master Fishing Rod', '💎', 'tool', 'legendary', 2000),
+      ('item_10', 'Small Fish', '🐟', 'fish', 'common', 15),
+      ('item_11', 'Rainbow Trout', '🌈', 'fish', 'rare', 75),
+      ('item_12', 'Golden Koi', '🐠', 'fish', 'epic', 250),
+      ('item_13', 'Legendary Dragon Fish', '🐉', 'fish', 'legendary', 1000)
     `);
 
-    console.log('✅ Database seeded with sample data');
+    // Seed a demo player
+    await client.query(`
+      INSERT INTO players (id, username, level, gold) VALUES
+      ('player_demo', 'DemoPlayer', 5, 500)
+    `);
+
+    console.log('✅ Database seeded with 13 items and 1 demo player');
   } catch (error) {
     console.error('❌ Database seeding failed:', error);
+  } finally {
+    client.release();
+  }
+}
+
+// Get database statistics
+export async function getDatabaseStats() {
+  const client = await pool.connect();
+
+  try {
+    const itemsCount = await client.query('SELECT COUNT(*) FROM items');
+    const playersCount = await client.query('SELECT COUNT(*) FROM players');
+
+    return {
+      items: parseInt(itemsCount.rows[0].count),
+      players: parseInt(playersCount.rows[0].count),
+      connected: true
+    };
+  } catch (error) {
+    console.error('Error getting database stats:', error);
+    return {
+      items: 0,
+      players: 0,
+      connected: false,
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
   } finally {
     client.release();
   }

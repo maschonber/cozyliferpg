@@ -3,7 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
 import itemsRouter from './routes/items';
-import { testConnection, initDatabase } from './db';
+import { testConnection, initDatabase, seedDatabase, getDatabaseStats } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -33,6 +33,15 @@ app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
   });
 });
 
+// Database status endpoint
+app.get('/api/db/status', async (_req: Request, res: Response) => {
+  const stats = await getDatabaseStats();
+  res.json({
+    success: true,
+    database: stats
+  });
+});
+
 // API Routes
 app.use('/api/items', itemsRouter);
 
@@ -43,6 +52,7 @@ app.get('/', (_req: Request, res: Response) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
+      database: '/api/db/status',
       items: '/api/items'
     }
   });
@@ -76,6 +86,8 @@ async function startServer() {
       if (connected) {
         console.log('📊 Initializing database schema...');
         await initDatabase();
+        console.log('🌱 Checking for seed data...');
+        await seedDatabase();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }
