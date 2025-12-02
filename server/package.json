@@ -2,11 +2,11 @@
   "name": "cozyliferpg-server",
   "version": "1.0.0",
   "description": "Backend API for CozyLife RPG",
-  "main": "dist/index.js",
+  "main": "dist/server/src/index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js",
+    "start": "node dist/server/src/index.js",
     "typecheck": "tsc --noEmit"
   },
   "keywords": ["cozylife", "rpg", "api", "typescript"],
