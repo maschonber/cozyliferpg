@@ -6,7 +6,11 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "server": "cd server && npm run dev",
+    "server:install": "cd server && npm install",
+    "dev": "concurrently \"npm start\" \"npm run server\" --names \"frontend,backend\" --prefix-colors \"cyan,magenta\"",
+    "build:all": "npm run build && cd server && npm run build"
   },
   "prettier": {
     "printWidth": 100,
@@ -37,6 +41,7 @@
     "@angular/cli": "^20.3.12",
     "@angular/compiler-cli": "^20.3.0",
     "@types/jasmine": "~5.1.0",
+    "concurrently": "^8.2.2",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
