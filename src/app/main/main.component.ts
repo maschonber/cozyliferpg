@@ -1,8 +1,8 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ApiService } from '../services/api.service';
-import { AuthService } from '../auth/auth.service';
-import { GameItem } from '../../../shared/types';
+import { ApiService } from '../core/services/api.service';
+import { AuthFacade } from '../features/auth/services/auth.facade';
+import { GameItem, ApiResponse } from '../../../shared/types';
 
 @Component({
   selector: 'app-main',
@@ -29,10 +29,11 @@ export class MainComponent implements OnInit {
     { icon: '👥', title: 'Meet Villagers', description: 'Build relationships with charming characters' }
   ];
 
-  constructor(
-    private apiService: ApiService,
-    public authService: AuthService
-  ) {}
+  private apiService = inject(ApiService);
+  private authFacade = inject(AuthFacade);
+
+  // Expose auth signals for template
+  currentUser = this.authFacade.user;
 
   ngOnInit() {
     this.loadItems();
@@ -44,13 +45,13 @@ export class MainComponent implements OnInit {
     this.error.set(null);
 
     this.apiService.getItems().subscribe({
-      next: (response) => {
+      next: (response: ApiResponse<GameItem[]>) => {
         if (response.success && response.data) {
           this.items.set(response.data);
         }
         this.isLoading.set(false);
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading items:', err);
         this.error.set('Failed to load items from database');
         this.isLoading.set(false);
@@ -60,12 +61,12 @@ export class MainComponent implements OnInit {
 
   loadDatabaseStats() {
     this.apiService.getDatabaseStats().subscribe({
-      next: (response) => {
+      next: (response: any) => {
         if (response.success) {
           this.dbStats.set(response.database);
         }
       },
-      error: (err) => {
+      error: (err: any) => {
         console.error('Error loading database stats:', err);
       }
     });
@@ -104,6 +105,6 @@ export class MainComponent implements OnInit {
   }
 
   logout() {
-    this.authService.logout();
+    this.authFacade.logout();
   }
 }

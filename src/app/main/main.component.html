@@ -5,8 +5,8 @@
         <h1>🏠 CozyLife RPG</h1>
       </div>
       <div class="navbar-user">
-        @if (authService.currentUser()) {
-          <span class="username">Welcome, {{ authService.currentUser()?.username }}!</span>
+        @if (currentUser()) {
+          <span class="username">Welcome, {{ currentUser()?.username }}!</span>
           <button class="btn-logout" (click)="logout()">Logout</button>
         }
       </div>
