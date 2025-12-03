@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
 import itemsRouter from './routes/items';
 import authRouter from './auth/auth.routes';
+import adminRouter from './auth/admin.routes';
 import { authenticateToken } from './auth/auth.middleware';
 import { testConnection, initDatabase, seedDatabase, seedUsers, getDatabaseStats } from './db';
 
@@ -59,6 +60,9 @@ app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
 // Authentication routes (public)
 app.use('/api/auth', authRouter);
 
+// Admin routes (public - REMOVE IN PRODUCTION!)
+app.use('/api/admin', adminRouter);
+
 // Protected routes (authentication required)
 // Database status endpoint
 app.get('/api/db/status', authenticateToken, async (_req: Request, res: Response) => {
@@ -80,6 +84,7 @@ app.get('/', (_req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth/login',
+      admin: '/api/admin/update-password (⚠️ REMOVE IN PRODUCTION)',
       database: '/api/db/status (protected)',
       items: '/api/items (protected)'
     }
