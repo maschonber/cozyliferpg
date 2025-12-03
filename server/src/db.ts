@@ -1,4 +1,5 @@
 import { Pool } from 'pg';
+import { PasswordService } from './auth/password.service';
 
 // Database connection pool
 export const pool = new Pool({
@@ -49,6 +50,16 @@ export async function initDatabase() {
         username VARCHAR(255) UNIQUE NOT NULL,
         level INTEGER DEFAULT 1,
         gold INTEGER DEFAULT 100,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create users table for authentication
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id VARCHAR(255) PRIMARY KEY,
+        username VARCHAR(255) UNIQUE NOT NULL,
+        password_hash VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);
@@ -105,6 +116,37 @@ export async function seedDatabase() {
     console.log('✅ Database seeded with 13 items and 1 demo player');
   } catch (error) {
     console.error('❌ Database seeding failed:', error);
+  } finally {
+    client.release();
+  }
+}
+
+// Seed initial user (run once)
+export async function seedUsers() {
+  const client = await pool.connect();
+
+  try {
+    const { rows } = await client.query('SELECT COUNT(*) FROM users');
+
+    if (parseInt(rows[0].count) > 0) {
+      console.log('⏭️  Users already exist, skipping user seed');
+      return;
+    }
+
+    console.log('👤 Seeding initial user...');
+
+    // Hash the password
+    const passwordHash = await PasswordService.hash('glb34Vvj5!');
+
+    // Insert the user
+    await client.query(`
+      INSERT INTO users (id, username, password_hash) VALUES
+      ('user_1', 'qurbl', $1)
+    `, [passwordHash]);
+
+    console.log('✅ Initial user created (username: qurbl)');
+  } catch (error) {
+    console.error('❌ User seeding failed:', error);
   } finally {
     client.release();
   }

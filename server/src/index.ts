@@ -3,7 +3,9 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
 import itemsRouter from './routes/items';
-import { testConnection, initDatabase, seedDatabase, getDatabaseStats } from './db';
+import authRouter from './auth/auth.routes';
+import { authenticateToken } from './auth/auth.middleware';
+import { testConnection, initDatabase, seedDatabase, seedUsers, getDatabaseStats } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -44,6 +46,7 @@ app.use((req, _res, next) => {
   next();
 });
 
+// Public routes (no authentication required)
 // Health check endpoint
 app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
   res.json({
@@ -53,8 +56,12 @@ app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
   });
 });
 
+// Authentication routes (public)
+app.use('/api/auth', authRouter);
+
+// Protected routes (authentication required)
 // Database status endpoint
-app.get('/api/db/status', async (_req: Request, res: Response) => {
+app.get('/api/db/status', authenticateToken, async (_req: Request, res: Response) => {
   const stats = await getDatabaseStats();
   res.json({
     success: true,
@@ -62,8 +69,8 @@ app.get('/api/db/status', async (_req: Request, res: Response) => {
   });
 });
 
-// API Routes
-app.use('/api/items', itemsRouter);
+// API Routes - all protected
+app.use('/api/items', authenticateToken, itemsRouter);
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
@@ -72,8 +79,9 @@ app.get('/', (_req: Request, res: Response) => {
     version: '1.0.0',
     endpoints: {
       health: '/api/health',
-      database: '/api/db/status',
-      items: '/api/items'
+      auth: '/api/auth/login',
+      database: '/api/db/status (protected)',
+      items: '/api/items (protected)'
     }
   });
 });
@@ -108,6 +116,8 @@ async function startServer() {
         await initDatabase();
         console.log('🌱 Checking for seed data...');
         await seedDatabase();
+        console.log('👤 Checking for initial user...');
+        await seedUsers();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }
