@@ -1,12 +1,16 @@
 import { inject } from '@angular/core';
 import { Router, CanActivateFn } from '@angular/router';
-import { AuthService } from './auth.service';
+import { AuthFacade } from '../../features/auth/services/auth.facade';
 
+/**
+ * Auth Guard
+ * Protects routes that require authentication
+ */
 export const authGuard: CanActivateFn = () => {
-  const authService = inject(AuthService);
+  const authFacade = inject(AuthFacade);
   const router = inject(Router);
 
-  if (authService.isAuthenticated()) {
+  if (authFacade.isAuthenticated()) {
     return true;
   }
 

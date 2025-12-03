@@ -1,10 +1,14 @@
 import { HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { AuthService } from './auth.service';
+import { AuthFacade } from '../../features/auth/services/auth.facade';
 
+/**
+ * Auth Interceptor
+ * Adds JWT token to outgoing HTTP requests
+ */
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
-  const authService = inject(AuthService);
-  const token = authService.getToken();
+  const authFacade = inject(AuthFacade);
+  const token = authFacade.getToken();
 
   // Clone the request and add authorization header if token exists
   if (token) {

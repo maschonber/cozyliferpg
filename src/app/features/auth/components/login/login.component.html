@@ -12,7 +12,7 @@
           name="username"
           [(ngModel)]="username"
           placeholder="Enter your username"
-          [disabled]="isLoading()"
+          [disabled]="loading()"
           required
         />
       </div>
@@ -25,23 +25,23 @@
           name="password"
           [(ngModel)]="password"
           placeholder="Enter your password"
-          [disabled]="isLoading()"
+          [disabled]="loading()"
           required
         />
       </div>
 
-      @if (errorMessage()) {
+      @if (getErrorMessage()) {
         <div class="error-message">
-          {{ errorMessage() }}
+          {{ getErrorMessage() }}
         </div>
       }
 
       <button
         type="submit"
-        [disabled]="isLoading()"
+        [disabled]="loading()"
         class="login-button"
       >
-        @if (isLoading()) {
+        @if (loading()) {
           <span>Logging in...</span>
         } @else {
           <span>Login</span>
