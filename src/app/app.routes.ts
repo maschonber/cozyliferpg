@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './features/auth/components/login/login.component';
 import { authGuard } from './core/guards/auth.guard';
+import { neighborDetailResolver } from './core/resolvers/neighbor-detail.resolver';
 
 export const routes: Routes = [
   {
@@ -17,7 +18,8 @@ export const routes: Routes = [
       },
       {
         path: 'neighbor/:id',
-        loadComponent: () => import('./features/game/components/neighbor-detail/neighbor-detail').then(m => m.NeighborDetail)
+        loadComponent: () => import('./features/game/components/neighbor-detail/neighbor-detail').then(m => m.NeighborDetail),
+        resolve: { data: neighborDetailResolver }
       }
     ]
   },

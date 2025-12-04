@@ -39,19 +39,25 @@ export class NeighborDetail implements OnInit, OnDestroy {
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
   relationshipsLoading = this.facade.relationshipsLoading;
+  npcsLoading = this.facade.npcsLoading;
+  isLoading = this.facade.isLoading;
 
   ngOnInit(): void {
     // Get NPC ID from route params
     const npcId = this.route.snapshot.paramMap.get('id');
     if (npcId) {
+      // Resolver has already loaded NPC and relationship data
+      // Just select the NPC to update the store's selectedNPCId
       this.facade.selectNPC(npcId);
 
-      // Load relationship if not already loaded
-      this.facade.getRelationship(npcId).subscribe({
-        error: (error) => {
-          console.error('Failed to load relationship:', error);
-        }
-      });
+      // Check if resolver succeeded by verifying data in route
+      const resolverData = this.route.snapshot.data['data'];
+      if (resolverData && (!resolverData.npcLoaded || !resolverData.relationshipLoaded)) {
+        console.warn('Failed to load data via resolver:', resolverData);
+      }
+    } else {
+      console.error('No NPC ID in route parameters');
+      this.router.navigate(['/game']);
     }
   }
 

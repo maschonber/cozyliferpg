@@ -8,10 +8,21 @@
   </div>
 
   <!-- Loading State -->
-  @if (relationshipsLoading() && !selectedNPC()) {
+  @if (isLoading() && !selectedNPC()) {
     <div class="loading-container">
       <mat-spinner diameter="50"></mat-spinner>
-      <p>Loading...</p>
+      <p>Loading neighbor details...</p>
+    </div>
+  }
+
+  <!-- Error State -->
+  @if (!isLoading() && !selectedNPC()) {
+    <div class="error-container">
+      <mat-icon color="warn">error_outline</mat-icon>
+      <p>Could not load neighbor details</p>
+      <button mat-raised-button color="primary" (click)="onBack()">
+        Return to Neighbors
+      </button>
     </div>
   }
 
