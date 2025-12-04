@@ -20,6 +20,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
   if (!token) {
+    console.warn(`⚠️ Authentication failed: No token provided for ${req.method} ${req.path}`);
     return res.status(401).json({
       success: false,
       error: 'Authentication required'
@@ -29,6 +30,7 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   const payload = JWTService.verifyToken(token);
 
   if (!payload) {
+    console.warn(`⚠️ Authentication failed: Invalid token for ${req.method} ${req.path}`);
     return res.status(403).json({
       success: false,
       error: 'Invalid or expired token'
@@ -36,5 +38,6 @@ export function authenticateToken(req: AuthRequest, res: Response, next: NextFun
   }
 
   req.user = payload;
+  console.log(`✅ Authenticated request: ${req.method} ${req.path} (user: ${payload.username})`);
   next();
 }

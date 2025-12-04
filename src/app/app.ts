@@ -1,7 +1,13 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { AuthFacade } from './features/auth/services/auth.facade';
 
+/**
+ * Root App Component
+ *
+ * Note: Auth initialization is handled by APP_INITIALIZER in app.config.ts
+ * This ensures authentication state is restored from localStorage BEFORE
+ * routing begins, preventing race conditions with HTTP requests.
+ */
 @Component({
   selector: 'app-root',
   standalone: true,
@@ -9,11 +15,6 @@ import { AuthFacade } from './features/auth/services/auth.facade';
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App implements OnInit {
-  private authFacade = inject(AuthFacade);
-
-  ngOnInit(): void {
-    // Initialize auth state from localStorage
-    this.authFacade.initialize();
-  }
+export class App {
+  // Auth is initialized via APP_INITIALIZER before this component is created
 }
