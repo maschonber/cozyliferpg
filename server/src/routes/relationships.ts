@@ -3,8 +3,9 @@
  * API endpoints for relationship management and interactions
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { pool } from '../db';
+import { AuthRequest } from '../auth/auth.middleware';
 import {
   calculateRelationshipState,
   applyActivityEffects,
@@ -24,6 +25,14 @@ import {
 import { randomUUID } from 'crypto';
 
 const router = Router();
+
+/**
+ * Helper: Validate NPC exists
+ */
+async function validateNPCExists(client: any, npcId: string): Promise<boolean> {
+  const result = await client.query('SELECT id FROM npcs WHERE id = $1', [npcId]);
+  return result.rows.length > 0;
+}
 
 /**
  * Helper: Map database row to Relationship object
@@ -51,6 +60,11 @@ async function getOrCreateRelationship(
   playerId: string,
   npcId: string
 ): Promise<{ relationship: Relationship; isNew: boolean }> {
+  // Validate inputs
+  if (!playerId || !npcId) {
+    throw new Error('Invalid player ID or NPC ID');
+  }
+
   // Check if relationship exists
   const existing = await client.query(
     `SELECT * FROM relationships WHERE player_id = $1 AND npc_id = $2`,
@@ -59,16 +73,25 @@ async function getOrCreateRelationship(
 
   if (existing.rows.length > 0) {
     const row = existing.rows[0];
+    console.log(`✅ Found existing relationship: Player ${playerId} <-> NPC ${npcId}`);
     return {
       relationship: mapRowToRelationship(row),
       isNew: false
     };
   }
 
+  // Validate NPC exists before creating relationship
+  const npcExists = await validateNPCExists(client, npcId);
+  if (!npcExists) {
+    throw new Error(`NPC with ID ${npcId} does not exist`);
+  }
+
   // Create new relationship
   const id = randomUUID();
   const now = new Date();
   const initialState = 'stranger';
+
+  console.log(`📝 Creating new relationship: Player ${playerId} <-> NPC ${npcId}`);
 
   const result = await client.query(
     `
@@ -81,6 +104,8 @@ async function getOrCreateRelationship(
     [id, playerId, npcId, 0, 0, initialState, [initialState], now, now]
   );
 
+  console.log(`✅ Created new relationship with ID: ${id}`);
+
   return {
     relationship: mapRowToRelationship(result.rows[0]),
     isNew: true
@@ -91,12 +116,20 @@ async function getOrCreateRelationship(
  * GET /api/relationships
  * Get all relationships for the authenticated user
  */
-router.get('/', async (req: Request, res: Response<ApiResponse<Relationship[]>>) => {
+router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[]>>) => {
+  // Get user ID from JWT (added by auth middleware)
+  if (!req.user || !req.user.userId) {
+    res.status(401).json({
+      success: false,
+      error: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userId = req.user.userId;
   const client = await pool.connect();
 
   try {
-    // Get user ID from JWT (added by auth middleware)
-    const userId = (req as any).user.id;
 
     // Join with NPCs to get NPC data
     const result = await client.query(
@@ -144,10 +177,11 @@ router.get('/', async (req: Request, res: Response<ApiResponse<Relationship[]>>)
       data: relationships
     });
   } catch (error) {
-    console.error('Error fetching relationships:', error);
+    console.error('❌ Error fetching relationships for user', userId, ':', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch relationships';
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch relationships'
+      error: errorMessage
     });
   } finally {
     client.release();
@@ -158,12 +192,22 @@ router.get('/', async (req: Request, res: Response<ApiResponse<Relationship[]>>)
  * GET /api/relationships/:npcId
  * Get or create relationship with specific NPC
  */
-router.get('/:npcId', async (req: Request, res: Response<ApiResponse<Relationship>>) => {
+router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relationship>>) => {
   const { npcId } = req.params;
+
+  // Get user ID from JWT (added by auth middleware)
+  if (!req.user || !req.user.userId) {
+    res.status(401).json({
+      success: false,
+      error: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userId = req.user.userId;
   const client = await pool.connect();
 
   try {
-    const userId = (req as any).user.id;
 
     // Check if NPC exists
     const npcResult = await client.query(`SELECT * FROM npcs WHERE id = $1`, [npcId]);
@@ -210,10 +254,11 @@ router.get('/:npcId', async (req: Request, res: Response<ApiResponse<Relationshi
       data: relationship
     });
   } catch (error) {
-    console.error('Error fetching/creating relationship:', error);
+    console.error(`❌ Error fetching/creating relationship for user ${userId} and NPC ${npcId}:`, error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to get relationship';
     res.status(500).json({
       success: false,
-      error: 'Failed to get relationship'
+      error: errorMessage
     });
   } finally {
     client.release();
@@ -226,13 +271,23 @@ router.get('/:npcId', async (req: Request, res: Response<ApiResponse<Relationshi
  */
 router.post(
   '/:npcId/interact',
-  async (req: Request, res: Response<PerformActivityResponse>) => {
+  async (req: AuthRequest, res: Response<PerformActivityResponse>) => {
     const { npcId } = req.params;
     const { activityId }: PerformActivityRequest = req.body;
+
+    // Get user ID from JWT (added by auth middleware)
+    if (!req.user || !req.user.userId) {
+      res.status(401).json({
+        success: false,
+        error: 'User not authenticated'
+      });
+      return;
+    }
+
+    const userId = req.user.userId;
     const client = await pool.connect();
 
     try {
-      const userId = (req as any).user.id;
 
       // Validate activity
       const activity = getActivityById(activityId);
@@ -355,10 +410,11 @@ router.post(
         emotionalState
       });
     } catch (error) {
-      console.error('Error performing activity:', error);
+      console.error(`❌ Error performing activity for user ${userId} with NPC ${npcId}:`, error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to perform activity';
       res.status(500).json({
         success: false,
-        error: 'Failed to perform activity'
+        error: errorMessage
       });
     } finally {
       client.release();
@@ -367,10 +423,10 @@ router.post(
 );
 
 /**
- * GET /api/activities
+ * GET /api/relationships/activities/list
  * Get all available activities
  */
-router.get('/activities/list', async (req: Request, res: Response<ApiResponse<Activity[]>>) => {
+router.get('/activities/list', async (req: AuthRequest, res: Response<ApiResponse<Activity[]>>) => {
   try {
     const activities = getAvailableActivities();
     res.json({
@@ -378,10 +434,11 @@ router.get('/activities/list', async (req: Request, res: Response<ApiResponse<Ac
       data: activities
     });
   } catch (error) {
-    console.error('Error fetching activities:', error);
+    console.error('❌ Error fetching activities:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch activities';
     res.status(500).json({
       success: false,
-      error: 'Failed to fetch activities'
+      error: errorMessage
     });
   }
 });
