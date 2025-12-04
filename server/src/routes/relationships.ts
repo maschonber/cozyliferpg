@@ -140,8 +140,12 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         n.name as npc_name,
         n.archetype as npc_archetype,
         n.traits as npc_traits,
-        n.hair_color, n.hair_style, n.eye_color, n.build, n.height, n.skin_tone,
-        n.distinctive_features, n.style, n.created_at as npc_created_at
+        n.gender as npc_gender,
+        n.hair_color, n.hair_style, n.eye_color, n.face_details,
+        n.body_type, n.torso_size, n.height, n.skin_tone,
+        n.upper_trace, n.lower_trace, n.style, n.body_details,
+        n.loras as npc_loras,
+        n.created_at as npc_created_at
       FROM relationships r
       JOIN npcs n ON r.npc_id = n.id
       WHERE r.player_id = $1
@@ -156,16 +160,22 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         name: row.npc_name,
         archetype: row.npc_archetype,
         traits: row.npc_traits,
+        gender: row.npc_gender,
         appearance: {
           hairColor: row.hair_color,
           hairStyle: row.hair_style,
           eyeColor: row.eye_color,
-          build: row.build,
+          faceDetails: row.face_details,
+          bodyType: row.body_type,
+          torsoSize: row.torso_size,
           height: row.height,
           skinTone: row.skin_tone,
-          distinctiveFeatures: row.distinctive_features,
-          style: row.style
+          upperTrace: row.upper_trace,
+          lowerTrace: row.lower_trace,
+          style: row.style,
+          bodyDetails: row.body_details
         },
+        loras: row.npc_loras,
         createdAt: row.npc_created_at.toISOString()
       };
 
@@ -230,16 +240,22 @@ router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relatio
       name: npcRow.name,
       archetype: npcRow.archetype,
       traits: npcRow.traits,
+      gender: npcRow.gender,
       appearance: {
         hairColor: npcRow.hair_color,
         hairStyle: npcRow.hair_style,
         eyeColor: npcRow.eye_color,
-        build: npcRow.build,
+        faceDetails: npcRow.face_details,
+        bodyType: npcRow.body_type,
+        torsoSize: npcRow.torso_size,
         height: npcRow.height,
         skinTone: npcRow.skin_tone,
-        distinctiveFeatures: npcRow.distinctive_features,
-        style: npcRow.style
+        upperTrace: npcRow.upper_trace,
+        lowerTrace: npcRow.lower_trace,
+        style: npcRow.style,
+        bodyDetails: npcRow.body_details
       },
+      loras: npcRow.loras,
       createdAt: npcRow.created_at.toISOString()
     };
 
@@ -365,8 +381,12 @@ router.post(
           n.name as npc_name,
           n.archetype as npc_archetype,
           n.traits as npc_traits,
-          n.hair_color, n.hair_style, n.eye_color, n.build, n.height, n.skin_tone,
-          n.distinctive_features, n.style, n.created_at as npc_created_at
+          n.gender as npc_gender,
+          n.hair_color, n.hair_style, n.eye_color, n.face_details,
+          n.body_type, n.torso_size, n.height, n.skin_tone,
+          n.upper_trace, n.lower_trace, n.style, n.body_details,
+          n.loras as npc_loras,
+          n.created_at as npc_created_at
         FROM relationships r
         JOIN npcs n ON r.npc_id = n.id
         WHERE r.id = $1
@@ -380,16 +400,22 @@ router.post(
         name: row.npc_name,
         archetype: row.npc_archetype,
         traits: row.npc_traits,
+        gender: row.npc_gender,
         appearance: {
           hairColor: row.hair_color,
           hairStyle: row.hair_style,
           eyeColor: row.eye_color,
-          build: row.build,
+          faceDetails: row.face_details,
+          bodyType: row.body_type,
+          torsoSize: row.torso_size,
           height: row.height,
           skinTone: row.skin_tone,
-          distinctiveFeatures: row.distinctive_features,
-          style: row.style
+          upperTrace: row.upper_trace,
+          lowerTrace: row.lower_trace,
+          style: row.style,
+          bodyDetails: row.body_details
         },
+        loras: row.npc_loras,
         createdAt: row.npc_created_at.toISOString()
       };
 

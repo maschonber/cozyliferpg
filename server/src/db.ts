@@ -69,18 +69,30 @@ export async function initDatabase() {
       CREATE TABLE IF NOT EXISTS npcs (
         id VARCHAR(255) PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
+
+        -- Game-specific fields
         archetype VARCHAR(100) NOT NULL,
         traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 
-        -- Appearance (for AI image generation)
+        -- Gender field
+        gender VARCHAR(10) NOT NULL CHECK (gender IN ('female', 'male', 'other')),
+
+        -- Appearance (for visualization API + game logic)
         hair_color VARCHAR(50) NOT NULL,
         hair_style VARCHAR(50) NOT NULL,
         eye_color VARCHAR(50) NOT NULL,
-        build VARCHAR(50) NOT NULL,
+        face_details TEXT[] DEFAULT ARRAY[]::TEXT[],
+        body_type VARCHAR(50) NOT NULL,
+        torso_size VARCHAR(50) NOT NULL,
         height VARCHAR(50) NOT NULL,
         skin_tone VARCHAR(50) NOT NULL,
-        distinctive_features TEXT[] DEFAULT ARRAY[]::TEXT[],
+        upper_trace VARCHAR(100) NOT NULL,
+        lower_trace VARCHAR(100) NOT NULL,
         style VARCHAR(50),
+        body_details TEXT[] DEFAULT ARRAY[]::TEXT[],
+
+        -- LoRAs for AI model
+        loras TEXT[] DEFAULT ARRAY[]::TEXT[],
 
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
