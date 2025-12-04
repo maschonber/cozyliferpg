@@ -36,6 +36,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
   selectedNPC = this.facade.selectedNPC;
   selectedRelationship = this.facade.selectedRelationship;
   activities = this.facade.activities;
+  activitiesLoading = this.facade.activitiesLoading;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
   relationshipsLoading = this.facade.relationshipsLoading;
@@ -46,14 +47,32 @@ export class NeighborDetail implements OnInit, OnDestroy {
     // Get NPC ID from route params
     const npcId = this.route.snapshot.paramMap.get('id');
     if (npcId) {
-      // Resolver has already loaded NPC and relationship data
+      // Resolver has already loaded NPC, relationship, and activities data
       // Just select the NPC to update the store's selectedNPCId
       this.facade.selectNPC(npcId);
 
       // Check if resolver succeeded by verifying data in route
       const resolverData = this.route.snapshot.data['data'];
-      if (resolverData && (!resolverData.npcLoaded || !resolverData.relationshipLoaded)) {
-        console.warn('Failed to load data via resolver:', resolverData);
+      if (resolverData) {
+        if (!resolverData.npcLoaded) {
+          console.warn('⚠️ Failed to load NPC via resolver');
+        }
+        if (!resolverData.relationshipLoaded) {
+          console.warn('⚠️ Failed to load relationship via resolver');
+        }
+        if (!resolverData.activitiesLoaded) {
+          console.warn('⚠️ Activities not loaded via resolver, attempting fallback...');
+          // Final fallback: try to load activities directly
+          this.facade.ensureActivitiesLoaded().subscribe({
+            next: (success) => {
+              if (success) {
+                console.log('✅ Activities loaded via component fallback');
+              } else {
+                console.error('❌ Failed to load activities - spend time actions will not be available');
+              }
+            }
+          });
+        }
       }
     } else {
       console.error('No NPC ID in route parameters');

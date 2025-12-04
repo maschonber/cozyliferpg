@@ -5,8 +5,8 @@
  */
 
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
-import { tap } from 'rxjs/operators';
+import { Observable, of } from 'rxjs';
+import { tap, map, catchError } from 'rxjs/operators';
 import { GameStore } from '../store/game.store';
 import { GameRepository } from './game.repository';
 import { NPC, Relationship, Activity, PerformActivityResponse } from '../../../../../shared/types';
@@ -51,6 +51,38 @@ export class GameFacade {
     this.loadNPCs();
     this.loadRelationships();
     this.loadActivities();
+  }
+
+  /**
+   * Ensure activities are loaded (for use in resolvers/components)
+   * Returns immediately if already loaded, otherwise loads and waits
+   *
+   * Note: Activities may become context-dependent in the future (based on
+   * relationship status, character traits, etc.), so they are loaded on-demand
+   * via the route resolver rather than at app startup.
+   */
+  ensureActivitiesLoaded(): Observable<boolean> {
+    // If activities are already loaded, return immediately
+    if (this.store.activities().length > 0) {
+      return of(true);
+    }
+
+    // Otherwise, load them
+    this.store.setActivitiesLoading(true);
+
+    return this.repository.getActivities().pipe(
+      tap((activities) => {
+        this.store.setActivities(activities);
+        console.log(`✅ Loaded ${activities.length} activities`);
+      }),
+      map(() => true),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to load activities';
+        this.store.setActivitiesError(errorMessage);
+        console.error('❌ Failed to load activities:', error);
+        return of(false);
+      })
+    );
   }
 
   // ===== NPC Operations =====
