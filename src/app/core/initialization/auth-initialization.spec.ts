@@ -125,17 +125,10 @@ describe('Auth Initialization - Regression Tests', () => {
       }));
       await authFacade.initialize();
 
-      // ACT: Make an HTTP request (simulates what resolvers do)
-      const http = TestBed.inject(HttpTestingController);
-
-      // Using the actual HttpClient to test interceptor
-      fetch('https://cozyliferpg-production.up.railway.app/api/relationships')
-        .catch(() => {}); // Ignore fetch errors in test
-
-      // Note: This test is more of a documentation of expected behavior
+      // Note: This test verifies that auth state is properly restored
       // In real usage, Angular's HttpClient with authInterceptor adds the header
 
-      // ASSERT: Token should be available
+      // ASSERT: Token should be available for interceptor to use
       expect(authFacade.getToken()).toBe(mockToken);
       expect(authFacade.isAuthenticated()).toBe(true);
     });
@@ -196,7 +189,7 @@ describe('Auth Initialization - Regression Tests', () => {
         username: mockUser.username,
         createdAt: mockUser.createdAt.toISOString()
       }));
-      spyOn(console, 'log');
+      jest.spyOn(console, 'log');
 
       // ACT
       await authFacade.initialize();
@@ -210,7 +203,7 @@ describe('Auth Initialization - Regression Tests', () => {
 
     it('should log when no stored session found', async () => {
       // ARRANGE: No stored auth
-      spyOn(console, 'log');
+      jest.spyOn(console, 'log');
 
       // ACT
       await authFacade.initialize();
