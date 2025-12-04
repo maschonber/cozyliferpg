@@ -1,0 +1,186 @@
+.game-home {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Header */
+.header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.header h1 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 500;
+}
+
+.subtitle {
+  color: rgba(0, 0, 0, 0.6);
+  margin: 0;
+}
+
+/* Action Section */
+.action-section {
+  display: flex;
+  justify-content: center;
+  margin: 24px 0;
+}
+
+.meet-button {
+  font-size: 16px;
+  padding: 12px 32px !important;
+  height: auto !important;
+}
+
+.meet-button mat-icon {
+  margin-right: 8px;
+}
+
+mat-divider {
+  margin: 32px 0;
+}
+
+/* Neighbors Section */
+.neighbors-section {
+  margin-top: 32px;
+}
+
+.neighbors-section h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 24px 0;
+}
+
+/* Loading, Error, Empty States */
+.loading-container,
+.error-container,
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+  text-align: center;
+}
+
+.loading-container p,
+.error-container p,
+.empty-state p {
+  margin: 16px 0 0 0;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.empty-state mat-icon {
+  font-size: 64px;
+  width: 64px;
+  height: 64px;
+  color: rgba(0, 0, 0, 0.3);
+}
+
+.hint {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+/* Neighbors List */
+.neighbors-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+/* Neighbor Card */
+.neighbor-card {
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.neighbor-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+}
+
+.neighbor-card mat-card-header {
+  margin-bottom: 16px;
+}
+
+.avatar-placeholder {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 16px;
+}
+
+.avatar-placeholder mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: rgba(0, 0, 0, 0.4);
+}
+
+/* Relationship Status */
+.relationship-status {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  background: rgba(0, 0, 0, 0.08);
+  width: fit-content;
+}
+
+/* State Colors */
+.neighbor-card.positive .status-badge {
+  background: rgba(76, 175, 80, 0.2);
+  color: #2e7d32;
+}
+
+.neighbor-card.negative .status-badge {
+  background: rgba(244, 67, 54, 0.2);
+  color: #c62828;
+}
+
+.neighbor-card.neutral .status-badge {
+  background: rgba(158, 158, 158, 0.2);
+  color: #616161;
+}
+
+.relationship-values {
+  display: flex;
+  gap: 16px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.value-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.small-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+mat-card-actions {
+  padding: 8px 16px !important;
+}
+
+mat-card-actions button mat-icon {
+  margin-right: 4px;
+}
