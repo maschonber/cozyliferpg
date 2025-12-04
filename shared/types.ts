@@ -60,18 +60,27 @@ export interface AuthResponse {
 // ===== CozyLife RPG - Game Data Types =====
 
 /**
- * NPC Appearance for AI image generation
+ * NPC Appearance for AI image generation and visualization API
  */
 export interface NPCAppearance {
   hairColor: string;
   hairStyle: string;
   eyeColor: string;
-  build: string;
+  faceDetails: string[];
+  bodyType: string;
+  torsoSize: string;
   height: string;
   skinTone: string;
-  distinctiveFeatures?: string[];
+  upperTrace: string;
+  lowerTrace: string;
   style?: string;
+  bodyDetails: string[];
 }
+
+/**
+ * Gender type
+ */
+export type Gender = 'female' | 'male' | 'other';
 
 /**
  * NPC (Non-Player Character)
@@ -81,9 +90,13 @@ export interface NPC {
   name: string;
   archetype: string;  // Artist, Athlete, Bookworm, Musician, Scientist
   traits: string[];   // Array of personality traits
+  gender: Gender;
 
   // Appearance (for AI image generation)
   appearance: NPCAppearance;
+
+  // LoRAs for AI model
+  loras: string[];
 
   createdAt: string;
 }

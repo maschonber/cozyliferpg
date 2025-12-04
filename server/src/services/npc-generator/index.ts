@@ -6,10 +6,12 @@
  * random generation with rule-based or AI-powered generation in the future.
  */
 
-import { NPC, NPCAppearance } from '../../../../shared/types';
+import { NPC, NPCAppearance, Gender } from '../../../../shared/types';
 import { randomUUID } from 'crypto';
 
 // ===== Generation Data Pools =====
+
+const GENDERS: Gender[] = ['female', 'male', 'other'];
 
 const FIRST_NAMES = [
   // Gender-neutral names
@@ -77,8 +79,12 @@ const EYE_COLORS = [
   'brown', 'dark brown', 'hazel', 'green', 'blue', 'gray', 'amber'
 ];
 
-const BUILDS = [
+const BODY_TYPES = [
   'slim', 'athletic', 'average', 'stocky', 'muscular', 'petite', 'curvy'
+];
+
+const TORSO_SIZES = [
+  'small', 'medium', 'large', 'petite', 'broad'
 ];
 
 const HEIGHTS = [
@@ -89,14 +95,34 @@ const SKIN_TONES = [
   'pale', 'fair', 'light', 'medium', 'tan', 'olive', 'brown', 'dark brown', 'deep'
 ];
 
-const DISTINCTIVE_FEATURES = [
-  'glasses', 'freckles', 'dimples', 'mole', 'scar', 'tattoo', 'piercing',
+const UPPER_TRACE = [
+  't-shirt', 'blouse', 'sweater', 'hoodie', 'tank top', 'dress shirt', 'jacket',
+  'cardigan', 'polo shirt', 'crop top'
+];
+
+const LOWER_TRACE = [
+  'jeans', 'slacks', 'skirt', 'shorts', 'leggings', 'dress pants', 'joggers',
+  'cargo pants', 'sweatpants', 'pencil skirt'
+];
+
+const FACE_DETAILS = [
+  'glasses', 'freckles', 'dimples', 'mole', 'scar', 'piercing',
   'birthmark', 'strong jawline', 'high cheekbones', 'full lips', 'bright smile'
+];
+
+const BODY_DETAILS = [
+  'tattoo on arm', 'tattoo on back', 'freckles on shoulders', 'birthmark',
+  'scar on hand', 'muscular arms', 'toned legs', 'lean build', 'broad shoulders'
 ];
 
 const STYLES = [
   'casual', 'formal', 'sporty', 'alternative', 'bohemian', 'preppy',
   'minimalist', 'vintage', 'streetwear', 'elegant'
+];
+
+const LORAS = [
+  // Placeholder for future LoRA models
+  'default', 'anime_style', 'realistic', 'portrait'
 ];
 
 // ===== Helper Functions =====
@@ -126,25 +152,55 @@ function generateName(): string {
 }
 
 /**
+ * Generate random gender
+ */
+function generateGender(): Gender {
+  // Weight distribution: 45% female, 45% male, 10% other
+  const rand = Math.random();
+  if (rand < 0.45) return 'female';
+  if (rand < 0.90) return 'male';
+  return 'other';
+}
+
+/**
  * Generate random appearance
  */
 function generateAppearance(): NPCAppearance {
-  // Randomly decide if they have distinctive features (50% chance, 1-2 features)
-  const hasDistinctiveFeatures = Math.random() > 0.5;
-  const distinctiveFeatures = hasDistinctiveFeatures
-    ? randomChoices(DISTINCTIVE_FEATURES, randomInt(1, 2))
-    : undefined;
+  // Randomly decide face details (50% chance, 1-2 features)
+  const hasFaceDetails = Math.random() > 0.5;
+  const faceDetails = hasFaceDetails
+    ? randomChoices(FACE_DETAILS, randomInt(1, 2))
+    : [];
+
+  // Randomly decide body details (30% chance, 1-2 features)
+  const hasBodyDetails = Math.random() > 0.7;
+  const bodyDetails = hasBodyDetails
+    ? randomChoices(BODY_DETAILS, randomInt(1, 2))
+    : [];
 
   return {
     hairColor: randomChoice(HAIR_COLORS),
     hairStyle: randomChoice(HAIR_STYLES),
     eyeColor: randomChoice(EYE_COLORS),
-    build: randomChoice(BUILDS),
+    faceDetails,
+    bodyType: randomChoice(BODY_TYPES),
+    torsoSize: randomChoice(TORSO_SIZES),
     height: randomChoice(HEIGHTS),
     skinTone: randomChoice(SKIN_TONES),
-    distinctiveFeatures,
-    style: randomChoice(STYLES)
+    upperTrace: randomChoice(UPPER_TRACE),
+    lowerTrace: randomChoice(LOWER_TRACE),
+    style: randomChoice(STYLES),
+    bodyDetails
   };
+}
+
+/**
+ * Generate LoRAs (currently just returns default)
+ */
+function generateLoras(): string[] {
+  // For now, always use default LoRA
+  // In the future, this could be based on archetype, style, or other factors
+  return ['default'];
 }
 
 /**
@@ -176,13 +232,16 @@ function generateTraits(): string[] {
  * - Archetype should influence traits and appearance
  * - Traits should be coherent (not conflicting)
  * - Consider player's existing NPCs to ensure variety
+ * - Gender could influence name selection and appearance
  */
 export function generateNPC(): Omit<NPC, 'id' | 'createdAt'> {
   return {
     name: generateName(),
     archetype: generateArchetype(),
     traits: generateTraits(),
-    appearance: generateAppearance()
+    gender: generateGender(),
+    appearance: generateAppearance(),
+    loras: generateLoras()
   };
 }
 

@@ -28,10 +28,12 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
     const result = await client.query(
       `
       INSERT INTO npcs (
-        id, name, archetype, traits,
-        hair_color, hair_style, eye_color, build, height, skin_tone,
-        distinctive_features, style, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        id, name, archetype, traits, gender,
+        hair_color, hair_style, eye_color, face_details,
+        body_type, torso_size, height, skin_tone,
+        upper_trace, lower_trace, style, body_details,
+        loras, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
       RETURNING *
       `,
       [
@@ -39,14 +41,20 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
         npcData.name,
         npcData.archetype,
         npcData.traits,
+        npcData.gender,
         npcData.appearance.hairColor,
         npcData.appearance.hairStyle,
         npcData.appearance.eyeColor,
-        npcData.appearance.build,
+        npcData.appearance.faceDetails,
+        npcData.appearance.bodyType,
+        npcData.appearance.torsoSize,
         npcData.appearance.height,
         npcData.appearance.skinTone,
-        npcData.appearance.distinctiveFeatures || [],
+        npcData.appearance.upperTrace,
+        npcData.appearance.lowerTrace,
         npcData.appearance.style,
+        npcData.appearance.bodyDetails,
+        npcData.loras,
         createdAt
       ]
     );
@@ -59,16 +67,22 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      gender: row.gender,
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,
         eyeColor: row.eye_color,
-        build: row.build,
+        faceDetails: row.face_details,
+        bodyType: row.body_type,
+        torsoSize: row.torso_size,
         height: row.height,
         skinTone: row.skin_tone,
-        distinctiveFeatures: row.distinctive_features,
-        style: row.style
+        upperTrace: row.upper_trace,
+        lowerTrace: row.lower_trace,
+        style: row.style,
+        bodyDetails: row.body_details
       },
+      loras: row.loras,
       createdAt: row.created_at.toISOString()
     };
 
@@ -106,16 +120,22 @@ router.get('/', async (req: Request, res: Response<ApiResponse<NPC[]>>) => {
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      gender: row.gender,
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,
         eyeColor: row.eye_color,
-        build: row.build,
+        faceDetails: row.face_details,
+        bodyType: row.body_type,
+        torsoSize: row.torso_size,
         height: row.height,
         skinTone: row.skin_tone,
-        distinctiveFeatures: row.distinctive_features,
-        style: row.style
+        upperTrace: row.upper_trace,
+        lowerTrace: row.lower_trace,
+        style: row.style,
+        bodyDetails: row.body_details
       },
+      loras: row.loras,
       createdAt: row.created_at.toISOString()
     }));
 
@@ -162,16 +182,22 @@ router.get('/:id', async (req: Request, res: Response<ApiResponse<NPC>>) => {
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      gender: row.gender,
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,
         eyeColor: row.eye_color,
-        build: row.build,
+        faceDetails: row.face_details,
+        bodyType: row.body_type,
+        torsoSize: row.torso_size,
         height: row.height,
         skinTone: row.skin_tone,
-        distinctiveFeatures: row.distinctive_features,
-        style: row.style
+        upperTrace: row.upper_trace,
+        lowerTrace: row.lower_trace,
+        style: row.style,
+        bodyDetails: row.body_details
       },
+      loras: row.loras,
       createdAt: row.created_at.toISOString()
     };
 
