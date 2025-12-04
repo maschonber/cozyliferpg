@@ -120,6 +120,13 @@ export const GameStore = signalStore(
       patchState(store, { npcs: [...store.npcs(), npc] });
     },
 
+    updateNPC(updated: NPC): void {
+      const npcs = store.npcs().map(npc =>
+        npc.id === updated.id ? updated : npc
+      );
+      patchState(store, { npcs });
+    },
+
     // ===== Relationship Methods =====
 
     setRelationshipsLoading(loading: boolean): void {

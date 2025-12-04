@@ -45,9 +45,10 @@ export class GameFacade {
 
   /**
    * Initialize game data on startup
-   * Loads relationships and activities
+   * Loads NPCs, relationships and activities
    */
   initialize(): void {
+    this.loadNPCs();
     this.loadRelationships();
     this.loadActivities();
   }
@@ -93,6 +94,35 @@ export class GameFacade {
         console.error('❌ Error loading NPCs:', error);
       }
     });
+  }
+
+  /**
+   * Load a specific NPC by ID
+   * Useful for deep links when NPC is not yet in store
+   */
+  loadNPCById(npcId: string): Observable<NPC> {
+    this.store.setNPCsLoading(true);
+
+    return this.repository.getNPCById(npcId).pipe(
+      tap({
+        next: (npc) => {
+          // Check if NPC already exists in store
+          const existing = this.store.npcs().find(n => n.id === npc.id);
+          if (existing) {
+            this.store.updateNPC(npc);
+          } else {
+            this.store.addNPC(npc);
+          }
+          this.store.setNPCsLoading(false);
+          console.log('✅ Loaded NPC:', npc.name);
+        },
+        error: (error) => {
+          const errorMessage = error.message || 'Failed to load NPC';
+          this.store.setNPCsError(errorMessage);
+          console.error('❌ Error loading NPC:', error);
+        }
+      })
+    );
   }
 
   // ===== Relationship Operations =====
