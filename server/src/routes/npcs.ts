@@ -216,4 +216,57 @@ router.get('/:id', async (req: Request, res: Response<ApiResponse<NPC>>) => {
   }
 });
 
+/**
+ * DELETE /api/npcs/:id
+ * Delete an NPC by ID
+ */
+router.delete('/:id', async (req: Request, res: Response<ApiResponse<void>>) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+
+  try {
+    // Start a transaction to delete both NPC and related relationships
+    await client.query('BEGIN');
+
+    // Delete relationships associated with this NPC
+    await client.query(
+      `DELETE FROM relationships WHERE npc_id = $1`,
+      [id]
+    );
+
+    // Delete the NPC
+    const result = await client.query(
+      `DELETE FROM npcs WHERE id = $1 RETURNING id`,
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      await client.query('ROLLBACK');
+      res.status(404).json({
+        success: false,
+        error: 'NPC not found'
+      });
+      return;
+    }
+
+    await client.query('COMMIT');
+
+    console.log(`✅ Deleted NPC: ${id}`);
+
+    res.json({
+      success: true,
+      data: undefined
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting NPC:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to delete NPC'
+    });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;

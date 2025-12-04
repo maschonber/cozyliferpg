@@ -95,6 +95,8 @@ mat-divider {
 .neighbor-card {
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  padding: 0 !important;
+  overflow: hidden;
 }
 
 .neighbor-card:hover {
@@ -102,26 +104,117 @@ mat-divider {
   box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
 
-.neighbor-card mat-card-header {
-  margin-bottom: 16px;
+/* Card Layout - Avatar on Right */
+.card-layout {
+  display: flex;
+  min-height: 250px;
 }
 
-.avatar-placeholder {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  background: rgba(0, 0, 0, 0.1);
+.card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 16px;
+}
+
+.card-content mat-card-header {
+  margin-bottom: 16px;
+  padding: 0;
+}
+
+.card-content mat-card-content {
+  flex: 1;
+  padding: 0;
+}
+
+.card-content mat-card-actions {
+  padding: 8px 0 0 0 !important;
+  margin: 0 !important;
+}
+
+/* Avatar Container - 1/3 of Card Width */
+.avatar-container {
+  width: 33.333%;
+  min-width: 140px;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 16px;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.1) 100%);
+  border-left: 3px solid rgba(0, 0, 0, 0.1);
+  transition: background 0.3s, border-color 0.3s;
 }
 
-.avatar-placeholder mat-icon {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-  color: rgba(0, 0, 0, 0.4);
+.avatar-container mat-icon {
+  font-size: 80px;
+  width: 80px;
+  height: 80px;
+  color: rgba(0, 0, 0, 0.3);
+  transition: color 0.3s;
+}
+
+/* Gender Color Coding for Avatar */
+.avatar-container.gender-female {
+  background: linear-gradient(135deg, rgba(233, 30, 99, 0.15) 0%, rgba(156, 39, 176, 0.15) 100%);
+  border-left-color: rgba(233, 30, 99, 0.5);
+}
+
+.avatar-container.gender-female mat-icon {
+  color: rgba(233, 30, 99, 0.7);
+}
+
+.avatar-container.gender-male {
+  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(63, 81, 181, 0.15) 100%);
+  border-left-color: rgba(33, 150, 243, 0.5);
+}
+
+.avatar-container.gender-male mat-icon {
+  color: rgba(33, 150, 243, 0.7);
+}
+
+.avatar-container.gender-other {
+  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(103, 58, 183, 0.1) 50%, rgba(63, 81, 181, 0.1) 100%);
+  border-left-color: rgba(156, 39, 176, 0.4);
+}
+
+.avatar-container.gender-other mat-icon {
+  color: rgba(103, 58, 183, 0.7);
+}
+
+/* Gender Badge */
+.gender-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  margin-left: 8px;
+  transition: transform 0.2s;
+}
+
+.gender-badge mat-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.gender-badge.gender-female {
+  background: rgba(233, 30, 99, 0.2);
+  color: #c2185b;
+}
+
+.gender-badge.gender-male {
+  background: rgba(33, 150, 243, 0.2);
+  color: #1976d2;
+}
+
+.gender-badge.gender-other {
+  background: rgba(156, 39, 176, 0.2);
+  color: #7b1fa2;
+}
+
+.neighbor-card:hover .gender-badge {
+  transform: scale(1.1);
 }
 
 /* Relationship Status */

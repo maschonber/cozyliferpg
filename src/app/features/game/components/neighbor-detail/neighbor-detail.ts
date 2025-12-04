@@ -93,6 +93,30 @@ export class NeighborDetail implements OnInit, OnDestroy {
   }
 
   /**
+   * Delete the current NPC
+   */
+  onDeleteNPC(): void {
+    const npc = this.selectedNPC();
+    if (!npc) return;
+
+    // Confirm before deleting
+    if (!confirm(`Are you sure you want to delete ${npc.name}? This action cannot be undone.`)) {
+      return;
+    }
+
+    this.facade.deleteNPC(npc.id).subscribe({
+      next: () => {
+        console.log('✅ NPC deleted successfully');
+        this.router.navigate(['/game']);
+      },
+      error: (error) => {
+        console.error('Failed to delete NPC:', error);
+        alert('Failed to delete character. Please try again.');
+      }
+    });
+  }
+
+  /**
    * Perform an activity
    */
   onPerformActivity(activityId: string): void {

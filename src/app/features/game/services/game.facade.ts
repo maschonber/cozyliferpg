@@ -157,6 +157,28 @@ export class GameFacade {
     );
   }
 
+  /**
+   * Delete an NPC by ID
+   */
+  deleteNPC(npcId: string): Observable<void> {
+    this.store.setNPCsLoading(true);
+
+    return this.repository.deleteNPC(npcId).pipe(
+      tap({
+        next: () => {
+          this.store.removeNPC(npcId);
+          this.store.setNPCsLoading(false);
+          console.log('✅ Deleted NPC:', npcId);
+        },
+        error: (error) => {
+          const errorMessage = error.message || 'Failed to delete NPC';
+          this.store.setNPCsError(errorMessage);
+          console.error('❌ Error deleting NPC:', error);
+        }
+      })
+    );
+  }
+
   // ===== Relationship Operations =====
 
   /**

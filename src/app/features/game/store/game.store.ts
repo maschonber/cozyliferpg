@@ -127,6 +127,12 @@ export const GameStore = signalStore(
       patchState(store, { npcs });
     },
 
+    removeNPC(npcId: string): void {
+      const npcs = store.npcs().filter(npc => npc.id !== npcId);
+      const relationships = store.relationships().filter(rel => rel.npcId !== npcId);
+      patchState(store, { npcs, relationships, selectedNPCId: null });
+    },
+
     // ===== Relationship Methods =====
 
     setRelationshipsLoading(loading: boolean): void {

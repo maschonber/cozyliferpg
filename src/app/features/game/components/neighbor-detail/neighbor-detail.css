@@ -6,7 +6,11 @@
 
 /* Back Button */
 .back-button-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 24px;
+  gap: 16px;
 }
 
 .back-button-container button mat-icon {
