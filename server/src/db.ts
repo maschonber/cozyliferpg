@@ -64,6 +64,95 @@ export async function initDatabase() {
       )
     `);
 
+    // Create NPCs table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS npcs (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        archetype VARCHAR(100) NOT NULL,
+        traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+
+        -- Appearance (for AI image generation)
+        hair_color VARCHAR(50) NOT NULL,
+        hair_style VARCHAR(50) NOT NULL,
+        eye_color VARCHAR(50) NOT NULL,
+        build VARCHAR(50) NOT NULL,
+        height VARCHAR(50) NOT NULL,
+        skin_tone VARCHAR(50) NOT NULL,
+        distinctive_features TEXT[] DEFAULT ARRAY[]::TEXT[],
+        style VARCHAR(50),
+
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create relationships table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS relationships (
+        id VARCHAR(255) PRIMARY KEY,
+        player_id VARCHAR(255) NOT NULL,
+        npc_id VARCHAR(255) NOT NULL,
+
+        -- Dimension values (-100 to +100)
+        friendship INTEGER NOT NULL DEFAULT 0 CHECK (friendship >= -100 AND friendship <= 100),
+        romance INTEGER NOT NULL DEFAULT 0 CHECK (romance >= -100 AND romance <= 100),
+
+        -- State tracking
+        current_state VARCHAR(50) NOT NULL DEFAULT 'stranger',
+        unlocked_states TEXT[] DEFAULT ARRAY['stranger']::TEXT[],
+
+        -- Timestamps
+        first_met TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        last_interaction TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        -- Foreign keys
+        FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (npc_id) REFERENCES npcs(id) ON DELETE CASCADE,
+
+        -- Constraints
+        UNIQUE(player_id, npc_id)
+      )
+    `);
+
+    // Create indexes for relationships
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_relationships_player ON relationships(player_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_relationships_npc ON relationships(npc_id)
+    `);
+
+    // Create interactions table (history)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS interactions (
+        id VARCHAR(255) PRIMARY KEY,
+        relationship_id VARCHAR(255) NOT NULL,
+        activity_type VARCHAR(100) NOT NULL,
+
+        -- Effects
+        friendship_delta INTEGER NOT NULL DEFAULT 0,
+        romance_delta INTEGER NOT NULL DEFAULT 0,
+
+        -- Context
+        emotional_state VARCHAR(50),
+        notes TEXT,
+
+        -- Timestamp
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+        -- Foreign key
+        FOREIGN KEY (relationship_id) REFERENCES relationships(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create indexes for interactions
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_interactions_relationship ON interactions(relationship_id)
+    `);
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_interactions_created ON interactions(created_at DESC)
+    `);
+
     await client.query('COMMIT');
     console.log('✅ Database schema initialized');
   } catch (error) {
@@ -159,10 +248,16 @@ export async function getDatabaseStats() {
   try {
     const itemsCount = await client.query('SELECT COUNT(*) FROM items');
     const playersCount = await client.query('SELECT COUNT(*) FROM players');
+    const npcsCount = await client.query('SELECT COUNT(*) FROM npcs');
+    const relationshipsCount = await client.query('SELECT COUNT(*) FROM relationships');
+    const interactionsCount = await client.query('SELECT COUNT(*) FROM interactions');
 
     return {
       items: parseInt(itemsCount.rows[0].count),
       players: parseInt(playersCount.rows[0].count),
+      npcs: parseInt(npcsCount.rows[0].count),
+      relationships: parseInt(relationshipsCount.rows[0].count),
+      interactions: parseInt(interactionsCount.rows[0].count),
       connected: true
     };
   } catch (error) {
@@ -170,6 +265,9 @@ export async function getDatabaseStats() {
     return {
       items: 0,
       players: 0,
+      npcs: 0,
+      relationships: 0,
+      interactions: 0,
       connected: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };
