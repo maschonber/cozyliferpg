@@ -32,14 +32,25 @@ export class AuthFacade {
   /**
    * Initialize auth state on app startup
    * Restores session from localStorage if available
+   * Returns a Promise that resolves when initialization is complete
+   * This is used by APP_INITIALIZER to ensure auth is ready before routing
    */
-  initialize(): void {
-    const token = this.getStoredToken();
-    const user = this.getStoredUser();
+  initialize(): Promise<void> {
+    return new Promise((resolve) => {
+      const token = this.getStoredToken();
+      const user = this.getStoredUser();
 
-    if (token && user) {
-      this.store.restoreSession(user, token);
-    }
+      if (token && user) {
+        this.store.restoreSession(user, token);
+        console.log('✅ Auth restored from localStorage:', user.username);
+      } else {
+        console.log('ℹ️ No stored auth session found');
+      }
+
+      // Resolve immediately as localStorage operations are synchronous
+      // This ensures store signals are updated before routing begins
+      resolve();
+    });
   }
 
   /**
