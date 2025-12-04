@@ -8,12 +8,31 @@ export const routes: Routes = [
     component: LoginComponent
   },
   {
-    path: '',
+    path: 'game',
+    canActivate: [authGuard],
+    children: [
+      {
+        path: '',
+        loadComponent: () => import('./features/game/components/game-home/game-home').then(m => m.GameHome)
+      },
+      {
+        path: 'neighbor/:id',
+        loadComponent: () => import('./features/game/components/neighbor-detail/neighbor-detail').then(m => m.NeighborDetail)
+      }
+    ]
+  },
+  {
+    path: 'main',
     loadComponent: () => import('./main/main.component').then(m => m.MainComponent),
     canActivate: [authGuard]
   },
   {
+    path: '',
+    redirectTo: 'game',
+    pathMatch: 'full'
+  },
+  {
     path: '**',
-    redirectTo: ''
+    redirectTo: 'game'
   }
 ];

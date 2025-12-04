@@ -1,0 +1,219 @@
+.neighbor-detail {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Back Button */
+.back-button-container {
+  margin-bottom: 24px;
+}
+
+.back-button-container button mat-icon {
+  margin-right: 4px;
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Content Layout */
+.content {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+@media (max-width: 900px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* NPC Card */
+.npc-card {
+  height: fit-content;
+}
+
+.npc-image-placeholder {
+  width: 100%;
+  height: 300px;
+  background: linear-gradient(135deg, rgba(66, 165, 245, 0.1), rgba(171, 71, 188, 0.1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  border-radius: 8px;
+}
+
+.npc-image-placeholder mat-icon {
+  font-size: 120px;
+  width: 120px;
+  height: 120px;
+  color: rgba(0, 0, 0, 0.2);
+}
+
+.section {
+  margin: 16px 0;
+}
+
+.section h3 {
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0 0 12px 0;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.appearance-text {
+  margin: 0 0 8px 0;
+  line-height: 1.6;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.style-text {
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.traits-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+mat-chip {
+  font-size: 12px;
+}
+
+/* Relationship Card */
+.relationship-card {
+  height: fit-content;
+}
+
+.relationship-metric {
+  margin: 24px 0;
+}
+
+.metric-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.metric-label {
+  flex: 1;
+  font-weight: 500;
+}
+
+.metric-value {
+  font-weight: 600;
+  font-size: 18px;
+}
+
+mat-progress-bar {
+  height: 8px;
+  border-radius: 4px;
+}
+
+/* Activities Section */
+.activities-section {
+  margin-top: 24px;
+}
+
+.activities-section h3 {
+  font-size: 18px;
+  font-weight: 500;
+  margin: 0 0 16px 0;
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(244, 67, 54, 0.1);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.activities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 12px;
+}
+
+.activity-button {
+  height: auto !important;
+  padding: 16px !important;
+  text-align: left;
+}
+
+.activity-button.positive {
+  background-color: rgba(76, 175, 80, 0.1) !important;
+  border: 1px solid rgba(76, 175, 80, 0.3);
+}
+
+.activity-button.negative {
+  background-color: rgba(244, 67, 54, 0.1) !important;
+  border: 1px solid rgba(244, 67, 54, 0.3);
+}
+
+.activity-button:hover:not([disabled]) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.activity-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.activity-effects {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.positive-effect {
+  color: #2e7d32;
+}
+
+.negative-effect {
+  color: #c62828;
+}
+
+.interacting-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}

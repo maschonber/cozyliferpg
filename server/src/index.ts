@@ -3,6 +3,8 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
 import itemsRouter from './routes/items';
+import npcsRouter from './routes/npcs';
+import relationshipsRouter from './routes/relationships';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
 import { testConnection, initDatabase, seedDatabase, seedUsers, getDatabaseStats } from './db';
@@ -71,6 +73,8 @@ app.get('/api/db/status', authenticateToken, async (_req: Request, res: Response
 
 // API Routes - all protected
 app.use('/api/items', authenticateToken, itemsRouter);
+app.use('/api/npcs', authenticateToken, npcsRouter);
+app.use('/api/relationships', authenticateToken, relationshipsRouter);
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
@@ -81,7 +85,10 @@ app.get('/', (_req: Request, res: Response) => {
       health: '/api/health',
       auth: '/api/auth/login',
       database: '/api/db/status (protected)',
-      items: '/api/items (protected)'
+      items: '/api/items (protected)',
+      npcs: '/api/npcs (protected)',
+      relationships: '/api/relationships (protected)',
+      activities: '/api/relationships/activities/list (protected)'
     }
   });
 });

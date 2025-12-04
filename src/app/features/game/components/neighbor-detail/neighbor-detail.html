@@ -1,0 +1,147 @@
+<div class="neighbor-detail">
+  <!-- Back Button -->
+  <div class="back-button-container">
+    <button mat-button (click)="onBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Neighbors
+    </button>
+  </div>
+
+  <!-- Loading State -->
+  @if (relationshipsLoading() && !selectedNPC()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading...</p>
+    </div>
+  }
+
+  <!-- Content -->
+  @if (selectedNPC() && selectedRelationship()) {
+    <div class="content">
+      <!-- NPC Card -->
+      <mat-card class="npc-card">
+        <!-- Placeholder for future AI-generated image -->
+        <div class="npc-image-placeholder">
+          <mat-icon>person</mat-icon>
+        </div>
+
+        <mat-card-header>
+          <mat-card-title>{{ selectedNPC()!.name }}</mat-card-title>
+          <mat-card-subtitle>{{ selectedNPC()!.archetype }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <!-- Appearance -->
+          <div class="section">
+            <h3>Appearance</h3>
+            <p class="appearance-text">{{ formatAppearance() }}</p>
+            <p class="style-text">Style: {{ selectedNPC()!.appearance.style }}</p>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <!-- Traits -->
+          <div class="section">
+            <h3>Personality</h3>
+            <div class="traits-container">
+              @for (trait of selectedNPC()!.traits; track trait) {
+                <mat-chip>{{ trait }}</mat-chip>
+              }
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- Relationship Card -->
+      <mat-card class="relationship-card">
+        <mat-card-header>
+          <mat-card-title>Relationship</mat-card-title>
+          <mat-card-subtitle>
+            {{ getStateDisplayName(selectedRelationship()!.currentState) }}
+          </mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <!-- Friendship -->
+          <div class="relationship-metric">
+            <div class="metric-header">
+              <mat-icon color="primary">favorite</mat-icon>
+              <span class="metric-label">Friendship</span>
+              <span class="metric-value">{{ selectedRelationship()!.friendship }}</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="getProgressValue(selectedRelationship()!.friendship)"
+              [color]="getProgressColor(selectedRelationship()!.friendship)">
+            </mat-progress-bar>
+          </div>
+
+          <!-- Romance -->
+          <div class="relationship-metric">
+            <div class="metric-header">
+              <mat-icon color="accent">whatshot</mat-icon>
+              <span class="metric-label">Romance</span>
+              <span class="metric-value">{{ selectedRelationship()!.romance }}</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="getProgressValue(selectedRelationship()!.romance)"
+              [color]="getProgressColor(selectedRelationship()!.romance)">
+            </mat-progress-bar>
+          </div>
+
+          <mat-divider></mat-divider>
+
+          <!-- Activities -->
+          <div class="activities-section">
+            <h3>Spend Time Together</h3>
+
+            @if (interactionError()) {
+              <div class="error-message">
+                <mat-icon color="warn">error</mat-icon>
+                <span>{{ interactionError() }}</span>
+              </div>
+            }
+
+            <div class="activities-grid">
+              @for (activity of activities(); track activity.id) {
+                <button
+                  mat-raised-button
+                  class="activity-button"
+                  [class.positive]="(activity.effects.friendship || 0) > 0 || (activity.effects.romance || 0) > 0"
+                  [class.negative]="(activity.effects.friendship || 0) < 0 || (activity.effects.romance || 0) < 0"
+                  [disabled]="interacting()"
+                  (click)="onPerformActivity(activity.id)">
+                  <div class="activity-content">
+                    <span class="activity-name">{{ activity.name }}</span>
+                    <span class="activity-effects">
+                      @if (activity.effects.friendship) {
+                        <span [class.positive-effect]="activity.effects.friendship > 0"
+                              [class.negative-effect]="activity.effects.friendship < 0">
+                          Friendship {{ activity.effects.friendship > 0 ? '+' : '' }}{{ activity.effects.friendship }}
+                        </span>
+                      }
+                      @if (activity.effects.romance) {
+                        <span [class.positive-effect]="activity.effects.romance > 0"
+                              [class.negative-effect]="activity.effects.romance < 0">
+                          Romance {{ activity.effects.romance > 0 ? '+' : '' }}{{ activity.effects.romance }}
+                        </span>
+                      }
+                    </span>
+                  </div>
+                </button>
+              }
+            </div>
+
+            @if (interacting()) {
+              <div class="interacting-indicator">
+                <mat-spinner diameter="24"></mat-spinner>
+                <span>Interacting...</span>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  }
+</div>
