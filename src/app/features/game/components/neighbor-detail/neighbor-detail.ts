@@ -141,14 +141,14 @@ export class NeighborDetail implements OnInit, OnDestroy {
 
     const { appearance } = npc;
     const parts = [
-      `${appearance.height}, ${appearance.build} build`,
+      `${appearance.height}, ${appearance.bodyType} build`,
       `${appearance.skinTone} skin`,
       `${appearance.hairStyle} ${appearance.hairColor} hair`,
       `${appearance.eyeColor} eyes`
     ];
 
-    if (appearance.distinctiveFeatures && appearance.distinctiveFeatures.length > 0) {
-      parts.push(appearance.distinctiveFeatures.join(', '));
+    if (appearance.faceDetails && appearance.faceDetails.length > 0) {
+      parts.push(appearance.faceDetails.join(', '));
     }
 
     return parts.join(' • ');
