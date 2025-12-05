@@ -5,6 +5,7 @@ import { HealthCheckResponse } from '../../shared/types';
 import npcsRouter from './routes/npcs';
 import relationshipsRouter from './routes/relationships';
 import playerRouter from './routes/player';
+import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
 import { testConnection, initDatabase, seedDatabase, seedUsers } from './db';
@@ -60,6 +61,9 @@ app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
 
 // Authentication routes (public)
 app.use('/api/auth', authRouter);
+
+// Admin routes (token-based auth, not JWT)
+app.use('/api/admin', adminRouter);
 
 // Protected routes (authentication required)
 // API Routes - all protected
