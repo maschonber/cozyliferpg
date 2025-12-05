@@ -202,6 +202,11 @@ mat-progress-bar {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
+.activity-button.unavailable {
+  opacity: 0.5 !important;
+  cursor: not-allowed;
+}
+
 .activity-content {
   display: flex;
   flex-direction: column;
@@ -209,15 +214,76 @@ mat-progress-bar {
   width: 100%;
 }
 
+.activity-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .activity-name {
   font-weight: 500;
   font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.warning-icon {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #ff9800;
+}
+
+.activity-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0;
+}
+
+.cost-chip {
+  font-size: 11px !important;
+  min-height: 24px !important;
+  padding: 0 8px !important;
+}
+
+.cost-chip mat-icon {
+  font-size: 14px !important;
+  width: 14px !important;
+  height: 14px !important;
+  margin-right: 2px;
+}
+
+.cost-chip.time {
+  background-color: rgba(33, 150, 243, 0.15) !important;
+  color: #1976d2 !important;
+}
+
+.cost-chip.energy {
+  background-color: rgba(255, 235, 59, 0.2) !important;
+  color: #f57c00 !important;
+}
+
+.cost-chip.energy.negative-cost {
+  background-color: rgba(244, 67, 54, 0.15) !important;
+  color: #c62828 !important;
+}
+
+.cost-chip.money {
+  background-color: rgba(76, 175, 80, 0.15) !important;
+  color: #388e3c !important;
+}
+
+.cost-chip.money.positive-cost {
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  color: #2e7d32 !important;
 }
 
 .activity-effects {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  flex-wrap: wrap;
+  gap: 8px;
   font-size: 12px;
   color: rgba(0, 0, 0, 0.6);
 }

@@ -36,6 +36,19 @@
         </div>
       </div>
 
+      <!-- Sleep Button -->
+      <div class="hud-item sleep">
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="onSleep()"
+          matTooltip="Go to sleep and advance to next day"
+          class="sleep-button">
+          <mat-icon>bedtime</mat-icon>
+          Sleep
+        </button>
+      </div>
+
       <!-- Reset Button (Debug) -->
       <div class="hud-item reset">
         <button

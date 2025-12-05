@@ -40,8 +40,24 @@
   min-width: 120px;
 }
 
-.hud-item.reset {
+.hud-item.sleep {
   margin-left: auto;
+}
+
+.sleep-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sleep-button mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+.hud-item.reset {
+  margin-left: 0;
 }
 
 .hud-icon {
@@ -117,9 +133,16 @@
     flex: 1 1 45%;
   }
 
+  .hud-item.sleep {
+    margin-left: 0;
+    flex: 1 1 100%;
+    order: 4;
+  }
+
   .hud-item.reset {
     margin-left: 0;
     flex: 0 0 auto;
+    order: 5;
   }
 }
 

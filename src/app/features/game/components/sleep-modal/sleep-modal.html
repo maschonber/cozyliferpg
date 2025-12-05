@@ -1,0 +1,69 @@
+<div class="sleep-modal">
+  <h2 mat-dialog-title>
+    <mat-icon>nightlight</mat-icon>
+    Sleep Summary
+  </h2>
+
+  <mat-dialog-content>
+    <div class="sleep-content">
+      <!-- Sleep Stats -->
+      <div class="sleep-stats">
+        <div class="stat-item">
+          <mat-icon>schedule</mat-icon>
+          <div class="stat-details">
+            <span class="stat-label">Hours Slept</span>
+            <span class="stat-value">{{ data.sleepResult.hoursSlept }} hours</span>
+          </div>
+        </div>
+
+        <div class="stat-item">
+          <mat-icon>bolt</mat-icon>
+          <div class="stat-details">
+            <span class="stat-label">Energy Restored</span>
+            <span class="stat-value">+{{ data.sleepResult.energyRestored }}</span>
+          </div>
+        </div>
+      </div>
+
+      <mat-divider></mat-divider>
+
+      <!-- Day Transition -->
+      <div class="day-transition">
+        <div class="day-info">
+          <div class="day-badge previous">
+            <span class="day-label">Day</span>
+            <span class="day-number">{{ data.previousDay }}</span>
+          </div>
+          <mat-icon class="arrow-icon">arrow_forward</mat-icon>
+          <div class="day-badge current">
+            <span class="day-label">Day</span>
+            <span class="day-number">{{ data.previousDay + 1 }}</span>
+          </div>
+        </div>
+
+        <div class="wake-time">
+          <mat-icon>wb_sunny</mat-icon>
+          <span>Woke up at {{ data.sleepResult.wakeTime }}</span>
+        </div>
+      </div>
+
+      <!-- Summary Message -->
+      <div class="summary-message">
+        <p>You had a @if (data.sleepResult.hoursSlept >= 8) {
+          <strong>restful</strong>
+        } @else if (data.sleepResult.hoursSlept >= 6) {
+          <strong>decent</strong>
+        } @else {
+          <strong>short</strong>
+        } night's sleep. Ready to start a new day!</p>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-raised-button color="primary" (click)="onContinue()">
+      <mat-icon>check</mat-icon>
+      Continue
+    </button>
+  </mat-dialog-actions>
+</div>
