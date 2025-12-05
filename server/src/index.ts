@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
 import npcsRouter from './routes/npcs';
 import relationshipsRouter from './routes/relationships';
+import playerRouter from './routes/player';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
 import { testConnection, initDatabase, seedDatabase, seedUsers } from './db';
@@ -64,6 +65,7 @@ app.use('/api/auth', authRouter);
 // API Routes - all protected
 app.use('/api/npcs', authenticateToken, npcsRouter);
 app.use('/api/relationships', authenticateToken, relationshipsRouter);
+app.use('/api/player', authenticateToken, playerRouter);
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {

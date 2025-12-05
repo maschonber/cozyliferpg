@@ -13,7 +13,10 @@ import {
   Activity,
   PerformActivityRequest,
   PerformActivityResponse,
-  ApiResponse
+  ApiResponse,
+  PlayerCharacter,
+  SleepResult,
+  ActivityAvailability
 } from '../../../../../shared/types';
 
 @Injectable({
@@ -134,13 +137,59 @@ export class GameRepository {
   // ===== Activity Operations =====
 
   /**
-   * Get all available activities
+   * Get all available activities with availability status (Phase 2)
    */
-  getActivities(): Observable<Activity[]> {
-    return this.http.get<ApiResponse<Activity[]>>(`${this.API_URL}/relationships/activities/list`).pipe(
+  getActivities(): Observable<{ activities: Activity[], availability: ActivityAvailability[] }> {
+    return this.http.get<ApiResponse<{ activities: Activity[], availability: ActivityAvailability[] }>>(
+      `${this.API_URL}/relationships/activities/list`
+    ).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to fetch activities');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  // ===== Player Character Operations (Phase 2) =====
+
+  /**
+   * Get current player character
+   */
+  getPlayer(): Observable<PlayerCharacter> {
+    return this.http.get<ApiResponse<PlayerCharacter>>(`${this.API_URL}/player`).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to fetch player');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  /**
+   * Reset player character to initial state
+   */
+  resetPlayer(): Observable<PlayerCharacter> {
+    return this.http.post<ApiResponse<PlayerCharacter>>(`${this.API_URL}/player/reset`, {}).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to reset player');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  /**
+   * Go to sleep and advance to next day
+   */
+  sleep(): Observable<SleepResult> {
+    return this.http.post<ApiResponse<SleepResult>>(`${this.API_URL}/player/sleep`, {}).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to process sleep');
         }
         return response.data;
       })

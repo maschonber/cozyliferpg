@@ -147,12 +147,37 @@ export interface Relationship {
 }
 
 /**
- * Activity that player can perform with an NPC
+ * Time slot of day (Phase 2)
+ */
+export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';
+
+/**
+ * Activity category (Phase 2)
+ */
+export type ActivityCategory = 'work' | 'social' | 'self_improvement' | 'leisure' | 'self_care' | 'discovery';
+
+/**
+ * Activity that player can perform with an NPC or alone
  */
 export interface Activity {
   id: string;
   name: string;
   description: string;
+  category: ActivityCategory;
+
+  // Costs (Phase 2)
+  timeCost: number;           // Minutes consumed
+  energyCost: number;         // Can be negative (cost) or positive (restore)
+  moneyCost: number;          // Can be negative (cost) or positive (earn)
+
+  // Time restrictions (Phase 2)
+  allowedTimeSlots?: TimeSlot[];  // If undefined, available anytime
+
+  // Requirements (Phase 2+)
+  minEnergy?: number;              // Minimum energy required
+  minRelationship?: string;        // e.g., "friend" (for relationship-gated activities)
+
+  // Effects (from Phase 1)
   effects: {
     friendship?: number;
     romance?: number;
@@ -198,4 +223,46 @@ export interface ImageGenerationResponse {
   imageUrl: string;
   cached: boolean;
   generationTime?: number;
+}
+
+/**
+ * Player Character (Phase 2)
+ */
+export interface PlayerCharacter {
+  id: string;
+  userId: string;
+
+  // Resources
+  currentEnergy: number;      // 0-100
+  maxEnergy: number;          // 100 (fixed for Phase 2, variable in future)
+  money: number;              // Starting: $200
+
+  // Time tracking
+  currentDay: number;         // 1, 2, 3...
+  currentTime: string;        // "HH:MM" format (e.g., "14:30")
+  lastSleptAt: string;        // "HH:MM" - for calculating sleep duration
+
+  // Timestamps
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Activity availability check result (Phase 2)
+ */
+export interface ActivityAvailability {
+  activityId: string;
+  available: boolean;
+  reason?: string;
+  endsAfterMidnight?: boolean;
+}
+
+/**
+ * Sleep result (Phase 2)
+ */
+export interface SleepResult {
+  wakeTime: string;
+  energyRestored: number;
+  hoursSlept: number;
+  newDay: number;
 }
