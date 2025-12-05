@@ -132,7 +132,7 @@ router.post('/create-player-table', async (req: Request, res: Response) => {
 
           -- Time tracking
           current_day INTEGER NOT NULL DEFAULT 1 CHECK (current_day >= 1),
-          current_time VARCHAR(5) NOT NULL DEFAULT '06:00',
+          time_of_day VARCHAR(5) NOT NULL DEFAULT '06:00',
           last_slept_at VARCHAR(5) NOT NULL DEFAULT '06:00',
 
           -- Timestamps
