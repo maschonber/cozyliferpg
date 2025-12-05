@@ -47,13 +47,18 @@ export function checkActivityEndTime(currentTime: string, activityDurationMinute
   const [endHour] = endTime.split(':').map(Number);
 
   // Check if we crossed midnight (hour wrapped around)
+  // This happens when end hour < current hour (e.g., 23:00 -> 01:00)
   const crossedMidnight = endHour < currentHour;
 
   // Activity ends after 4 AM (4-5:59) - forbidden
-  const after4am = crossedMidnight && endHour >= 4 && endHour < 6;
+  // This includes both: activities that cross midnight AND end at 4-5:59,
+  // or activities that start after midnight and end at 4-5:59
+  const after4am = (crossedMidnight && endHour >= 4 && endHour < 6) ||
+                   (!crossedMidnight && currentHour < 6 && endHour >= 4 && endHour < 6);
 
   // Activity ends after midnight but before 4 AM - warning
-  const afterMidnight = crossedMidnight && endHour < 4;
+  // Only applies to activities that actually cross midnight
+  const afterMidnight = crossedMidnight && endHour >= 0 && endHour < 4;
 
   return { after4am, afterMidnight };
 }
