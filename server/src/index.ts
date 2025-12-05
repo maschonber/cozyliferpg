@@ -2,12 +2,11 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
-import itemsRouter from './routes/items';
 import npcsRouter from './routes/npcs';
 import relationshipsRouter from './routes/relationships';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers, getDatabaseStats } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -62,17 +61,7 @@ app.get('/api/health', (_req: Request, res: Response<HealthCheckResponse>) => {
 app.use('/api/auth', authRouter);
 
 // Protected routes (authentication required)
-// Database status endpoint
-app.get('/api/db/status', authenticateToken, async (_req: Request, res: Response) => {
-  const stats = await getDatabaseStats();
-  res.json({
-    success: true,
-    database: stats
-  });
-});
-
 // API Routes - all protected
-app.use('/api/items', authenticateToken, itemsRouter);
 app.use('/api/npcs', authenticateToken, npcsRouter);
 app.use('/api/relationships', authenticateToken, relationshipsRouter);
 
@@ -84,8 +73,6 @@ app.get('/', (_req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth/login',
-      database: '/api/db/status (protected)',
-      items: '/api/items (protected)',
       npcs: '/api/npcs (protected)',
       relationships: '/api/relationships (protected)',
       activities: '/api/relationships/activities/list (protected)'
