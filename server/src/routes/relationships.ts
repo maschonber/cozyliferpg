@@ -14,13 +14,16 @@ import {
   getActivityById,
   getAvailableActivities
 } from '../services/relationship';
+import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
+import { canPerformActivity, addMinutes } from '../services/time';
 import {
   Relationship,
   ApiResponse,
   PerformActivityRequest,
   PerformActivityResponse,
   Activity,
-  NPC
+  NPC,
+  ActivityAvailability
 } from '../../../shared/types';
 import { randomUUID } from 'crypto';
 
@@ -283,7 +286,7 @@ router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relatio
 
 /**
  * POST /api/relationships/:npcId/interact
- * Perform an activity with an NPC
+ * Perform an activity with an NPC (Phase 2: includes resource management)
  */
 router.post(
   '/:npcId/interact',
@@ -315,6 +318,19 @@ router.post(
         return;
       }
 
+      // Get player character (Phase 2)
+      const player = await getOrCreatePlayerCharacter(pool, userId);
+
+      // Validate activity can be performed (Phase 2)
+      const availability = canPerformActivity(activity, player);
+      if (!availability.available) {
+        res.status(400).json({
+          success: false,
+          error: availability.reason || 'Activity cannot be performed'
+        });
+        return;
+      }
+
       // Get or create relationship
       const { relationship } = await getOrCreateRelationship(client, userId, npcId);
 
@@ -340,6 +356,17 @@ router.post(
         activity.effects.romance || 0,
         newState
       );
+
+      // Update player resources (Phase 2)
+      const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost));
+      const newMoney = player.money + activity.moneyCost;
+      const newTime = addMinutes(player.currentTime, activity.timeCost);
+
+      await updatePlayerCharacter(pool, player.id, {
+        currentEnergy: newEnergy,
+        money: newMoney,
+        currentTime: newTime
+      });
 
       // Update relationship in database
       await client.query(
@@ -424,7 +451,8 @@ router.post(
       console.log(
         `✅ Interaction: ${activity.name} with ${npc.name} ` +
           `(F: ${relationship.friendship} → ${newFriendship}, R: ${relationship.romance} → ${newRomance}) ` +
-          `State: ${previousState}${stateChanged ? ` → ${newState}` : ''}`
+          `State: ${previousState}${stateChanged ? ` → ${newState}` : ''} ` +
+          `[Energy: ${player.currentEnergy} → ${newEnergy}, Money: ${player.money} → ${newMoney}]`
       );
 
       res.json({
@@ -450,14 +478,34 @@ router.post(
 
 /**
  * GET /api/relationships/activities/list
- * Get all available activities
+ * Get all available activities with availability status (Phase 2)
  */
-router.get('/activities/list', async (req: AuthRequest, res: Response<ApiResponse<Activity[]>>) => {
+router.get('/activities/list', async (req: AuthRequest, res: Response<ApiResponse<{ activities: Activity[], availability: ActivityAvailability[] }>>) => {
+  if (!req.user || !req.user.userId) {
+    res.status(401).json({
+      success: false,
+      error: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userId = req.user.userId;
+
   try {
     const activities = getAvailableActivities();
+
+    // Get player character to check availability (Phase 2)
+    const player = await getOrCreatePlayerCharacter(pool, userId);
+
+    // Check availability for each activity
+    const availability = activities.map(activity => canPerformActivity(activity, player));
+
     res.json({
       success: true,
-      data: activities
+      data: {
+        activities,
+        availability
+      }
     });
   } catch (error) {
     console.error('❌ Error fetching activities:', error);

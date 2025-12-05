@@ -6,12 +6,17 @@
 
 import { signalStore, withState, withMethods, patchState, withComputed } from '@ngrx/signals';
 import { computed } from '@angular/core';
-import { NPC, Relationship, Activity } from '../../../../../shared/types';
+import { NPC, Relationship, Activity, PlayerCharacter, ActivityAvailability } from '../../../../../shared/types';
 
 /**
  * Game State
  */
 interface GameState {
+  // Player Character (Phase 2)
+  player: PlayerCharacter | null;
+  playerLoading: boolean;
+  playerError: string | null;
+
   // NPCs
   npcs: NPC[];
   npcsLoading: boolean;
@@ -25,8 +30,9 @@ interface GameState {
   // Currently viewed NPC (for detail view)
   selectedNPCId: string | null;
 
-  // Activities
+  // Activities (Phase 2: includes availability)
   activities: Activity[];
+  activityAvailability: ActivityAvailability[];
   activitiesLoading: boolean;
   activitiesError: string | null;
 
@@ -39,6 +45,10 @@ interface GameState {
  * Initial state
  */
 const initialState: GameState = {
+  player: null,
+  playerLoading: false,
+  playerError: null,
+
   npcs: [],
   npcsLoading: false,
   npcsError: null,
@@ -50,6 +60,7 @@ const initialState: GameState = {
   selectedNPCId: null,
 
   activities: [],
+  activityAvailability: [],
   activitiesLoading: false,
   activitiesError: null,
 
@@ -102,6 +113,24 @@ export const GameStore = signalStore(
     })
   })),
   withMethods((store) => ({
+    // ===== Player Character Methods (Phase 2) =====
+
+    setPlayerLoading(loading: boolean): void {
+      patchState(store, { playerLoading: loading, playerError: null });
+    },
+
+    setPlayerError(error: string): void {
+      patchState(store, { playerError: error, playerLoading: false });
+    },
+
+    setPlayer(player: PlayerCharacter): void {
+      patchState(store, { player, playerLoading: false, playerError: null });
+    },
+
+    updatePlayer(player: PlayerCharacter): void {
+      patchState(store, { player });
+    },
+
     // ===== NPC Methods =====
 
     setNPCsLoading(loading: boolean): void {
@@ -174,8 +203,13 @@ export const GameStore = signalStore(
       patchState(store, { activitiesError: error, activitiesLoading: false });
     },
 
-    setActivities(activities: Activity[]): void {
-      patchState(store, { activities, activitiesLoading: false, activitiesError: null });
+    setActivities(activities: Activity[], availability?: ActivityAvailability[]): void {
+      patchState(store, {
+        activities,
+        activityAvailability: availability || [],
+        activitiesLoading: false,
+        activitiesError: null
+      });
     },
 
     // ===== Interaction Methods =====

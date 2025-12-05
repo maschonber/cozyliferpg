@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { GameFacade } from '../../services/game.facade';
 import { Relationship } from '../../../../../../shared/types';
+import { PlayerHud } from '../player-hud/player-hud';
 
 @Component({
   selector: 'app-game-home',
@@ -17,7 +18,8 @@ import { Relationship } from '../../../../../../shared/types';
     MatCardModule,
     MatProgressSpinnerModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    PlayerHud
   ],
   templateUrl: './game-home.html',
   styleUrl: './game-home.css',

@@ -40,6 +40,36 @@ export async function initDatabase() {
       )
     `);
 
+    // Create player_characters table (Phase 2)
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS player_characters (
+        id VARCHAR(255) PRIMARY KEY,
+        user_id VARCHAR(255) NOT NULL UNIQUE,
+
+        -- Resources
+        current_energy INTEGER NOT NULL DEFAULT 100 CHECK (current_energy >= 0 AND current_energy <= 100),
+        max_energy INTEGER NOT NULL DEFAULT 100,
+        money INTEGER NOT NULL DEFAULT 200,
+
+        -- Time tracking
+        current_day INTEGER NOT NULL DEFAULT 1 CHECK (current_day >= 1),
+        current_time VARCHAR(5) NOT NULL DEFAULT '06:00',
+        last_slept_at VARCHAR(5) NOT NULL DEFAULT '06:00',
+
+        -- Timestamps
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+        -- Foreign key
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create index for player_characters
+    await client.query(`
+      CREATE INDEX IF NOT EXISTS idx_player_characters_user ON player_characters(user_id)
+    `);
+
     // Create NPCs table
     await client.query(`
       CREATE TABLE IF NOT EXISTS npcs (

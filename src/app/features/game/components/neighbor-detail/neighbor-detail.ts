@@ -8,6 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { GameFacade } from '../../services/game.facade';
 import { Subscription } from 'rxjs';
 
@@ -21,7 +22,8 @@ import { Subscription } from 'rxjs';
     MatIconModule,
     MatDividerModule,
     MatProgressBarModule,
-    MatChipsModule
+    MatChipsModule,
+    MatTooltipModule
   ],
   templateUrl: './neighbor-detail.html',
   styleUrl: './neighbor-detail.css',
@@ -32,16 +34,21 @@ export class NeighborDetail implements OnInit, OnDestroy {
   private router = inject(Router);
   private subscriptions = new Subscription();
 
+  // Expose Math for template
+  Math = Math;
+
   // Expose facade signals
   selectedNPC = this.facade.selectedNPC;
   selectedRelationship = this.facade.selectedRelationship;
   activities = this.facade.activities;
+  activityAvailability = this.facade.activityAvailability;
   activitiesLoading = this.facade.activitiesLoading;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
   relationshipsLoading = this.facade.relationshipsLoading;
   npcsLoading = this.facade.npcsLoading;
   isLoading = this.facade.isLoading;
+  player = this.facade.player;
 
   ngOnInit(): void {
     // Get NPC ID from route params
@@ -176,5 +183,48 @@ export class NeighborDetail implements OnInit, OnDestroy {
     }
 
     return parts.join(' • ');
+  }
+
+  /**
+   * Get availability for a specific activity
+   */
+  getActivityAvailability(activityId: string) {
+    const availability = this.activityAvailability();
+    return availability.find(a => a.activityId === activityId);
+  }
+
+  /**
+   * Format time cost (convert minutes to readable format)
+   */
+  formatTimeCost(minutes: number): string {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+
+    if (hours === 0) {
+      return `${mins}m`;
+    } else if (mins === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${mins}m`;
+    }
+  }
+
+  /**
+   * Get tooltip text for unavailable activity
+   */
+  getUnavailableTooltip(activityId: string): string {
+    const availability = this.getActivityAvailability(activityId);
+    if (!availability || availability.available) {
+      return '';
+    }
+    return availability.reason || 'Activity not available';
+  }
+
+  /**
+   * Check if activity is available
+   */
+  isActivityAvailable(activityId: string): boolean {
+    const availability = this.getActivityAvailability(activityId);
+    return availability?.available ?? true;
   }
 }

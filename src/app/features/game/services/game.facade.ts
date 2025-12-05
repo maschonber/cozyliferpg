@@ -6,10 +6,10 @@
 
 import { Injectable, inject } from '@angular/core';
 import { Observable, of } from 'rxjs';
-import { tap, map, catchError } from 'rxjs/operators';
+import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { GameStore } from '../store/game.store';
 import { GameRepository } from './game.repository';
-import { NPC, Relationship, Activity, PerformActivityResponse } from '../../../../../shared/types';
+import { NPC, Relationship, Activity, PerformActivityResponse, PlayerCharacter, SleepResult } from '../../../../../shared/types';
 
 @Injectable({
   providedIn: 'root'
@@ -19,6 +19,10 @@ export class GameFacade {
   private repository = inject(GameRepository);
 
   // Expose signals from store for components
+  player = this.store.player;
+  playerLoading = this.store.playerLoading;
+  playerError = this.store.playerError;
+
   npcs = this.store.npcs;
   npcsLoading = this.store.npcsLoading;
   npcsError = this.store.npcsError;
@@ -34,6 +38,7 @@ export class GameFacade {
   npcsWithRelationships = this.store.npcsWithRelationships;
 
   activities = this.store.activities;
+  activityAvailability = this.store.activityAvailability;
   activitiesLoading = this.store.activitiesLoading;
   activitiesError = this.store.activitiesError;
 
@@ -45,9 +50,10 @@ export class GameFacade {
 
   /**
    * Initialize game data on startup
-   * Loads NPCs, relationships and activities
+   * Loads player, NPCs, relationships and activities (Phase 2)
    */
   initialize(): void {
+    this.loadPlayer();
     this.loadNPCs();
     this.loadRelationships();
     this.loadActivities();
@@ -56,10 +62,10 @@ export class GameFacade {
   /**
    * Ensure activities are loaded (for use in resolvers/components)
    * Returns immediately if already loaded, otherwise loads and waits
+   * (Phase 2: Now includes availability information)
    *
-   * Note: Activities may become context-dependent in the future (based on
-   * relationship status, character traits, etc.), so they are loaded on-demand
-   * via the route resolver rather than at app startup.
+   * Note: Activities are context-dependent (based on player state, time, etc.),
+   * so they should be reloaded when player state changes significantly.
    */
   ensureActivitiesLoaded(): Observable<boolean> {
     // If activities are already loaded, return immediately
@@ -71,9 +77,9 @@ export class GameFacade {
     this.store.setActivitiesLoading(true);
 
     return this.repository.getActivities().pipe(
-      tap((activities) => {
-        this.store.setActivities(activities);
-        console.log(`✅ Loaded ${activities.length} activities`);
+      tap((data) => {
+        this.store.setActivities(data.activities, data.availability);
+        console.log(`✅ Loaded ${data.activities.length} activities`);
       }),
       map(() => true),
       catchError((error) => {
@@ -228,33 +234,41 @@ export class GameFacade {
   }
 
   /**
-   * Perform an activity with an NPC
+   * Perform an activity with an NPC (Phase 2: updates player resources)
    */
   performActivity(npcId: string, activityId: string): Observable<PerformActivityResponse> {
     this.store.setInteracting(true);
 
     return this.repository.performActivity(npcId, activityId).pipe(
-      tap({
-        next: (response) => {
-          // Update relationship in store
-          if (response.relationship) {
-            this.store.updateRelationship(response.relationship);
-          }
-
-          this.store.setInteracting(false);
-
-          // Log activity result
-          const activity = this.store.activities().find(a => a.id === activityId);
-          console.log(
-            `✅ Activity "${activity?.name}" completed`,
-            response.stateChanged ? `State changed: ${response.previousState} → ${response.newState}` : ''
-          );
-        },
-        error: (error) => {
-          const errorMessage = error.message || 'Failed to perform activity';
-          this.store.setInteractionError(errorMessage);
-          console.error('❌ Error performing activity:', error);
+      switchMap((response) => {
+        // Update relationship in store
+        if (response.relationship) {
+          this.store.updateRelationship(response.relationship);
         }
+
+        this.store.setInteracting(false);
+
+        // Log activity result
+        const activity = this.store.activities().find(a => a.id === activityId);
+        console.log(
+          `✅ Activity "${activity?.name}" completed`,
+          response.stateChanged ? `State changed: ${response.previousState} → ${response.newState}` : ''
+        );
+
+        // Reload player to get updated resources and reload activities to get updated availability
+        return this.repository.getPlayer().pipe(
+          tap((player) => this.store.setPlayer(player)),
+          switchMap(() => this.repository.getActivities().pipe(
+            tap((data) => this.store.setActivities(data.activities, data.availability))
+          )),
+          map(() => response)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to perform activity';
+        this.store.setInteractionError(errorMessage);
+        console.error('❌ Error performing activity:', error);
+        throw error;
       })
     );
   }
@@ -262,15 +276,15 @@ export class GameFacade {
   // ===== Activity Operations =====
 
   /**
-   * Load all available activities
+   * Load all available activities with availability (Phase 2)
    */
   loadActivities(): void {
     this.store.setActivitiesLoading(true);
 
     this.repository.getActivities().subscribe({
-      next: (activities) => {
-        this.store.setActivities(activities);
-        console.log(`✅ Loaded ${activities.length} activities`);
+      next: (data) => {
+        this.store.setActivities(data.activities, data.availability);
+        console.log(`✅ Loaded ${data.activities.length} activities`);
       },
       error: (error) => {
         const errorMessage = error.message || 'Failed to load activities';
@@ -278,6 +292,80 @@ export class GameFacade {
         console.error('❌ Error loading activities:', error);
       }
     });
+  }
+
+  // ===== Player Character Operations (Phase 2) =====
+
+  /**
+   * Load player character
+   */
+  loadPlayer(): void {
+    this.store.setPlayerLoading(true);
+
+    this.repository.getPlayer().subscribe({
+      next: (player) => {
+        this.store.setPlayer(player);
+        console.log(`✅ Loaded player - Day ${player.currentDay}, ${player.currentTime}`);
+      },
+      error: (error) => {
+        const errorMessage = error.message || 'Failed to load player';
+        this.store.setPlayerError(errorMessage);
+        console.error('❌ Error loading player:', error);
+      }
+    });
+  }
+
+  /**
+   * Reset player character to initial state
+   */
+  resetPlayer(): Observable<PlayerCharacter> {
+    this.store.setPlayerLoading(true);
+
+    return this.repository.resetPlayer().pipe(
+      tap({
+        next: (player) => {
+          this.store.setPlayer(player);
+          // Also reset NPCs and relationships since they're deleted
+          this.store.setNPCs([]);
+          this.store.setRelationships([]);
+          console.log('✅ Player reset to initial state');
+        },
+        error: (error) => {
+          const errorMessage = error.message || 'Failed to reset player';
+          this.store.setPlayerError(errorMessage);
+          console.error('❌ Error resetting player:', error);
+        }
+      })
+    );
+  }
+
+  /**
+   * Go to sleep and advance to next day
+   */
+  sleep(): Observable<SleepResult> {
+    this.store.setPlayerLoading(true);
+
+    return this.repository.sleep().pipe(
+      switchMap((result) => {
+        console.log(`✅ Slept ${result.hoursSlept} hours, gained ${result.energyRestored} energy`);
+        console.log(`🌅 Day ${result.newDay} begins at ${result.wakeTime}`);
+
+        // Reload player to get updated state
+        return this.repository.getPlayer().pipe(
+          tap((player) => this.store.setPlayer(player)),
+          switchMap(() => this.repository.getActivities().pipe(
+            tap((data) => this.store.setActivities(data.activities, data.availability))
+          )),
+          map(() => result)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to process sleep';
+        this.store.setPlayerError(errorMessage);
+        console.error('❌ Error processing sleep:', error);
+        throw error;
+      })
+    );
   }
 
   // ===== Selection Operations =====

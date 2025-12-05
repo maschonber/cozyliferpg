@@ -1,0 +1,71 @@
+<div class="player-hud">
+  @if (player(); as p) {
+    <div class="hud-container">
+      <!-- Day & Time -->
+      <div class="hud-item day-time">
+        <mat-icon class="hud-icon">calendar_today</mat-icon>
+        <div class="hud-content">
+          <span class="hud-label">Day {{ p.currentDay }}</span>
+          <span class="hud-value">{{ p.currentTime }} ({{ getTimeSlotLabel(p.currentTime) }})</span>
+        </div>
+      </div>
+
+      <!-- Energy -->
+      <div class="hud-item energy">
+        <mat-icon class="hud-icon">bolt</mat-icon>
+        <div class="hud-content">
+          <div class="hud-header">
+            <span class="hud-label">Energy</span>
+            <span class="hud-value">{{ p.currentEnergy }}/{{ p.maxEnergy }}</span>
+          </div>
+          <mat-progress-bar
+            [mode]="'determinate'"
+            [value]="getEnergyPercentage(p.currentEnergy, p.maxEnergy)"
+            [color]="getEnergyColor(p.currentEnergy)"
+            class="energy-bar">
+          </mat-progress-bar>
+        </div>
+      </div>
+
+      <!-- Money -->
+      <div class="hud-item money">
+        <mat-icon class="hud-icon">attach_money</mat-icon>
+        <div class="hud-content">
+          <span class="hud-label">Money</span>
+          <span class="hud-value">${{ p.money }}</span>
+        </div>
+      </div>
+
+      <!-- Sleep Button -->
+      <div class="hud-item sleep">
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="onSleep()"
+          matTooltip="Go to sleep and advance to next day"
+          class="sleep-button">
+          <mat-icon>bedtime</mat-icon>
+          Sleep
+        </button>
+      </div>
+
+      <!-- Reset Button (Debug) -->
+      <div class="hud-item reset">
+        <button
+          mat-icon-button
+          color="warn"
+          (click)="onResetPlayer()"
+          matTooltip="Reset Progress (Debug)"
+          class="reset-button">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
+    </div>
+  }
+
+  @if (playerLoading()) {
+    <div class="hud-container loading">
+      <span class="hud-label">Loading player data...</span>
+    </div>
+  }
+</div>
