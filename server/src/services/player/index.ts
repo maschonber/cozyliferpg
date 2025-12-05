@@ -18,7 +18,7 @@ function mapRowToPlayerCharacter(row: any): PlayerCharacter {
     maxEnergy: row.max_energy,
     money: row.money,
     currentDay: row.current_day,
-    currentTime: row.current_time,
+    currentTime: row.time_of_day,
     lastSleptAt: row.last_slept_at,
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString()
@@ -53,7 +53,7 @@ export async function getOrCreatePlayerCharacter(
       `
       INSERT INTO player_characters (
         id, user_id, current_energy, max_energy, money,
-        current_day, current_time, last_slept_at,
+        current_day, time_of_day, last_slept_at,
         created_at, updated_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
@@ -101,7 +101,7 @@ export async function updatePlayerCharacter(
       values.push(updates.currentDay);
     }
     if (updates.currentTime !== undefined) {
-      updateFields.push(`current_time = $${paramCount++}`);
+      updateFields.push(`time_of_day = $${paramCount++}`);
       values.push(updates.currentTime);
     }
     if (updates.lastSleptAt !== undefined) {
@@ -178,7 +178,7 @@ export async function resetPlayerCharacter(
           max_energy = 100,
           money = 200,
           current_day = 1,
-          current_time = '06:00',
+          time_of_day = '06:00',
           last_slept_at = '06:00',
           updated_at = $1
       WHERE id = $2
