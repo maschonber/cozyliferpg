@@ -584,36 +584,66 @@ function getTimeSlot(time: string): TimeSlot {
 
 **Sleep Duration & Wake Time Calculation:**
 ```typescript
-function calculateSleepResults(currentTime: string, bedtime: string) {
-  // Calculate hours until 6 AM or 8 AM based on bedtime
+function calculateSleepResults(bedtime: string) {
   const bedHour = parseInt(bedtime.split(':')[0]);
   const bedMinute = parseInt(bedtime.split(':')[1]);
 
   let wakeTime: string;
   let hoursSlept: number;
 
-  if (bedHour < 6) {
-    // After midnight, before 6 AM
-    hoursSlept = (6 - bedHour) - (bedMinute / 60);
-    wakeTime = hoursSlept >= 8 ? "06:00" : "08:00";
-  } else if (bedHour >= 22) {
-    // 10 PM or later
-    hoursSlept = (24 - bedHour) + 6 - (bedMinute / 60);
+  // Case 1: Before 10 PM (6 AM - 9:59 PM)
+  // Wake at 6 AM, but only get energy for 8 hours max
+  if (bedHour >= 6 && bedHour < 22) {
     wakeTime = "06:00";
-  } else {
-    // Between 6 AM and 10 PM
-    hoursSlept = (24 - bedHour) + 6 - (bedMinute / 60);
-    wakeTime = "06:00";
+    hoursSlept = 8; // Capped at 8 hours for energy purposes
+  }
+  // Case 2: Between 10 PM and midnight (22:00 - 23:59)
+  // Sleep exactly 8 hours, wake 8 hours after bedtime
+  else if (bedHour >= 22) {
+    hoursSlept = 8;
+    const bedTimeInMinutes = bedHour * 60 + bedMinute;
+    const wakeMinutes = bedTimeInMinutes + (8 * 60);
+    const wakeHour = Math.floor(wakeMinutes / 60) % 24;
+    const wakeMin = wakeMinutes % 60;
+    wakeTime = `${String(wakeHour).padStart(2, '0')}:${String(wakeMin).padStart(2, '0')}`;
+  }
+  // Case 3: After midnight, before 4 AM (0:00 - 3:59)
+  // Wake at 8 AM, sleep time gradually declines
+  else if (bedHour >= 0 && bedHour < 4) {
+    wakeTime = "08:00";
+    const bedTimeInMinutes = bedHour * 60 + bedMinute;
+    const wakeTimeInMinutes = 8 * 60; // 8 AM
+    hoursSlept = (wakeTimeInMinutes - bedTimeInMinutes) / 60;
+    // At midnight: 8 hours
+    // At 1 AM: 7 hours
+    // At 2 AM: 6 hours
+    // At 3 AM: 5 hours
+    // At 4 AM: 4 hours
+  }
+  // Case 4: Between 4 AM and 6 AM (4:00 - 5:59)
+  // Edge case: wake at 8 AM
+  else {
+    wakeTime = "08:00";
+    const bedTimeInMinutes = bedHour * 60 + bedMinute;
+    const wakeTimeInMinutes = 8 * 60;
+    hoursSlept = (wakeTimeInMinutes - bedTimeInMinutes) / 60;
   }
 
-  // Cap at 8 hours max
-  hoursSlept = Math.min(hoursSlept, 8);
-
-  // Calculate energy restoration
-  const energyRestored = Math.floor(hoursSlept * 10); // Max 80
+  // Calculate energy restoration (hours × 10)
+  const energyRestored = Math.floor(hoursSlept * 10);
 
   return { wakeTime, energyRestored, hoursSlept };
 }
+
+// Examples:
+// Bed at 9 PM (21:00) → Wake 06:00, 8 hours, 80 energy
+// Bed at 10 PM (22:00) → Wake 06:00, 8 hours, 80 energy
+// Bed at 11 PM (23:00) → Wake 07:00, 8 hours, 80 energy
+// Bed at midnight (00:00) → Wake 08:00, 8 hours, 80 energy
+// Bed at 1 AM (01:00) → Wake 08:00, 7 hours, 70 energy
+// Bed at 2 AM (02:00) → Wake 08:00, 6 hours, 60 energy
+// Bed at 3 AM (03:00) → Wake 08:00, 5 hours, 50 energy
+// Bed at 4 AM (04:00) → Wake 08:00, 4 hours, 40 energy
 ```
 
 **Activity End Time Validation:**
