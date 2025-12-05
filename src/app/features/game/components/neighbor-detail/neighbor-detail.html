@@ -1,10 +1,20 @@
 <div class="neighbor-detail">
-  <!-- Back Button -->
+  <!-- Back Button and Actions -->
   <div class="back-button-container">
     <button mat-button (click)="onBack()">
       <mat-icon>arrow_back</mat-icon>
       Back to Neighbors
     </button>
+    @if (selectedNPC()) {
+      <button
+        mat-button
+        color="warn"
+        (click)="onDeleteNPC()"
+        [disabled]="isLoading()">
+        <mat-icon>delete</mat-icon>
+        Delete Character
+      </button>
+    }
   </div>
 
   <!-- Loading State -->

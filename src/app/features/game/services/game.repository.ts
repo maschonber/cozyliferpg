@@ -68,6 +68,20 @@ export class GameRepository {
     );
   }
 
+  /**
+   * Delete an NPC by ID
+   */
+  deleteNPC(npcId: string): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.API_URL}/npcs/${npcId}`).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to delete NPC');
+        }
+        return;
+      })
+    );
+  }
+
   // ===== Relationship Operations =====
 
   /**
