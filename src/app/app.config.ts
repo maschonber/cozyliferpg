@@ -3,6 +3,7 @@ import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/
 import { provideRouter } from '@angular/router';
 import { routes } from './app.routes';
 import { authInterceptor } from './core/interceptors/auth.interceptor';
+import { httpErrorInterceptor } from './core/interceptors/http-error.interceptor';
 import { AuthFacade } from './features/auth/services/auth.facade';
 
 /**
@@ -21,7 +22,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideHttpClient(
       withFetch(),
-      withInterceptors([authInterceptor])
+      withInterceptors([authInterceptor, httpErrorInterceptor])
     ),
     {
       provide: APP_INITIALIZER,
