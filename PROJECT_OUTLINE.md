@@ -293,22 +293,81 @@ GET    /api/activities        - List available activities
 ## Phase 2: Time & Energy Systems 🔨 NEXT
 
 ### Scope
-Phase 2 introduces resource management and pacing through time and energy systems. Players must strategically balance limited resources to pursue relationships, personal development, and daily life needs.
+Phase 2 introduces resource management and pacing through time and energy systems. Players must strategically balance limited time, energy, and money to pursue relationships, personal development, and daily life needs.
 
-**Planned Features:**
-- Time system (day cycles with morning/afternoon/evening/night slots)
-- Energy resource management
-- Player character creation and tracking
-- Expanded activity system with costs and requirements
-- Money system (work to earn, activities cost money)
-- Player stats (Fitness, Intelligence, Charisma) - optional
+### Core Design Decisions
 
-**Core Questions to Resolve:**
-- Time mechanics (automatic vs manual advancement)
-- Energy system design (single pool, recovery mechanics)
-- Player stats inclusion/scope
-- Activity variety and balancing
-- UI/UX for resource tracking
+#### 1. Time System
+- **Time Tracking:** Real-time clock (HH:MM format) from wake-up to 3 AM auto-sleep
+- **Time Display:** Show both actual time (e.g., "14:30") and derived period (Afternoon)
+- **Time Progression:** Automatic - activities consume specific minutes
+- **Activity Time Costs:**
+  - Quick actions (check phone, browse): 0 minutes
+  - Light activities (coffee, casual chat): 30-60 minutes
+  - Medium activities (dates, study, nap): 60-120 minutes
+  - Heavy activities (work, intense workouts): 180-240 minutes
+- **Day Structure:**
+  - Day starts at wake-up time (TBD: 7 AM?)
+  - Day automatically ends at 3 AM (forced sleep)
+  - Time slots derived from clock:
+    - Morning: 6 AM - 12 PM
+    - Afternoon: 12 PM - 6 PM
+    - Evening: 6 PM - 12 AM
+    - Night: 12 AM - 6 AM
+
+#### 2. Energy System
+- **Single Energy Pool:** 100 points maximum (no stats initially)
+- **Energy Costs:** Activities can cost, restore, or be neutral
+  - Heavy work/study: -25 to -40 energy
+  - Social activities: -15 to -25 energy
+  - Light relaxation: -5 to +10 energy
+  - Napping: +20 to +30 energy (costs time)
+  - Sleeping: Variable restoration (see below)
+- **Sleep Mechanics:**
+  - Does NOT fully restore to 100 (encourages long-term resource management)
+  - Earlier bedtime = more energy restored OR later wake-up
+  - Players must balance activity vs. rest strategically
+  - Future: Better beds restore more energy
+- **Day End:** Automatic sleep at 3 AM if player hasn't slept yet
+
+#### 3. Money System
+- **Basic Resource:** Track money as integer ($)
+- **Sources:** Part-time work activities
+- **Sinks:** Some activities cost money (dates, entertainment, shopping)
+- **Starting Amount:** TBD
+- **Future Expansion:** Jobs, gifts for NPCs, purchases
+
+#### 4. Player Character (Minimal)
+- **No name/gender selection** in Phase 2 (defer to Phase 3)
+- **Track only:** Current energy, current money, current time/day
+- **Stats:** Deferred to Phase 3+
+
+#### 5. Activities (Expanded)
+- **Target Count:** ~20 activities covering diverse categories
+- **Categories:**
+  - Work (earn money, high energy cost, long time)
+  - Social with NPCs (varying costs based on activity type)
+  - Self-improvement (study, exercise - costs resources, future stat gains)
+  - Leisure/Relaxation (low/neutral energy, variable time)
+  - Self-care (nap, sleep - restore energy)
+- **Design Philosophy:**
+  - Heavy activities (work, study) = high energy cost, long time
+  - Light activities (park stroll, relaxing) = low energy, variable time
+  - Some activities OK to have minimal impact if they rely on future systems
+
+#### 6. UI/UX
+- **Top Bar HUD (Always Visible):**
+  ```
+  Day 3  |  14:30 (Afternoon)  |  ⚡ 65/100  |  💰 $180
+  ```
+- **Activity Selection:**
+  - Show time cost (in minutes) and energy cost
+  - Gray out activities player can't afford (insufficient energy/money)
+  - Clear tooltips for unavailable activities
+- **Sleep/Day Transition:**
+  - Option to sleep manually before 3 AM
+  - Automatic forced sleep at 3 AM
+  - Summary of day before advancing to next day
 
 ### Phase 3: Locations & Exploration
 - Multiple neighborhood locations
