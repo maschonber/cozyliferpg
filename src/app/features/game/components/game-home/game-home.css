@@ -139,8 +139,8 @@ mat-divider {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.05) 0%, rgba(0, 0, 0, 0.1) 100%);
-  border-left: 3px solid rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.04);
+  border-left: 3px solid rgba(0, 0, 0, 0.08);
   transition: background 0.3s, border-color 0.3s;
 }
 
@@ -152,32 +152,32 @@ mat-divider {
   transition: color 0.3s;
 }
 
-/* Gender Color Coding for Avatar */
+/* Gender Color Coding for Avatar - Flat Design */
 .avatar-container.gender-female {
-  background: linear-gradient(135deg, rgba(233, 30, 99, 0.15) 0%, rgba(156, 39, 176, 0.15) 100%);
-  border-left-color: rgba(233, 30, 99, 0.5);
+  background: rgba(233, 30, 99, 0.08);
+  border-left-color: rgba(233, 30, 99, 0.4);
 }
 
 .avatar-container.gender-female mat-icon {
-  color: rgba(233, 30, 99, 0.7);
+  color: rgba(233, 30, 99, 0.8);
 }
 
 .avatar-container.gender-male {
-  background: linear-gradient(135deg, rgba(33, 150, 243, 0.15) 0%, rgba(63, 81, 181, 0.15) 100%);
-  border-left-color: rgba(33, 150, 243, 0.5);
+  background: rgba(33, 150, 243, 0.08);
+  border-left-color: rgba(33, 150, 243, 0.4);
 }
 
 .avatar-container.gender-male mat-icon {
-  color: rgba(33, 150, 243, 0.7);
+  color: rgba(33, 150, 243, 0.8);
 }
 
 .avatar-container.gender-other {
-  background: linear-gradient(135deg, rgba(156, 39, 176, 0.1) 0%, rgba(103, 58, 183, 0.1) 50%, rgba(63, 81, 181, 0.1) 100%);
+  background: rgba(156, 39, 176, 0.08);
   border-left-color: rgba(156, 39, 176, 0.4);
 }
 
 .avatar-container.gender-other mat-icon {
-  color: rgba(103, 58, 183, 0.7);
+  color: rgba(156, 39, 176, 0.8);
 }
 
 /* Gender Badge */
