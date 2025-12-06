@@ -11,6 +11,7 @@ export const routes: Routes = [
   {
     path: 'game',
     canActivate: [authGuard],
+    loadComponent: () => import('./features/game/components/game-layout/game-layout').then(m => m.GameLayout),
     children: [
       {
         path: '',

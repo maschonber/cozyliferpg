@@ -14,12 +14,13 @@ import { RelationshipState, EmotionalState } from '../../../../shared/types';
  * Phase 2 Activities
  */
 export const ACTIVITIES = [
-  // Work Activities
+  // Work Activities (solo)
   {
     id: 'work_part_time',
     name: 'Work Part-Time Job',
     description: 'Work a 4-hour shift at your part-time job',
     category: 'work' as const,
+    requiresNPC: false,
     timeCost: 240,
     energyCost: -30,
     moneyCost: 80,
@@ -31,6 +32,7 @@ export const ACTIVITIES = [
     name: 'Work Full Day',
     description: 'Work a full 8-hour shift for maximum pay',
     category: 'work' as const,
+    requiresNPC: false,
     timeCost: 480,
     energyCost: -50,
     moneyCost: 150,
@@ -44,6 +46,7 @@ export const ACTIVITIES = [
     name: 'Have Coffee Together',
     description: 'Grab a casual coffee and catch up',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 60,
     energyCost: -15,
     moneyCost: -5,
@@ -54,6 +57,7 @@ export const ACTIVITIES = [
     name: 'Quick Chat',
     description: 'Have a brief conversation',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 30,
     energyCost: -10,
     moneyCost: 0,
@@ -64,6 +68,7 @@ export const ACTIVITIES = [
     name: 'Go on Casual Date',
     description: 'Go out for dinner or drinks together',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 120,
     energyCost: -20,
     moneyCost: -30,
@@ -75,6 +80,7 @@ export const ACTIVITIES = [
     name: 'Have Deep Conversation',
     description: 'Share meaningful thoughts and feelings',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 90,
     energyCost: -25,
     moneyCost: 0,
@@ -86,6 +92,7 @@ export const ACTIVITIES = [
     name: 'Go to Movies',
     description: 'Watch a film together at the cinema',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 150,
     energyCost: -15,
     moneyCost: -20,
@@ -97,6 +104,7 @@ export const ACTIVITIES = [
     name: 'Exercise Together',
     description: 'Work out or play sports together',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 90,
     energyCost: -30,
     moneyCost: 0,
@@ -108,6 +116,7 @@ export const ACTIVITIES = [
     name: 'Cook Dinner Together',
     description: 'Prepare and share a homemade meal',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 120,
     energyCost: -20,
     moneyCost: -15,
@@ -119,18 +128,20 @@ export const ACTIVITIES = [
     name: 'Flirt Playfully',
     description: 'Engage in some lighthearted flirting',
     category: 'social' as const,
+    requiresNPC: true,
     timeCost: 45,
     energyCost: -15,
     moneyCost: 0,
     effects: { romance: 12 }
   },
 
-  // Self-Improvement Activities
+  // Self-Improvement Activities (solo)
   {
     id: 'study_library',
     name: 'Study at Library',
     description: 'Hit the books and expand your knowledge',
     category: 'self_improvement' as const,
+    requiresNPC: false,
     timeCost: 120,
     energyCost: -25,
     moneyCost: 0,
@@ -142,6 +153,7 @@ export const ACTIVITIES = [
     name: 'Work Out at Gym',
     description: 'Get a solid workout in at the gym',
     category: 'self_improvement' as const,
+    requiresNPC: false,
     timeCost: 90,
     energyCost: -30,
     moneyCost: -10,
@@ -153,6 +165,7 @@ export const ACTIVITIES = [
     name: 'Read a Book',
     description: 'Read for pleasure and relaxation',
     category: 'self_improvement' as const,
+    requiresNPC: false,
     timeCost: 90,
     energyCost: -10,
     moneyCost: 0,
@@ -163,18 +176,20 @@ export const ACTIVITIES = [
     name: 'Practice Creative Hobby',
     description: 'Work on art, music, or creative projects',
     category: 'self_improvement' as const,
+    requiresNPC: false,
     timeCost: 120,
     energyCost: -20,
     moneyCost: 0,
     effects: {}
   },
 
-  // Leisure/Relaxation Activities
+  // Leisure/Relaxation Activities (solo)
   {
     id: 'stroll_park',
     name: 'Stroll in the Park',
     description: 'Take a peaceful walk outdoors',
     category: 'leisure' as const,
+    requiresNPC: false,
     timeCost: 60,
     energyCost: -5,
     moneyCost: 0,
@@ -186,6 +201,7 @@ export const ACTIVITIES = [
     name: 'Play Video Games',
     description: 'Unwind with some gaming',
     category: 'leisure' as const,
+    requiresNPC: false,
     timeCost: 120,
     energyCost: -10,
     moneyCost: 0,
@@ -196,6 +212,7 @@ export const ACTIVITIES = [
     name: 'Watch TV',
     description: 'Relax and watch your favorite shows',
     category: 'leisure' as const,
+    requiresNPC: false,
     timeCost: 90,
     energyCost: 5,
     moneyCost: 0,
@@ -206,18 +223,20 @@ export const ACTIVITIES = [
     name: 'Listen to Music',
     description: 'Put on some tunes and chill',
     category: 'leisure' as const,
+    requiresNPC: false,
     timeCost: 30,
     energyCost: 10,
     moneyCost: 0,
     effects: {}
   },
 
-  // Self-Care Activities
+  // Self-Care Activities (solo)
   {
     id: 'take_nap',
     name: 'Take a Nap',
     description: 'Get some quick rest to recharge',
     category: 'self_care' as const,
+    requiresNPC: false,
     timeCost: 60,
     energyCost: 25,
     moneyCost: 0,
@@ -229,6 +248,7 @@ export const ACTIVITIES = [
     name: 'Go to Sleep',
     description: 'Go to bed and end the day',
     category: 'self_care' as const,
+    requiresNPC: false,
     timeCost: 0, // Special: ends day
     energyCost: 0, // Special: calculated based on sleep duration
     moneyCost: 0,
@@ -236,12 +256,13 @@ export const ACTIVITIES = [
     effects: {}
   },
 
-  // Discovery Activity
+  // Discovery Activity (solo)
   {
     id: 'meet_someone',
     name: 'Meet Someone New',
     description: 'Explore the neighborhood and meet a new person',
     category: 'discovery' as const,
+    requiresNPC: false,
     timeCost: 45,
     energyCost: -20,
     moneyCost: 0,

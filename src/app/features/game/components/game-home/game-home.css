@@ -277,3 +277,144 @@ mat-card-actions {
 mat-card-actions button mat-icon {
   margin-right: 4px;
 }
+
+/* Activities Section (Phase 2) */
+.activities-section {
+  margin-bottom: 32px;
+}
+
+.activities-section h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 20px 0;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.error-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(244, 67, 54, 0.1);
+  border-radius: 4px;
+  margin-bottom: 16px;
+  color: #c62828;
+  font-size: 14px;
+}
+
+.activities-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.activity-card {
+  height: auto !important;
+  padding: 16px !important;
+  text-align: left;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.activity-card.unavailable {
+  opacity: 0.5 !important;
+  cursor: not-allowed;
+}
+
+.activity-card:hover:not([disabled]) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+}
+
+.activity-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.activity-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.activity-name {
+  font-weight: 500;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.warning-icon {
+  font-size: 18px !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: #ff9800;
+}
+
+.activity-costs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.cost-chip {
+  font-size: 12px !important;
+  min-height: 28px !important;
+  padding: 0 10px !important;
+}
+
+.cost-chip mat-icon {
+  font-size: 16px !important;
+  width: 16px !important;
+  height: 16px !important;
+  margin-right: 4px;
+}
+
+.cost-chip.time {
+  background-color: rgba(33, 150, 243, 0.15) !important;
+  color: #1976d2 !important;
+}
+
+.cost-chip.energy {
+  background-color: rgba(255, 235, 59, 0.2) !important;
+  color: #f57c00 !important;
+}
+
+.cost-chip.energy.negative-cost {
+  background-color: rgba(244, 67, 54, 0.15) !important;
+  color: #c62828 !important;
+}
+
+.cost-chip.money {
+  background-color: rgba(76, 175, 80, 0.15) !important;
+  color: #388e3c !important;
+}
+
+.cost-chip.money.positive-cost {
+  background-color: rgba(76, 175, 80, 0.2) !important;
+  color: #2e7d32 !important;
+}
+
+.interacting-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .activities-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -11,8 +11,7 @@ import {
   applyActivityEffects,
   getContextualEmotionalState,
   updateUnlockedStates,
-  getActivityById,
-  getAvailableActivities
+  getActivityById
 } from '../services/relationship';
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
@@ -21,9 +20,7 @@ import {
   ApiResponse,
   PerformActivityRequest,
   PerformActivityResponse,
-  Activity,
-  NPC,
-  ActivityAvailability
+  NPC
 } from '../../../shared/types';
 import { randomUUID } from 'crypto';
 
@@ -475,46 +472,5 @@ router.post(
     }
   }
 );
-
-/**
- * GET /api/relationships/activities/list
- * Get all available activities with availability status (Phase 2)
- */
-router.get('/activities/list', async (req: AuthRequest, res: Response<ApiResponse<{ activities: Activity[], availability: ActivityAvailability[] }>>) => {
-  if (!req.user || !req.user.userId) {
-    res.status(401).json({
-      success: false,
-      error: 'User not authenticated'
-    });
-    return;
-  }
-
-  const userId = req.user.userId;
-
-  try {
-    const activities = getAvailableActivities();
-
-    // Get player character to check availability (Phase 2)
-    const player = await getOrCreatePlayerCharacter(pool, userId);
-
-    // Check availability for each activity
-    const availability = activities.map(activity => canPerformActivity(activity, player));
-
-    res.json({
-      success: true,
-      data: {
-        activities,
-        availability
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error fetching activities:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Failed to fetch activities';
-    res.status(500).json({
-      success: false,
-      error: errorMessage
-    });
-  }
-});
 
 export default router;

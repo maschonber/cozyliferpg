@@ -134,6 +134,25 @@ export class GameRepository {
     );
   }
 
+  /**
+   * Perform a solo activity (no NPC required)
+   */
+  performSoloActivity(activityId: string): Observable<any> {
+    const request: PerformActivityRequest = { activityId };
+
+    return this.http.post<ApiResponse<{ player: any }>>(
+      `${this.API_URL}/activities/perform`,
+      request
+    ).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to perform solo activity');
+        }
+        return response;
+      })
+    );
+  }
+
   // ===== Activity Operations =====
 
   /**
@@ -141,7 +160,7 @@ export class GameRepository {
    */
   getActivities(): Observable<{ activities: Activity[], availability: ActivityAvailability[] }> {
     return this.http.get<ApiResponse<{ activities: Activity[], availability: ActivityAvailability[] }>>(
-      `${this.API_URL}/relationships/activities/list`
+      `${this.API_URL}/activities`
     ).pipe(
       map(response => {
         if (!response.success || !response.data) {

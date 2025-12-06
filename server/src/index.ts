@@ -5,6 +5,7 @@ import { HealthCheckResponse } from '../../shared/types';
 import npcsRouter from './routes/npcs';
 import relationshipsRouter from './routes/relationships';
 import playerRouter from './routes/player';
+import activitiesRouter from './routes/activities';
 import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
@@ -70,6 +71,7 @@ app.use('/api/admin', adminRouter);
 app.use('/api/npcs', authenticateToken, npcsRouter);
 app.use('/api/relationships', authenticateToken, relationshipsRouter);
 app.use('/api/player', authenticateToken, playerRouter);
+app.use('/api/activities', authenticateToken, activitiesRouter);
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
@@ -81,7 +83,8 @@ app.get('/', (_req: Request, res: Response) => {
       auth: '/api/auth/login',
       npcs: '/api/npcs (protected)',
       relationships: '/api/relationships (protected)',
-      activities: '/api/relationships/activities/list (protected)'
+      activities: '/api/activities (protected)',
+      player: '/api/player (protected)'
     }
   });
 });
