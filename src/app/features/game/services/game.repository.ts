@@ -134,6 +134,25 @@ export class GameRepository {
     );
   }
 
+  /**
+   * Perform a solo activity (no NPC required)
+   */
+  performSoloActivity(activityId: string): Observable<any> {
+    const request: PerformActivityRequest = { activityId };
+
+    return this.http.post<ApiResponse<{ player: any }>>(
+      `${this.API_URL}/relationships/activities/solo`,
+      request
+    ).pipe(
+      map(response => {
+        if (!response.success) {
+          throw new Error(response.error || 'Failed to perform solo activity');
+        }
+        return response;
+      })
+    );
+  }
+
   // ===== Activity Operations =====
 
   /**

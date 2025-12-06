@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -49,6 +49,11 @@ export class NeighborDetail implements OnInit, OnDestroy {
   npcsLoading = this.facade.npcsLoading;
   isLoading = this.facade.isLoading;
   player = this.facade.player;
+
+  // Filter social activities (require NPC)
+  socialActivities = computed(() => {
+    return this.activities().filter(activity => activity.requiresNPC);
+  });
 
   ngOnInit(): void {
     // Get NPC ID from route params

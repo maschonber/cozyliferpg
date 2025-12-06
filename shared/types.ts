@@ -165,6 +165,9 @@ export interface Activity {
   description: string;
   category: ActivityCategory;
 
+  // Activity type
+  requiresNPC: boolean;       // true = social activity (needs neighbor), false = solo activity
+
   // Costs (Phase 2)
   timeCost: number;           // Minutes consumed
   energyCost: number;         // Can be negative (cost) or positive (restore)

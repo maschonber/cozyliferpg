@@ -273,6 +273,38 @@ export class GameFacade {
     );
   }
 
+  /**
+   * Perform a solo activity (no NPC required)
+   */
+  performSoloActivity(activityId: string): Observable<any> {
+    this.store.setInteracting(true);
+
+    return this.repository.performSoloActivity(activityId).pipe(
+      switchMap((response) => {
+        this.store.setInteracting(false);
+
+        // Log activity result
+        const activity = this.store.activities().find(a => a.id === activityId);
+        console.log(`✅ Solo activity "${activity?.name}" completed`);
+
+        // Reload player to get updated resources and reload activities to get updated availability
+        return this.repository.getPlayer().pipe(
+          tap((player) => this.store.setPlayer(player)),
+          switchMap(() => this.repository.getActivities().pipe(
+            tap((data) => this.store.setActivities(data.activities, data.availability))
+          )),
+          map(() => response)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to perform activity';
+        this.store.setInteractionError(errorMessage);
+        console.error('❌ Error performing solo activity:', error);
+        throw error;
+      })
+    );
+  }
+
   // ===== Activity Operations =====
 
   /**
