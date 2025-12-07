@@ -8,9 +8,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
-import { MatTooltipModule } from '@angular/material/tooltip';
 import { GameFacade } from '../../services/game.facade';
 import { Subscription } from 'rxjs';
+import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 
 @Component({
   selector: 'app-neighbor-detail',
@@ -23,7 +23,7 @@ import { Subscription } from 'rxjs';
     MatDividerModule,
     MatProgressBarModule,
     MatChipsModule,
-    MatTooltipModule
+    ActivityButtonComponent
   ],
   templateUrl: './neighbor-detail.html',
   styleUrl: './neighbor-detail.css',
@@ -199,37 +199,14 @@ export class NeighborDetail implements OnInit, OnDestroy {
   }
 
   /**
-   * Format time cost (convert minutes to readable format)
+   * Get variant for activity button (positive/negative coloring)
    */
-  formatTimeCost(minutes: number): string {
-    const hours = Math.floor(minutes / 60);
-    const mins = minutes % 60;
+  getActivityVariant(activity: any): 'default' | 'positive' | 'negative' {
+    const friendship = activity.effects?.friendship || 0;
+    const romance = activity.effects?.romance || 0;
 
-    if (hours === 0) {
-      return `${mins}m`;
-    } else if (mins === 0) {
-      return `${hours}h`;
-    } else {
-      return `${hours}h ${mins}m`;
-    }
-  }
-
-  /**
-   * Get tooltip text for unavailable activity
-   */
-  getUnavailableTooltip(activityId: string): string {
-    const availability = this.getActivityAvailability(activityId);
-    if (!availability || availability.available) {
-      return '';
-    }
-    return availability.reason || 'Activity not available';
-  }
-
-  /**
-   * Check if activity is available
-   */
-  isActivityAvailable(activityId: string): boolean {
-    const availability = this.getActivityAvailability(activityId);
-    return availability?.available ?? true;
+    if (friendship > 0 || romance > 0) return 'positive';
+    if (friendship < 0 || romance < 0) return 'negative';
+    return 'default';
   }
 }
