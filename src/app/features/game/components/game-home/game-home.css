@@ -32,6 +32,7 @@
   font-size: 16px;
   padding: 12px 32px !important;
   height: auto !important;
+  border-radius: 4px !important;
 }
 
 .sleep-button mat-icon {
@@ -226,8 +227,8 @@ mat-divider {
 
 .status-badge {
   display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
+  padding: 4px 10px;
+  border-radius: 3px;
   font-size: 12px;
   font-weight: 500;
   text-transform: uppercase;
@@ -311,9 +312,10 @@ mat-card-actions button mat-icon {
 
 .activity-card {
   height: auto !important;
-  padding: 16px !important;
+  padding: 12px 14px !important;
   text-align: left;
   border: 1px solid rgba(0, 0, 0, 0.12);
+  border-radius: 4px !important;
 }
 
 .activity-card.unavailable {
@@ -330,7 +332,7 @@ mat-card-actions button mat-icon {
 .activity-content {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
   width: 100%;
 }
 
@@ -359,13 +361,17 @@ mat-card-actions button mat-icon {
 .activity-costs {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
+  justify-content: flex-start;
+  align-items: center;
 }
 
 .cost-chip {
   font-size: 12px !important;
-  min-height: 28px !important;
-  padding: 0 10px !important;
+  min-height: 24px !important;
+  height: 24px !important;
+  padding: 0 8px !important;
+  border-radius: 3px !important;
 }
 
 .cost-chip mat-icon {

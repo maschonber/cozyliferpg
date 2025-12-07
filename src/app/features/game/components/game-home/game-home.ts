@@ -58,21 +58,6 @@ export class GameHome implements OnInit {
   }
 
   /**
-   * Meet someone new (generate NPC)
-   */
-  onMeetSomeoneNew(): void {
-    this.facade.createNPC().subscribe({
-      next: (npc) => {
-        // Navigate to the new NPC's detail page
-        this.router.navigate(['/game/neighbor', npc.id]);
-      },
-      error: (error) => {
-        console.error('Failed to create NPC:', error);
-      }
-    });
-  }
-
-  /**
    * View neighbor details
    */
   onViewNeighbor(npcId: string): void {
@@ -149,12 +134,43 @@ export class GameHome implements OnInit {
    * Perform solo activity (no NPC required)
    */
   onPerformSoloActivity(activityId: string): void {
+    // Special handling for "Meet Someone New" activity
+    if (activityId === 'meet_someone') {
+      this.onMeetSomeoneNew();
+      return;
+    }
+
     this.facade.performSoloActivity(activityId).subscribe({
       next: () => {
         console.log(`Performed solo activity: ${activityId}`);
       },
       error: (error) => {
         console.error('Failed to perform activity:', error);
+      }
+    });
+  }
+
+  /**
+   * Meet someone new (generate NPC)
+   * First consumes time/energy, then creates NPC
+   */
+  onMeetSomeoneNew(): void {
+    // First, perform the activity to consume time/energy
+    this.facade.performSoloActivity('meet_someone').subscribe({
+      next: () => {
+        // Then create the NPC
+        this.facade.createNPC().subscribe({
+          next: (npc) => {
+            // Navigate to the new NPC's detail page
+            this.router.navigate(['/game/neighbor', npc.id]);
+          },
+          error: (error) => {
+            console.error('Failed to create NPC:', error);
+          }
+        });
+      },
+      error: (error) => {
+        console.error('Failed to perform meet someone activity:', error);
       }
     });
   }
