@@ -334,12 +334,14 @@ mat-card-actions button mat-icon {
   flex-direction: column;
   gap: 10px;
   width: 100%;
+  align-items: flex-start;
 }
 
 .activity-header {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: 100%;
 }
 
 .activity-name {
@@ -349,6 +351,7 @@ mat-card-actions button mat-icon {
   align-items: center;
   gap: 6px;
   color: rgba(0, 0, 0, 0.87);
+  text-align: left;
 }
 
 .warning-icon {
