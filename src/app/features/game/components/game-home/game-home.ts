@@ -8,8 +8,10 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
 import { Relationship } from '../../../../../../shared/types';
+import { SleepModal } from '../sleep-modal/sleep-modal';
 
 @Component({
   selector: 'app-game-home',
@@ -29,6 +31,7 @@ import { Relationship } from '../../../../../../shared/types';
 export class GameHome implements OnInit {
   private facade = inject(GameFacade);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
 
   // Expose Math for template
   Math = Math;
@@ -154,5 +157,33 @@ export class GameHome implements OnInit {
         console.error('Failed to perform activity:', error);
       }
     });
+  }
+
+  /**
+   * Sleep and advance to next day
+   */
+  onSleep(): void {
+    const currentPlayer = this.player();
+    if (!currentPlayer) return;
+
+    if (confirm('Go to sleep? This will advance to the next day.')) {
+      this.facade.sleep().subscribe({
+        next: (sleepResult) => {
+          // Show sleep modal with results
+          this.dialog.open(SleepModal, {
+            width: '500px',
+            disableClose: true,
+            data: {
+              sleepResult,
+              previousDay: currentPlayer.currentDay
+            }
+          });
+        },
+        error: (error) => {
+          console.error('Failed to sleep:', error);
+          alert('Failed to go to sleep. Please try again.');
+        }
+      });
+    }
   }
 }

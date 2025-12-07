@@ -28,13 +28,13 @@
   margin: 24px 0;
 }
 
-.meet-button {
+.sleep-button {
   font-size: 16px;
   padding: 12px 32px !important;
   height: auto !important;
 }
 
-.meet-button mat-icon {
+.sleep-button mat-icon {
   margin-right: 8px;
 }
 
