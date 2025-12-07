@@ -1,0 +1,56 @@
+<button
+  mat-raised-button
+  class="activity-button"
+  [class.positive]="variant === 'positive'"
+  [class.negative]="variant === 'negative'"
+  [class.unavailable]="!isAvailable()"
+  [disabled]="disabled || !isAvailable()"
+  [matTooltip]="getTooltip()"
+  (click)="onClick()">
+  <div class="activity-content">
+    <div class="activity-header">
+      <span class="activity-name">
+        {{ activity.name }}
+        @if (availability?.endsAfterMidnight) {
+          <mat-icon class="warning-icon" matTooltip="Ends after midnight">warning</mat-icon>
+        }
+      </span>
+    </div>
+
+    <!-- Costs -->
+    <div class="activity-costs">
+      <mat-chip class="cost-chip time">
+        <mat-icon>schedule</mat-icon>
+        {{ formatTimeCost(activity.timeCost) }}
+      </mat-chip>
+      <mat-chip class="cost-chip energy" [class.negative-cost]="activity.energyCost < 0">
+        <mat-icon>bolt</mat-icon>
+        {{ activity.energyCost > 0 ? '+' : '' }}{{ activity.energyCost }}
+      </mat-chip>
+      @if (activity.moneyCost !== 0) {
+        <mat-chip class="cost-chip money" [class.positive-cost]="activity.moneyCost > 0">
+          <mat-icon>{{ activity.moneyCost > 0 ? 'add_circle' : 'remove_circle' }}</mat-icon>
+          ${{ Math.abs(activity.moneyCost) }}
+        </mat-chip>
+      }
+    </div>
+
+    <!-- Optional Effects (for social activities) -->
+    @if (effects && (effects.friendship || effects.romance)) {
+      <div class="activity-effects">
+        @if (effects.friendship) {
+          <span [class.positive-effect]="effects.friendship > 0"
+                [class.negative-effect]="effects.friendship < 0">
+            Friendship {{ effects.friendship > 0 ? '+' : '' }}{{ effects.friendship }}
+          </span>
+        }
+        @if (effects.romance) {
+          <span [class.positive-effect]="effects.romance > 0"
+                [class.negative-effect]="effects.romance < 0">
+            Romance {{ effects.romance > 0 ? '+' : '' }}{{ effects.romance }}
+          </span>
+        }
+      </div>
+    }
+  </div>
+</button>

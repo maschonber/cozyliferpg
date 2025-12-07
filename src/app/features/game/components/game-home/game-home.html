@@ -17,42 +17,12 @@
 
     <div class="activities-grid">
       @for (activity of soloActivities(); track activity.id) {
-        <button
-          mat-raised-button
-          class="activity-card"
-          [class.unavailable]="!isActivityAvailable(activity.id)"
-          [disabled]="interacting() || !isActivityAvailable(activity.id)"
-          [matTooltip]="getUnavailableTooltip(activity.id)"
-          (click)="onPerformSoloActivity(activity.id)">
-          <div class="activity-content">
-            <div class="activity-header">
-              <span class="activity-name">
-                {{ activity.name }}
-                @if (getActivityAvailability(activity.id)?.endsAfterMidnight) {
-                  <mat-icon class="warning-icon" matTooltip="Ends after midnight">warning</mat-icon>
-                }
-              </span>
-            </div>
-
-            <!-- Costs -->
-            <div class="activity-costs">
-              <mat-chip class="cost-chip time">
-                <mat-icon>schedule</mat-icon>
-                {{ formatTimeCost(activity.timeCost) }}
-              </mat-chip>
-              <mat-chip class="cost-chip energy" [class.negative-cost]="activity.energyCost < 0">
-                <mat-icon>bolt</mat-icon>
-                {{ activity.energyCost > 0 ? '+' : '' }}{{ activity.energyCost }}
-              </mat-chip>
-              @if (activity.moneyCost !== 0) {
-                <mat-chip class="cost-chip money" [class.positive-cost]="activity.moneyCost > 0">
-                  <mat-icon>{{ activity.moneyCost > 0 ? 'add_circle' : 'remove_circle' }}</mat-icon>
-                  ${{ Math.abs(activity.moneyCost) }}
-                </mat-chip>
-              }
-            </div>
-          </div>
-        </button>
+        <app-activity-button
+          [activity]="activity"
+          [availability]="getActivityAvailability(activity.id)"
+          [disabled]="interacting()"
+          (activityClick)="onPerformSoloActivity($event)">
+        </app-activity-button>
       }
     </div>
 

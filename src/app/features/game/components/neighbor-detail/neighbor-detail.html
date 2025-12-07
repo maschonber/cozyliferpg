@@ -126,60 +126,14 @@
 
             <div class="activities-grid">
               @for (activity of socialActivities(); track activity.id) {
-                <button
-                  mat-raised-button
-                  class="activity-button"
-                  [class.positive]="(activity.effects.friendship || 0) > 0 || (activity.effects.romance || 0) > 0"
-                  [class.negative]="(activity.effects.friendship || 0) < 0 || (activity.effects.romance || 0) < 0"
-                  [class.unavailable]="!isActivityAvailable(activity.id)"
-                  [disabled]="interacting() || !isActivityAvailable(activity.id)"
-                  [matTooltip]="getUnavailableTooltip(activity.id)"
-                  (click)="onPerformActivity(activity.id)">
-                  <div class="activity-content">
-                    <div class="activity-header">
-                      <span class="activity-name">
-                        {{ activity.name }}
-                        @if (getActivityAvailability(activity.id)?.endsAfterMidnight) {
-                          <mat-icon class="warning-icon" matTooltip="Ends after midnight">warning</mat-icon>
-                        }
-                      </span>
-                    </div>
-
-                    <!-- Phase 2: Costs -->
-                    <div class="activity-costs">
-                      <mat-chip class="cost-chip time">
-                        <mat-icon>schedule</mat-icon>
-                        {{ formatTimeCost(activity.timeCost) }}
-                      </mat-chip>
-                      <mat-chip class="cost-chip energy" [class.negative-cost]="activity.energyCost < 0">
-                        <mat-icon>bolt</mat-icon>
-                        {{ activity.energyCost > 0 ? '+' : '' }}{{ activity.energyCost }}
-                      </mat-chip>
-                      @if (activity.moneyCost !== 0) {
-                        <mat-chip class="cost-chip money" [class.positive-cost]="activity.moneyCost > 0">
-                          <mat-icon>{{ activity.moneyCost > 0 ? 'add_circle' : 'remove_circle' }}</mat-icon>
-                          ${{ Math.abs(activity.moneyCost) }}
-                        </mat-chip>
-                      }
-                    </div>
-
-                    <!-- Phase 2: Effects -->
-                    <div class="activity-effects">
-                      @if (activity.effects.friendship) {
-                        <span [class.positive-effect]="activity.effects.friendship > 0"
-                              [class.negative-effect]="activity.effects.friendship < 0">
-                          Friendship {{ activity.effects.friendship > 0 ? '+' : '' }}{{ activity.effects.friendship }}
-                        </span>
-                      }
-                      @if (activity.effects.romance) {
-                        <span [class.positive-effect]="activity.effects.romance > 0"
-                              [class.negative-effect]="activity.effects.romance < 0">
-                          Romance {{ activity.effects.romance > 0 ? '+' : '' }}{{ activity.effects.romance }}
-                        </span>
-                      }
-                    </div>
-                  </div>
-                </button>
+                <app-activity-button
+                  [activity]="activity"
+                  [availability]="getActivityAvailability(activity.id)"
+                  [disabled]="interacting()"
+                  [effects]="activity.effects"
+                  [variant]="getActivityVariant(activity)"
+                  (activityClick)="onPerformActivity($event)">
+                </app-activity-button>
               }
             </div>
 
