@@ -74,7 +74,14 @@ export interface NPC {
   // LoRAs for AI model
   loras: string[];
 
+  // Location (Phase 3)
+  currentLocation: LocationId;  // Where they were first met and currently are
+
   createdAt: string;
+
+  // Future Phase 4+:
+  // favoriteLocations?: LocationId[];  // Preferred hangout spots based on archetype
+  // schedule?: NPCSchedule;             // Time-based location patterns
 }
 
 /**
@@ -176,6 +183,9 @@ export interface Activity {
   // Time restrictions (Phase 2)
   allowedTimeSlots?: TimeSlot[];  // If undefined, available anytime
 
+  // Location restriction (Phase 3)
+  location?: LocationId;  // Specific location required (undefined = available anywhere with NPC for social, or flexible solo)
+
   // Requirements (Phase 2+)
   minEnergy?: number;              // Minimum energy required
   minRelationship?: string;        // e.g., "friend" (for relationship-gated activities)
@@ -229,7 +239,44 @@ export interface ImageGenerationResponse {
 }
 
 /**
- * Player Character (Phase 2)
+ * District type (Phase 3)
+ */
+export type District = 'residential' | 'downtown' | 'waterfront';
+
+/**
+ * Location ID type (Phase 3)
+ */
+export type LocationId =
+  | 'home'
+  | 'park'
+  | 'coffee_shop'
+  | 'library'
+  | 'shopping_district'
+  | 'gym'
+  | 'movie_theater'
+  | 'beach'
+  | 'boardwalk'
+  | 'bar';
+
+/**
+ * Location (Phase 3)
+ */
+export interface Location {
+  id: LocationId;
+  name: string;
+  description: string;
+  district: District;
+
+  // Operating hours (optional - undefined means 24/7)
+  openTime?: string;    // "06:00"
+  closeTime?: string;   // "22:00"
+
+  // Future: Background image
+  imageUrl?: string;
+}
+
+/**
+ * Player Character (Phase 2+3)
  */
 export interface PlayerCharacter {
   id: string;
@@ -244,6 +291,9 @@ export interface PlayerCharacter {
   currentDay: number;         // 1, 2, 3...
   currentTime: string;        // "HH:MM" format (e.g., "14:30")
   lastSleptAt: string;        // "HH:MM" - for calculating sleep duration
+
+  // Location tracking (Phase 3)
+  currentLocation: LocationId; // Where the player currently is
 
   // Timestamps
   createdAt: string;
@@ -268,4 +318,28 @@ export interface SleepResult {
   energyRestored: number;
   hoursSlept: number;
   newDay: number;
+}
+
+/**
+ * Location with NPC count (Phase 3)
+ * Used for displaying locations with how many NPCs are there
+ */
+export interface LocationWithNPCCount extends Location {
+  npcCount: number;
+}
+
+/**
+ * Travel request (Phase 3)
+ */
+export interface TravelRequest {
+  destinationId: LocationId;
+}
+
+/**
+ * Travel result (Phase 3)
+ */
+export interface TravelResult {
+  newLocation: LocationId;
+  travelTime: number;  // Minutes spent traveling
+  arrivedAt: string;   // New time after travel
 }

@@ -6,10 +6,11 @@ import npcsRouter from './routes/npcs';
 import relationshipsRouter from './routes/relationships';
 import playerRouter from './routes/player';
 import activitiesRouter from './routes/activities';
+import locationsRouter from './routes/locations';
 import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers, migratePhase3Locations } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -72,6 +73,7 @@ app.use('/api/npcs', authenticateToken, npcsRouter);
 app.use('/api/relationships', authenticateToken, relationshipsRouter);
 app.use('/api/player', authenticateToken, playerRouter);
 app.use('/api/activities', authenticateToken, activitiesRouter);
+app.use('/api/locations', authenticateToken, locationsRouter);
 
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
@@ -84,7 +86,8 @@ app.get('/', (_req: Request, res: Response) => {
       npcs: '/api/npcs (protected)',
       relationships: '/api/relationships (protected)',
       activities: '/api/activities (protected)',
-      player: '/api/player (protected)'
+      player: '/api/player (protected)',
+      locations: '/api/locations (protected)'
     }
   });
 });
@@ -121,6 +124,8 @@ async function startServer() {
         await seedDatabase();
         console.log('👤 Checking for initial user...');
         await seedUsers();
+        console.log('🗺️  Running Phase 3 migration...');
+        await migratePhase3Locations();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }
