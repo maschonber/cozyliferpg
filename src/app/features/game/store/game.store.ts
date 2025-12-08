@@ -6,7 +6,7 @@
 
 import { signalStore, withState, withMethods, patchState, withComputed } from '@ngrx/signals';
 import { computed } from '@angular/core';
-import { NPC, Relationship, Activity, PlayerCharacter, ActivityAvailability } from '../../../../../shared/types';
+import { NPC, Relationship, Activity, PlayerCharacter, ActivityAvailability, LocationWithNPCCount } from '../../../../../shared/types';
 
 /**
  * Game State
@@ -39,6 +39,12 @@ interface GameState {
   // Interaction state
   interacting: boolean;
   interactionError: string | null;
+
+  // Locations (Phase 3)
+  locations: LocationWithNPCCount[];
+  locationsLoading: boolean;
+  locationsError: string | null;
+  traveling: boolean;
 }
 
 /**
@@ -65,7 +71,12 @@ const initialState: GameState = {
   activitiesError: null,
 
   interacting: false,
-  interactionError: null
+  interactionError: null,
+
+  locations: [],
+  locationsLoading: false,
+  locationsError: null,
+  traveling: false
 };
 
 /**
@@ -224,6 +235,24 @@ export const GameStore = signalStore(
 
     clearInteractionError(): void {
       patchState(store, { interactionError: null });
+    },
+
+    // ===== Location Methods (Phase 3) =====
+
+    setLocationsLoading(loading: boolean): void {
+      patchState(store, { locationsLoading: loading, locationsError: null });
+    },
+
+    setLocationsError(error: string): void {
+      patchState(store, { locationsError: error, locationsLoading: false });
+    },
+
+    setLocations(locations: LocationWithNPCCount[]): void {
+      patchState(store, { locations, locationsLoading: false, locationsError: null });
+    },
+
+    setTraveling(traveling: boolean): void {
+      patchState(store, { traveling });
     },
 
     // ===== Reset Methods =====

@@ -21,13 +21,15 @@
   margin: 0;
 }
 
-/* Action Section */
+/* Action Section (Phase 3: Updated for multiple buttons) */
 .action-section {
   display: flex;
   justify-content: center;
+  gap: 16px;
   margin: 24px 0;
 }
 
+.location-button,
 .sleep-button {
   font-size: 16px;
   padding: 12px 32px !important;
@@ -35,6 +37,7 @@
   border-radius: 4px !important;
 }
 
+.location-button mat-icon,
 .sleep-button mat-icon {
   margin-right: 8px;
 }
@@ -216,6 +219,28 @@ mat-divider {
 
 .neighbor-card:hover .gender-badge {
   transform: scale(1.1);
+}
+
+/* Subtitle with Location (Phase 3) */
+.subtitle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.location-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+  color: rgba(98, 0, 234, 0.8);
+}
+
+.tiny-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Relationship Status */

@@ -11,7 +11,7 @@ import { RelationshipState, EmotionalState } from '../../../../shared/types';
 // ===== Constants =====
 
 /**
- * Phase 2 Activities
+ * Phase 2+3 Activities
  */
 export const ACTIVITIES = [
   // Work Activities (solo)
@@ -21,6 +21,7 @@ export const ACTIVITIES = [
     description: 'Work a 4-hour shift at your part-time job',
     category: 'work' as const,
     requiresNPC: false,
+    location: 'shopping_district' as const,
     timeCost: 240,
     energyCost: -30,
     moneyCost: 80,
@@ -33,6 +34,7 @@ export const ACTIVITIES = [
     description: 'Work a full 8-hour shift for maximum pay',
     category: 'work' as const,
     requiresNPC: false,
+    location: 'shopping_district' as const,
     timeCost: 480,
     energyCost: -50,
     moneyCost: 150,
@@ -47,6 +49,7 @@ export const ACTIVITIES = [
     description: 'Grab a casual coffee and catch up',
     category: 'social' as const,
     requiresNPC: true,
+    location: 'coffee_shop' as const,
     timeCost: 60,
     energyCost: -15,
     moneyCost: -5,
@@ -58,6 +61,7 @@ export const ACTIVITIES = [
     description: 'Have a brief conversation',
     category: 'social' as const,
     requiresNPC: true,
+    // No location - available anywhere with NPC
     timeCost: 30,
     energyCost: -10,
     moneyCost: 0,
@@ -69,6 +73,7 @@ export const ACTIVITIES = [
     description: 'Go out for dinner or drinks together',
     category: 'social' as const,
     requiresNPC: true,
+    location: 'bar' as const,
     timeCost: 120,
     energyCost: -20,
     moneyCost: -30,
@@ -81,6 +86,7 @@ export const ACTIVITIES = [
     description: 'Share meaningful thoughts and feelings',
     category: 'social' as const,
     requiresNPC: true,
+    // No location - available anywhere with NPC
     timeCost: 90,
     energyCost: -25,
     moneyCost: 0,
@@ -93,6 +99,7 @@ export const ACTIVITIES = [
     description: 'Watch a film together at the cinema',
     category: 'social' as const,
     requiresNPC: true,
+    location: 'movie_theater' as const,
     timeCost: 150,
     energyCost: -15,
     moneyCost: -20,
@@ -105,6 +112,7 @@ export const ACTIVITIES = [
     description: 'Work out or play sports together',
     category: 'social' as const,
     requiresNPC: true,
+    location: 'gym' as const,
     timeCost: 90,
     energyCost: -30,
     moneyCost: 0,
@@ -117,6 +125,7 @@ export const ACTIVITIES = [
     description: 'Prepare and share a homemade meal',
     category: 'social' as const,
     requiresNPC: true,
+    location: 'home' as const,
     timeCost: 120,
     energyCost: -20,
     moneyCost: -15,
@@ -129,6 +138,7 @@ export const ACTIVITIES = [
     description: 'Engage in some lighthearted flirting',
     category: 'social' as const,
     requiresNPC: true,
+    // No location - available anywhere with NPC
     timeCost: 45,
     energyCost: -15,
     moneyCost: 0,
@@ -142,6 +152,7 @@ export const ACTIVITIES = [
     description: 'Hit the books and expand your knowledge',
     category: 'self_improvement' as const,
     requiresNPC: false,
+    location: 'library' as const,
     timeCost: 120,
     energyCost: -25,
     moneyCost: 0,
@@ -154,6 +165,7 @@ export const ACTIVITIES = [
     description: 'Get a solid workout in at the gym',
     category: 'self_improvement' as const,
     requiresNPC: false,
+    location: 'gym' as const,
     timeCost: 90,
     energyCost: -30,
     moneyCost: -10,
@@ -166,6 +178,7 @@ export const ACTIVITIES = [
     description: 'Read for pleasure and relaxation',
     category: 'self_improvement' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 90,
     energyCost: -10,
     moneyCost: 0,
@@ -177,6 +190,7 @@ export const ACTIVITIES = [
     description: 'Work on art, music, or creative projects',
     category: 'self_improvement' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 120,
     energyCost: -20,
     moneyCost: 0,
@@ -190,6 +204,7 @@ export const ACTIVITIES = [
     description: 'Take a peaceful walk outdoors',
     category: 'leisure' as const,
     requiresNPC: false,
+    location: 'park' as const,
     timeCost: 60,
     energyCost: -5,
     moneyCost: 0,
@@ -202,6 +217,7 @@ export const ACTIVITIES = [
     description: 'Unwind with some gaming',
     category: 'leisure' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 120,
     energyCost: -10,
     moneyCost: 0,
@@ -213,6 +229,7 @@ export const ACTIVITIES = [
     description: 'Relax and watch your favorite shows',
     category: 'leisure' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 90,
     energyCost: 0,
     moneyCost: 0,
@@ -224,6 +241,7 @@ export const ACTIVITIES = [
     description: 'Put on some tunes and chill',
     category: 'leisure' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 30,
     energyCost: 0,
     moneyCost: 0,
@@ -237,6 +255,7 @@ export const ACTIVITIES = [
     description: 'Get some quick rest to recharge',
     category: 'self_care' as const,
     requiresNPC: false,
+    location: 'home' as const,
     timeCost: 60,
     energyCost: 5,
     moneyCost: 0,
@@ -249,6 +268,7 @@ export const ACTIVITIES = [
     description: 'Go to bed and end the day',
     category: 'self_care' as const,
     requiresNPC: false,
+    // No location - works everywhere (special handling to travel home)
     timeCost: 0, // Special: ends day
     energyCost: 0, // Special: calculated based on sleep duration
     moneyCost: 0,
@@ -263,9 +283,132 @@ export const ACTIVITIES = [
     description: 'Explore the neighborhood and meet a new person',
     category: 'discovery' as const,
     requiresNPC: false,
+    // No location - available everywhere except home (handled in logic)
     timeCost: 45,
     energyCost: -20,
     moneyCost: 0,
+    effects: {}
+  },
+
+  // ===== PHASE 3 NEW ACTIVITIES =====
+
+  // New Solo Activities
+  {
+    id: 'beach_walk',
+    name: 'Beach Walk',
+    description: 'Take a peaceful walk along the shoreline',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'beach' as const,
+    timeCost: 45,
+    energyCost: -5,
+    moneyCost: 0,
+    effects: {}
+  },
+  {
+    id: 'window_shopping',
+    name: 'Window Shopping',
+    description: 'Browse shops without buying anything',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'shopping_district' as const,
+    timeCost: 60,
+    energyCost: -10,
+    moneyCost: 0,
+    effects: {}
+  },
+  {
+    id: 'morning_jog',
+    name: 'Morning Jog',
+    description: 'Go for an energizing run outdoors',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'park' as const,
+    timeCost: 45,
+    energyCost: -20,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
+    effects: {}
+  },
+  {
+    id: 'swim_beach',
+    name: 'Swim at Beach',
+    description: 'Take a refreshing swim in the ocean',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'beach' as const,
+    timeCost: 60,
+    energyCost: -25,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: {}
+  },
+  {
+    id: 'play_arcade',
+    name: 'Play Arcade Games',
+    description: 'Have fun with retro arcade games',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'boardwalk' as const,
+    timeCost: 90,
+    energyCost: -15,
+    moneyCost: -10,
+    effects: {}
+  },
+
+  // New Social Activities
+  {
+    id: 'beach_picnic',
+    name: 'Beach Picnic',
+    description: 'Share food and relaxation by the ocean',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'beach' as const,
+    timeCost: 90,
+    energyCost: -20,
+    moneyCost: -15,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: { friendship: 15, romance: 8 }
+  },
+  {
+    id: 'play_pool_darts',
+    name: 'Play Pool/Darts',
+    description: 'Friendly competition over bar games',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'bar' as const,
+    timeCost: 60,
+    energyCost: -15,
+    moneyCost: -10,
+    allowedTimeSlots: ['evening' as const, 'night' as const],
+    effects: { friendship: 10 }
+  },
+  {
+    id: 'boardwalk_stroll',
+    name: 'Boardwalk Stroll',
+    description: 'Take a romantic walk along the pier',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'boardwalk' as const,
+    timeCost: 75,
+    energyCost: -10,
+    moneyCost: -5,
+    allowedTimeSlots: ['evening' as const, 'night' as const],
+    effects: { friendship: 8, romance: 10 }
+  },
+
+  // New Work Activity
+  {
+    id: 'work_barista',
+    name: 'Work as Barista',
+    description: 'Serve coffee and pastries at the cafe',
+    category: 'work' as const,
+    requiresNPC: false,
+    location: 'coffee_shop' as const,
+    timeCost: 240,
+    energyCost: -35,
+    moneyCost: 70,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {}
   }
 ];

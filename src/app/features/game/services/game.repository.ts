@@ -16,7 +16,11 @@ import {
   ApiResponse,
   PlayerCharacter,
   SleepResult,
-  ActivityAvailability
+  ActivityAvailability,
+  Location,
+  LocationWithNPCCount,
+  TravelRequest,
+  TravelResult
 } from '../../../../../shared/types';
 
 @Injectable({
@@ -209,6 +213,61 @@ export class GameRepository {
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to process sleep');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  // ===== Location Operations (Phase 3) =====
+
+  /**
+   * Get all locations, optionally with NPC counts
+   */
+  getLocations(includeNPCCounts: boolean = true): Observable<LocationWithNPCCount[]> {
+    const params = includeNPCCounts ? { includeNPCCounts: 'true' } : {};
+    return this.http.get<ApiResponse<LocationWithNPCCount[]>>(
+      `${this.API_URL}/locations`,
+      { params }
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to fetch locations');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  /**
+   * Travel to a specific location
+   */
+  travel(destinationId: string): Observable<TravelResult> {
+    const request: TravelRequest = { destinationId };
+    return this.http.post<ApiResponse<TravelResult>>(
+      `${this.API_URL}/locations/travel`,
+      request
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to travel');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  /**
+   * Quick travel home
+   */
+  goHome(): Observable<TravelResult> {
+    return this.http.post<ApiResponse<TravelResult>>(
+      `${this.API_URL}/locations/go-home`,
+      {}
+    ).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to go home');
         }
         return response.data;
       })

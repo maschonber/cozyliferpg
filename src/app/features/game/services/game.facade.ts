@@ -46,17 +46,23 @@ export class GameFacade {
   interactionError = this.store.interactionError;
   isLoading = this.store.isLoading;
 
+  locations = this.store.locations;
+  locationsLoading = this.store.locationsLoading;
+  locationsError = this.store.locationsError;
+  traveling = this.store.traveling;
+
   // ===== Initialization =====
 
   /**
    * Initialize game data on startup
-   * Loads player, NPCs, relationships and activities (Phase 2)
+   * Loads player, NPCs, relationships, activities, and locations (Phase 3)
    */
   initialize(): void {
     this.loadPlayer();
     this.loadNPCs();
     this.loadRelationships();
     this.loadActivities();
+    this.loadLocations();
   }
 
   /**
@@ -412,6 +418,97 @@ export class GameFacade {
     if (npcId && !this.store.relationships().find(r => r.npcId === npcId)) {
       this.getRelationship(npcId).subscribe();
     }
+  }
+
+  // ===== Location Operations (Phase 3) =====
+
+  /**
+   * Load all locations with NPC counts
+   */
+  loadLocations(): void {
+    this.store.setLocationsLoading(true);
+
+    this.repository.getLocations(true).subscribe({
+      next: (locations) => {
+        this.store.setLocations(locations);
+        console.log(`✅ Loaded ${locations.length} locations`);
+      },
+      error: (error) => {
+        const errorMessage = error.message || 'Failed to load locations';
+        this.store.setLocationsError(errorMessage);
+        console.error('❌ Error loading locations:', error);
+      }
+    });
+  }
+
+  /**
+   * Travel to a specific location
+   */
+  travel(destinationId: string): Observable<any> {
+    this.store.setTraveling(true);
+
+    return this.repository.travel(destinationId).pipe(
+      switchMap((result) => {
+        console.log(`✅ Traveled to ${result.destination} (${result.travelTime} minutes)`);
+        this.store.setTraveling(false);
+
+        // Reload player to get updated location and time
+        return this.repository.getPlayer().pipe(
+          tap((player) => this.store.setPlayer(player)),
+          // Reload locations to update NPC counts
+          switchMap(() => this.repository.getLocations(true).pipe(
+            tap((locations) => this.store.setLocations(locations))
+          )),
+          // Reload activities to update availability
+          switchMap(() => this.repository.getActivities().pipe(
+            tap((data) => this.store.setActivities(data.activities, data.availability))
+          )),
+          map(() => result)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to travel';
+        this.store.setLocationsError(errorMessage);
+        this.store.setTraveling(false);
+        console.error('❌ Error traveling:', error);
+        throw error;
+      })
+    );
+  }
+
+  /**
+   * Quick travel home
+   */
+  goHome(): Observable<any> {
+    this.store.setTraveling(true);
+
+    return this.repository.goHome().pipe(
+      switchMap((result) => {
+        console.log(`✅ Traveled home (${result.travelTime} minutes)`);
+        this.store.setTraveling(false);
+
+        // Reload player to get updated location and time
+        return this.repository.getPlayer().pipe(
+          tap((player) => this.store.setPlayer(player)),
+          // Reload locations to update NPC counts
+          switchMap(() => this.repository.getLocations(true).pipe(
+            tap((locations) => this.store.setLocations(locations))
+          )),
+          // Reload activities to update availability
+          switchMap(() => this.repository.getActivities().pipe(
+            tap((data) => this.store.setActivities(data.activities, data.availability))
+          )),
+          map(() => result)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to go home';
+        this.store.setLocationsError(errorMessage);
+        this.store.setTraveling(false);
+        console.error('❌ Error going home:', error);
+        throw error;
+      })
+    );
   }
 
   // ===== Error Management =====

@@ -8,8 +8,9 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship } from '../../../../../../shared/types';
+import { Relationship, LocationId } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
+import { LocationSelector } from '../location-selector/location-selector';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 
 @Component({
@@ -164,5 +165,36 @@ export class GameHome implements OnInit {
         }
       });
     }
+  }
+
+  /**
+   * Open location selector modal (Phase 3)
+   */
+  onOpenLocationSelector(): void {
+    this.dialog.open(LocationSelector, {
+      width: '900px',
+      maxWidth: '95vw',
+      maxHeight: '90vh',
+      disableClose: false
+    });
+  }
+
+  /**
+   * Get display name for location (Phase 3)
+   */
+  getLocationDisplayName(locationId: LocationId): string {
+    const locationNames: Record<LocationId, string> = {
+      'home': 'Home',
+      'park': 'Park',
+      'coffee_shop': 'Coffee Shop',
+      'library': 'Library',
+      'shopping_district': 'Shopping District',
+      'gym': 'Gym',
+      'movie_theater': 'Movie Theater',
+      'beach': 'Beach',
+      'boardwalk': 'Boardwalk',
+      'bar': 'Bar'
+    };
+    return locationNames[locationId] || locationId;
   }
 }

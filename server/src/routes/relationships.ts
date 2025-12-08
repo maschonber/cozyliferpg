@@ -145,6 +145,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         n.body_type, n.torso_size, n.height, n.skin_tone,
         n.upper_trace, n.lower_trace, n.style, n.body_details,
         n.loras as npc_loras,
+        n.current_location,
         n.created_at as npc_created_at
       FROM relationships r
       JOIN npcs n ON r.npc_id = n.id
@@ -176,6 +177,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
           bodyDetails: row.body_details
         },
         loras: row.npc_loras,
+        currentLocation: row.current_location,
         createdAt: row.npc_created_at.toISOString()
       };
 
@@ -256,6 +258,7 @@ router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relatio
         bodyDetails: npcRow.body_details
       },
       loras: npcRow.loras,
+      currentLocation: npcRow.current_location,
       createdAt: npcRow.created_at.toISOString()
     };
 
@@ -318,8 +321,20 @@ router.post(
       // Get player character (Phase 2)
       const player = await getOrCreatePlayerCharacter(pool, userId);
 
-      // Validate activity can be performed (Phase 2)
-      const availability = canPerformActivity(activity, player);
+      // Fetch NPC data to check location (Phase 3)
+      const npcResult = await client.query(`SELECT * FROM npcs WHERE id = $1`, [npcId]);
+      if (npcResult.rows.length === 0) {
+        res.status(404).json({
+          success: false,
+          error: 'NPC not found'
+        });
+        return;
+      }
+      const npcRow = npcResult.rows[0];
+      const npcLocation = npcRow.current_location;
+
+      // Validate activity can be performed (Phase 2 + Phase 3 location checks)
+      const availability = canPerformActivity(activity, player, npcLocation);
       if (!availability.available) {
         res.status(400).json({
           success: false,
@@ -410,6 +425,7 @@ router.post(
           n.body_type, n.torso_size, n.height, n.skin_tone,
           n.upper_trace, n.lower_trace, n.style, n.body_details,
           n.loras as npc_loras,
+          n.current_location,
           n.created_at as npc_created_at
         FROM relationships r
         JOIN npcs n ON r.npc_id = n.id
@@ -440,6 +456,7 @@ router.post(
           bodyDetails: row.body_details
         },
         loras: row.npc_loras,
+        currentLocation: row.current_location,
         createdAt: row.npc_created_at.toISOString()
       };
 

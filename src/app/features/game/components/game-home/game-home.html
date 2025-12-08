@@ -33,8 +33,18 @@
       </div>
     }
 
-    <!-- Sleep Button -->
+    <!-- Action Buttons (Phase 3: Added Location Selector) -->
     <div class="action-section">
+      <button
+        mat-raised-button
+        color="accent"
+        class="location-button"
+        (click)="onOpenLocationSelector()"
+        [disabled]="interacting()">
+        <mat-icon>map</mat-icon>
+        Travel
+      </button>
+
       <button
         mat-raised-button
         color="primary"
@@ -105,7 +115,15 @@
                       }
                     </span>
                   </mat-card-title>
-                  <mat-card-subtitle>{{ item.npc.archetype }}</mat-card-subtitle>
+                  <mat-card-subtitle>
+                    <div class="subtitle-content">
+                      <span>{{ item.npc.archetype }}</span>
+                      <span class="location-badge">
+                        <mat-icon class="tiny-icon">place</mat-icon>
+                        {{ getLocationDisplayName(item.npc.currentLocation) }}
+                      </span>
+                    </div>
+                  </mat-card-subtitle>
                 </mat-card-header>
 
                 <mat-card-content>
