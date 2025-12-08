@@ -45,9 +45,9 @@ export class GameHome implements OnInit {
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
 
-  // Filter solo activities (not requiring NPC)
+  // Filter solo activities (not requiring NPC), excluding sleep since it has a dedicated button
   soloActivities = computed(() => {
-    return this.activities().filter(activity => !activity.requiresNPC);
+    return this.activities().filter(activity => !activity.requiresNPC && activity.id !== 'go_to_sleep');
   });
 
   ngOnInit(): void {
