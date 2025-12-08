@@ -29,7 +29,7 @@ const router = Router();
  * GET /api/locations
  * Get all locations (optionally with NPC counts)
  */
-router.get('/', async (req: AuthRequest, res: Response<ApiResponse<{ locations: Location[] | LocationWithNPCCount[] }>>) => {
+router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Location[] | LocationWithNPCCount[]>>) => {
   if (!req.user || !req.user.userId) {
     res.status(401).json({
       success: false,
@@ -51,7 +51,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<{ locations: 
 
     res.json({
       success: true,
-      data: { locations }
+      data: locations
     });
   } catch (error) {
     console.error('❌ Error fetching locations:', error);
