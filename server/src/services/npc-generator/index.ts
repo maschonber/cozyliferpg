@@ -259,12 +259,14 @@ function generateTraits(): string[] {
 /**
  * Generate a random NPC
  *
+ * Note: currentLocation is set by the route based on player location (Phase 3)
+ *
  * FUTURE: Replace this with rule-based or AI-powered generation
  * - Archetype should influence traits and appearance
  * - Traits should be coherent (not conflicting)
  * - Consider player's existing NPCs to ensure variety
  */
-export function generateNPC(): Omit<NPC, 'id' | 'createdAt'> {
+export function generateNPC(): Omit<NPC, 'id' | 'createdAt' | 'currentLocation'> {
   // Generate gender first, then use it for name selection
   const gender = generateGender();
 
@@ -280,13 +282,15 @@ export function generateNPC(): Omit<NPC, 'id' | 'createdAt'> {
 
 /**
  * Create a full NPC object with ID and timestamp
+ * @param currentLocation - The location where the NPC is created (Phase 3)
  */
-export function createNPC(): NPC {
+export function createNPC(currentLocation: string = 'park'): NPC {
   const npcData = generateNPC();
 
   return {
     ...npcData,
     id: randomUUID(),
+    currentLocation: currentLocation as any,  // LocationId
     createdAt: new Date().toISOString()
   };
 }
