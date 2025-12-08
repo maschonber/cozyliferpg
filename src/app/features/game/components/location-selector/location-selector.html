@@ -21,7 +21,7 @@
     <!-- Locations by District -->
     @if (!locationsLoading()) {
       <div class="districts-container">
-        @for (district of ['residential', 'downtown', 'waterfront']; track district) {
+        @for (district of districts; track district) {
           <div class="district-section">
             <h3 class="district-title">{{ getDistrictName(district) }}</h3>
 

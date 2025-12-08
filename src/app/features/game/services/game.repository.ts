@@ -225,10 +225,12 @@ export class GameRepository {
    * Get all locations, optionally with NPC counts
    */
   getLocations(includeNPCCounts: boolean = true): Observable<LocationWithNPCCount[]> {
-    const params = includeNPCCounts ? { includeNPCCounts: 'true' } : {};
+    const options = includeNPCCounts
+      ? { params: { includeNPCCounts: 'true' } }
+      : {};
     return this.http.get<ApiResponse<LocationWithNPCCount[]>>(
       `${this.API_URL}/locations`,
-      { params }
+      options
     ).pipe(
       map(response => {
         if (!response.success || !response.data) {
@@ -243,7 +245,7 @@ export class GameRepository {
    * Travel to a specific location
    */
   travel(destinationId: string): Observable<TravelResult> {
-    const request: TravelRequest = { destinationId };
+    const request: TravelRequest = { destinationId: destinationId as any };
     return this.http.post<ApiResponse<TravelResult>>(
       `${this.API_URL}/locations/travel`,
       request

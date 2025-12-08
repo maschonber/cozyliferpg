@@ -449,7 +449,7 @@ export class GameFacade {
 
     return this.repository.travel(destinationId).pipe(
       switchMap((result) => {
-        console.log(`✅ Traveled to ${result.destination} (${result.travelTime} minutes)`);
+        console.log(`✅ Traveled to ${result.newLocation} (${result.travelTime} minutes)`);
         this.store.setTraveling(false);
 
         // Reload player to get updated location and time

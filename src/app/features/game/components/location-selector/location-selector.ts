@@ -38,6 +38,9 @@ export class LocationSelector {
   player = this.facade.player;
   traveling = this.facade.traveling;
 
+  // Districts array for template iteration
+  readonly districts: District[] = ['residential', 'downtown', 'waterfront'];
+
   // Group locations by district
   locationsByDistrict = computed(() => {
     const locs = this.locations();
