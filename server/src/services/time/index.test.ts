@@ -199,6 +199,7 @@ describe('Time Service', () => {
       currentDay: 1,
       currentTime: '14:00',
       lastSleptAt: '06:00',
+      currentLocation: 'home',
       createdAt: '2024-01-01T00:00:00Z',
       updatedAt: '2024-01-01T00:00:00Z'
     };
@@ -208,6 +209,7 @@ describe('Time Service', () => {
       name: 'Test Activity',
       description: 'A test activity',
       category: 'leisure',
+      requiresNPC: false,
       timeCost: 60,
       energyCost: -20,
       moneyCost: -10,
