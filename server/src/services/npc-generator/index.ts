@@ -13,20 +13,39 @@ import { randomUUID } from 'crypto';
 
 const GENDERS: Gender[] = ['female', 'male', 'other'];
 
-const FIRST_NAMES = [
-  // Gender-neutral names
+// Gender-specific first names
+const FEMALE_NAMES = [
+  'Emma', 'Olivia', 'Sophia', 'Ava', 'Isabella', 'Mia', 'Charlotte', 'Amelia',
+  'Harper', 'Ella', 'Grace', 'Lily', 'Chloe', 'Zoe', 'Emily', 'Madison',
+  'Abigail', 'Scarlett', 'Victoria', 'Aria', 'Luna', 'Layla', 'Hazel', 'Nora',
+  'Violet', 'Aurora', 'Savannah', 'Brooklyn', 'Bella', 'Claire', 'Sophie',
+  'Ruby', 'Alice', 'Eva', 'Stella', 'Maya', 'Natalie', 'Lucy', 'Audrey'
+];
+
+const MALE_NAMES = [
+  'Liam', 'Noah', 'Ethan', 'Mason', 'Lucas', 'Logan', 'Oliver', 'James',
+  'Benjamin', 'Elijah', 'Alexander', 'William', 'Michael', 'Daniel', 'Henry',
+  'Jackson', 'Sebastian', 'Jack', 'Owen', 'Samuel', 'Matthew', 'Joseph',
+  'David', 'Carter', 'Wyatt', 'John', 'Dylan', 'Luke', 'Gabriel', 'Isaac',
+  'Julian', 'Levi', 'Nathan', 'Caleb', 'Ryan', 'Christian', 'Hunter', 'Adrian'
+];
+
+const NEUTRAL_NAMES = [
   'Alex', 'Jordan', 'Casey', 'Taylor', 'Morgan', 'Riley', 'Avery', 'Quinn',
   'Sam', 'Jamie', 'Sage', 'Dakota', 'River', 'Phoenix', 'Rowan', 'Skylar',
-  // Traditional names
-  'Emma', 'Olivia', 'Sophia', 'Liam', 'Noah', 'Ethan', 'Ava', 'Isabella',
-  'Mia', 'Mason', 'Lucas', 'Logan', 'Harper', 'Ella', 'Grace', 'Jack'
+  'Charlie', 'Finley', 'Reese', 'Emerson', 'Parker', 'Hayden', 'Peyton',
+  'Cameron', 'Blake', 'Drew', 'Ash', 'Kai', 'Rory', 'Jesse'
 ];
 
 const LAST_NAMES = [
   'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis',
   'Rodriguez', 'Martinez', 'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson',
   'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin', 'Lee', 'Thompson', 'White',
-  'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker'
+  'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson', 'Walker',
+  'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill',
+  'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell',
+  'Mitchell', 'Carter', 'Roberts', 'Turner', 'Phillips', 'Evans', 'Parker',
+  'Collins', 'Edwards', 'Stewart', 'Morris', 'Murphy', 'Cook', 'Rogers'
 ];
 
 const ARCHETYPES = [
@@ -143,10 +162,21 @@ function randomInt(min: number, max: number): number {
 // ===== Generation Functions =====
 
 /**
- * Generate a random name
+ * Generate a random name based on gender
  */
-function generateName(): string {
-  const firstName = randomChoice(FIRST_NAMES);
+function generateName(gender: Gender): string {
+  let firstName: string;
+
+  // Select first name based on gender
+  if (gender === 'female') {
+    firstName = randomChoice(FEMALE_NAMES);
+  } else if (gender === 'male') {
+    firstName = randomChoice(MALE_NAMES);
+  } else {
+    // For 'other' gender, use neutral names
+    firstName = randomChoice(NEUTRAL_NAMES);
+  }
+
   const lastName = randomChoice(LAST_NAMES);
   return `${firstName} ${lastName}`;
 }
@@ -233,14 +263,16 @@ function generateTraits(): string[] {
  * - Archetype should influence traits and appearance
  * - Traits should be coherent (not conflicting)
  * - Consider player's existing NPCs to ensure variety
- * - Gender could influence name selection and appearance
  */
 export function generateNPC(): Omit<NPC, 'id' | 'createdAt'> {
+  // Generate gender first, then use it for name selection
+  const gender = generateGender();
+
   return {
-    name: generateName(),
+    name: generateName(gender),
     archetype: generateArchetype(),
     traits: generateTraits(),
-    gender: generateGender(),
+    gender,
     appearance: generateAppearance(),
     loras: generateLoras()
   };
