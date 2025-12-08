@@ -214,7 +214,7 @@ export const ACTIVITIES = [
     category: 'leisure' as const,
     requiresNPC: false,
     timeCost: 90,
-    energyCost: 5,
+    energyCost: 0,
     moneyCost: 0,
     effects: {}
   },
@@ -225,7 +225,7 @@ export const ACTIVITIES = [
     category: 'leisure' as const,
     requiresNPC: false,
     timeCost: 30,
-    energyCost: 10,
+    energyCost: 0,
     moneyCost: 0,
     effects: {}
   },
@@ -238,7 +238,7 @@ export const ACTIVITIES = [
     category: 'self_care' as const,
     requiresNPC: false,
     timeCost: 60,
-    energyCost: 25,
+    energyCost: 5,
     moneyCost: 0,
     allowedTimeSlots: ['afternoon' as const, 'evening' as const],
     effects: {}
