@@ -10,7 +10,6 @@ import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
 import { Relationship, LocationId } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
-import { LocationSelector } from '../location-selector/location-selector';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 
 @Component({
@@ -168,15 +167,10 @@ export class GameHome implements OnInit {
   }
 
   /**
-   * Open location selector modal (Phase 3)
+   * Navigate to travel view (Phase 3)
    */
   onOpenLocationSelector(): void {
-    this.dialog.open(LocationSelector, {
-      width: '900px',
-      maxWidth: '95vw',
-      maxHeight: '90vh',
-      disableClose: false
-    });
+    this.router.navigate(['/game/travel']);
   }
 
   /**
