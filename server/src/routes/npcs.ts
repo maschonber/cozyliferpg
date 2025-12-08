@@ -3,28 +3,42 @@
  * API endpoints for NPC generation and management
  */
 
-import { Router, Request, Response } from 'express';
+import { Router, Response } from 'express';
 import { pool } from '../db';
 import { generateNPC } from '../services/npc-generator';
 import { NPC, ApiResponse } from '../../../shared/types';
 import { randomUUID } from 'crypto';
+import { AuthRequest } from '../auth/auth.middleware';
+import { getOrCreatePlayerCharacter } from '../services/player';
 
 const router = Router();
 
 /**
  * POST /api/npcs
- * Generate and create a new NPC
+ * Generate and create a new NPC at player's current location
  */
-router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
+router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
+  if (!req.user || !req.user.userId) {
+    res.status(401).json({
+      success: false,
+      error: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userId = req.user.userId;
   const client = await pool.connect();
 
   try {
+    // Get player's current location
+    const player = await getOrCreatePlayerCharacter(pool, userId);
+
     // Generate random NPC
     const npcData = generateNPC();
     const id = randomUUID();
     const createdAt = new Date();
 
-    // Insert into database
+    // Insert into database with player's current location (Phase 3)
     const result = await client.query(
       `
       INSERT INTO npcs (
@@ -32,8 +46,8 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
         hair_color, hair_style, eye_color, face_details,
         body_type, torso_size, height, skin_tone,
         upper_trace, lower_trace, style, body_details,
-        loras, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+        loras, current_location, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
       RETURNING *
       `,
       [
@@ -55,6 +69,7 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
         npcData.appearance.style,
         npcData.appearance.bodyDetails,
         npcData.loras,
+        player.currentLocation, // Spawn at player's location
         createdAt
       ]
     );
@@ -83,10 +98,11 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
         bodyDetails: row.body_details
       },
       loras: row.loras,
+      currentLocation: row.current_location, // Phase 3
       createdAt: row.created_at.toISOString()
     };
 
-    console.log(`✅ Created NPC: ${npc.name} (${npc.archetype})`);
+    console.log(`✅ Created NPC: ${npc.name} (${npc.archetype}) at ${npc.currentLocation}`);
 
     res.json({
       success: true,
@@ -107,7 +123,7 @@ router.post('/', async (req: Request, res: Response<ApiResponse<NPC>>) => {
  * GET /api/npcs
  * Get all NPCs
  */
-router.get('/', async (req: Request, res: Response<ApiResponse<NPC[]>>) => {
+router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
   const client = await pool.connect();
 
   try {
@@ -121,6 +137,7 @@ router.get('/', async (req: Request, res: Response<ApiResponse<NPC[]>>) => {
       archetype: row.archetype,
       traits: row.traits,
       gender: row.gender,
+      currentLocation: row.current_location, // Phase 3
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,

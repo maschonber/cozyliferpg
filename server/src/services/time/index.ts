@@ -127,12 +127,46 @@ export function calculateSleepResults(bedtime: string): SleepResult {
  * Check if an activity can be performed based on player state
  * @param activity - The activity to check
  * @param player - Current player state
+ * @param npcLocation - Optional NPC location (for social activities)
  * @returns Availability result with reason if not available
  */
 export function canPerformActivity(
   activity: Activity,
-  player: PlayerCharacter
+  player: PlayerCharacter,
+  npcLocation?: string
 ): ActivityAvailability {
+  // Check location requirement (Phase 3)
+  if (activity.location) {
+    // Activity requires specific location
+    if (player.currentLocation !== activity.location) {
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: `Must be at ${activity.location.replace('_', ' ')}`
+      };
+    }
+  }
+
+  // Check if NPC is at same location (for social activities)
+  if (activity.requiresNPC && npcLocation) {
+    if (player.currentLocation !== npcLocation) {
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: "Must be at same location as NPC"
+      };
+    }
+  }
+
+  // Special case: "Meet Someone New" blocked at home
+  if (activity.id === 'meet_someone' && player.currentLocation === 'home') {
+    return {
+      activityId: activity.id,
+      available: false,
+      reason: "Cannot meet new people at home"
+    };
+  }
+
   // Check energy
   if (player.currentEnergy + activity.energyCost < 0) {
     return {

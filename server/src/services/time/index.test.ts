@@ -293,5 +293,68 @@ describe('Time Service', () => {
       expect(result.available).toBe(false);
       expect(result.reason).toBe('Not enough energy');
     });
+
+    // ===== Phase 3: Location Tests =====
+    it('should block activity when player is not at required location', () => {
+      const activity = { ...mockActivity, location: 'gym' as const };
+      const player = { ...mockPlayer, currentLocation: 'home' as const };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(false);
+      expect(result.reason).toContain('Must be at');
+    });
+
+    it('should allow activity when player is at required location', () => {
+      const activity = { ...mockActivity, location: 'gym' as const };
+      const player = { ...mockPlayer, currentLocation: 'gym' as const };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(true);
+    });
+
+    it('should allow activity with no location requirement anywhere', () => {
+      const activity = { ...mockActivity }; // No location field
+      const player = { ...mockPlayer, currentLocation: 'beach' as const };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(true);
+    });
+
+    it('should block social activity when NPC is at different location', () => {
+      const activity = { ...mockActivity, requiresNPC: true };
+      const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const };
+      const npcLocation = 'beach';
+      const result = canPerformActivity(activity, player, npcLocation);
+      expect(result.available).toBe(false);
+      expect(result.reason).toBe('Must be at same location as NPC');
+    });
+
+    it('should allow social activity when NPC is at same location', () => {
+      const activity = { ...mockActivity, requiresNPC: true };
+      const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const };
+      const npcLocation = 'coffee_shop';
+      const result = canPerformActivity(activity, player, npcLocation);
+      expect(result.available).toBe(true);
+    });
+
+    it('should block "Meet Someone New" at home', () => {
+      const activity = { ...mockActivity, id: 'meet_someone' };
+      const player = { ...mockPlayer, currentLocation: 'home' as const };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(false);
+      expect(result.reason).toBe('Cannot meet new people at home');
+    });
+
+    it('should allow "Meet Someone New" at other locations', () => {
+      const activity = { ...mockActivity, id: 'meet_someone' };
+      const player = { ...mockPlayer, currentLocation: 'park' as const };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(true);
+    });
+
+    it('should check location before other constraints', () => {
+      const activity = { ...mockActivity, location: 'gym' as const, energyCost: -100 };
+      const player = { ...mockPlayer, currentLocation: 'home' as const, currentEnergy: 50 };
+      const result = canPerformActivity(activity, player);
+      expect(result.available).toBe(false);
+      expect(result.reason).toContain('Must be at'); // Location check fails first
+    });
   });
 });
