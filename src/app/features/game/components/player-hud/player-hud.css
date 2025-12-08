@@ -32,6 +32,10 @@
   min-width: 150px;
 }
 
+.hud-item.location {
+  min-width: 120px;
+}
+
 .hud-item.money {
   min-width: 100px;
 }

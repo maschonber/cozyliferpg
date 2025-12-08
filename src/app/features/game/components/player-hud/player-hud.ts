@@ -12,6 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
 import { GameFacade } from '../../services/game.facade';
+import { LocationId } from '../../../../../../shared/types';
 
 @Component({
   selector: 'app-player-hud',
@@ -75,5 +76,24 @@ export class PlayerHud {
         }
       });
     }
+  }
+
+  /**
+   * Get human-readable location name (Phase 3)
+   */
+  getLocationName(locationId: LocationId): string {
+    const locationNames: Record<LocationId, string> = {
+      'home': 'Home',
+      'park': 'Park',
+      'coffee_shop': 'Coffee Shop',
+      'library': 'Library',
+      'shopping_district': 'Shopping District',
+      'gym': 'Gym',
+      'movie_theater': 'Movie Theater',
+      'beach': 'Beach',
+      'boardwalk': 'Boardwalk',
+      'bar': 'Bar'
+    };
+    return locationNames[locationId] || locationId;
   }
 }
