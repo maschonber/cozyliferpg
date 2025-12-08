@@ -115,7 +115,15 @@
                       }
                     </span>
                   </mat-card-title>
-                  <mat-card-subtitle>{{ item.npc.archetype }}</mat-card-subtitle>
+                  <mat-card-subtitle>
+                    <div class="subtitle-content">
+                      <span>{{ item.npc.archetype }}</span>
+                      <span class="location-badge">
+                        <mat-icon class="tiny-icon">place</mat-icon>
+                        {{ getLocationDisplayName(item.npc.currentLocation) }}
+                      </span>
+                    </div>
+                  </mat-card-subtitle>
                 </mat-card-header>
 
                 <mat-card-content>

@@ -221,6 +221,28 @@ mat-divider {
   transform: scale(1.1);
 }
 
+/* Subtitle with Location (Phase 3) */
+.subtitle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.location-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+  color: rgba(98, 0, 234, 0.8);
+}
+
+.tiny-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
 /* Relationship Status */
 .relationship-status {
   display: flex;
