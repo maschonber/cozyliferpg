@@ -29,7 +29,7 @@ A beautiful full-stack application showcasing modern web development with Angula
 ## ✨ Features
 
 - 🎮 Interactive counter demonstrating Angular Signals
-- 🏡 Beautiful UI with gradient backgrounds and animations
+- 🏡 Beautiful UI
 - 📱 Fully responsive design
 - ⚡ RESTful API with Express
 - 🗄️ PostgreSQL database integration
