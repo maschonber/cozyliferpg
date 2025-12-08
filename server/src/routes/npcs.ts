@@ -175,7 +175,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
  * GET /api/npcs/:id
  * Get NPC by ID
  */
-router.get('/:id', async (req: Request, res: Response<ApiResponse<NPC>>) => {
+router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
   const { id } = req.params;
   const client = await pool.connect();
 
@@ -215,6 +215,7 @@ router.get('/:id', async (req: Request, res: Response<ApiResponse<NPC>>) => {
         bodyDetails: row.body_details
       },
       loras: row.loras,
+      currentLocation: row.current_location,
       createdAt: row.created_at.toISOString()
     };
 
@@ -237,7 +238,7 @@ router.get('/:id', async (req: Request, res: Response<ApiResponse<NPC>>) => {
  * DELETE /api/npcs/:id
  * Delete an NPC by ID
  */
-router.delete('/:id', async (req: Request, res: Response<ApiResponse<void>>) => {
+router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse<void>>) => {
   const { id } = req.params;
   const client = await pool.connect();
 

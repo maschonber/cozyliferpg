@@ -311,13 +311,15 @@ export interface ActivityAvailability {
 }
 
 /**
- * Sleep result (Phase 2)
+ * Sleep result (Phase 2 + Phase 3)
  */
 export interface SleepResult {
   wakeTime: string;
   energyRestored: number;
   hoursSlept: number;
   newDay: number;
+  traveledHome?: boolean;  // Phase 3: if player traveled home before sleeping
+  travelTime?: number;     // Phase 3: travel time in minutes
 }
 
 /**
