@@ -290,403 +290,233 @@ GET    /api/activities        - List available activities
 
 ---
 
-## Phase 2: Time & Energy Systems 🔨 NEXT
+## Phase 2: Time & Energy Systems ✅ COMPLETED
+
+### What Was Built
+Phase 2 successfully transformed the game from a simple relationship simulator into a resource management experience. Players must now strategically balance time, energy, and money to pursue relationships and daily activities.
+
+**Development Period:** ~2 weeks
+**Key Commits:**
+- b060fc8: Implement Phase 2 backend and state management
+- 68f1f5c: Fix sleep calculation algorithm
+- 490cede: Add Phase 2 player HUD component
+- bbb7990: Complete Phase 2 frontend UI implementation
+
+### Implemented Features
+
+#### ✅ Time System
+- **Clock System:** HH:MM format tracking from wake-up (6-8 AM) to bedtime (max 4 AM)
+- **Time Slots:** Automatic derivation (Morning, Afternoon, Evening, Night) from current time
+- **Activity Duration:** 21 activities with varied time costs (30 min - 8 hours)
+- **Sleep Schedule:** Sophisticated wake time calculation based on bedtime
+  - Early sleep (before 10 PM) → Wake at 6 AM
+  - Optimal sleep (10 PM - midnight) → Wake 8 hours later
+  - Late sleep (after midnight) → Reduced sleep, wake at 8 AM max
+- **Time Validation:** Activities blocked if they would end after 4 AM
+
+#### ✅ Energy System
+- **Energy Pool:** 0-100 range with dynamic costs per activity
+- **Activity Costs:** Range from -50 (full day work) to +5 (napping, light leisure)
+- **Sleep Restoration:** Formula: `hoursSlept × 10` (max 80 energy from 8 hours)
+- **Strategic Depth:** Energy doesn't fully restore, requiring long-term planning
+
+#### ✅ Money System
+- **Starting Capital:** $200
+- **Income Sources:** Part-time job (+$80), Full-day work (+$150)
+- **Expenses:** Social activities (coffee -$5, dates -$30), gym (-$10), movies (-$20)
+- **Balance Challenge:** Players must work to afford social activities
+
+#### ✅ Player Character Tracking
+- **Database Model:** Full PlayerCharacter table with resource tracking
+- **Persisted State:** Energy, money, current day, current time, last sleep time
+- **Reset Function:** Debug tool to restart progress (deletes NPCs, resets to Day 1)
+
+#### ✅ Activities (21 Total)
+Exceeded target of ~20 activities across all categories:
+- **Work (2):** Part-time job, full-day shift
+- **Social with NPCs (8):** Coffee, quick chat, dates, deep conversation, movies, exercise together, cook dinner, flirt
+- **Self-Improvement (4):** Study library, gym workout, read book, creative hobby
+- **Leisure (4):** Park stroll, video games, watch TV, listen to music
+- **Self-Care (2):** Nap, sleep
+- **Discovery (1):** Meet Someone New
+
+#### ✅ Activity System Enhancements
+- **Availability Validation:** Real-time checks for energy, money, time slot, end time
+- **Time Restrictions:** Some activities limited to specific time slots (e.g., work only in morning/afternoon)
+- **Visual Feedback:** Grayed-out unavailable activities with reason tooltips
+- **Category Classification:** Each activity tagged for future filtering/organization
+
+#### ✅ UI/UX Implementation
+- **Player HUD Component:** Persistent top bar showing Day, Time (with slot label), Energy bar, Money
+- **Energy Bar Colors:** Dynamic coloring (green/yellow/red) based on energy level
+- **Activity Display:** Shows time cost, energy cost, money cost for each activity
+- **Sleep Button:** Dedicated sleep action with projected energy restoration preview
+- **Reset Option:** Confirmation dialog for progress reset
+
+#### ✅ Backend Services
+- **Time Service:** Helper functions for time calculations, sleep results, activity validation
+- **Player Service:** CRUD operations for player character
+- **API Endpoints:**
+  - `GET /api/player` - Get/create player character
+  - `POST /api/player/sleep` - Sleep and advance day
+  - `POST /api/player/reset` - Reset progress
+  - `GET /api/activities` - List all activities with availability
+  - `POST /api/activities/perform` - Perform solo activity
+
+#### ✅ Testing & Refinement
+- **Unit Tests:** Time service thoroughly tested (sleep calculations, time slot logic)
+- **Energy Balancing:** Adjusted after initial testing (commit d07f5df)
+- **Bug Fixes:** Fixed duplicate sleep action, NPC creation, UI consistency issues
+- **Mobile Responsive:** Activity buttons and HUD optimized for mobile
+
+### Postponed to Later Phases
+Features deliberately deferred for future development:
+- **Player Customization:** Name/gender selection (planned for Phase 3+)
+- **Player Stats:** Intelligence, Fitness, Creativity attributes (system exists but not implemented)
+- **Stat Gains:** Activities prepared with "Future: +Stat" notes, no actual progression yet
+- **Relationship-Gated Activities:** `minRelationship` field exists but minimally used
+- **Item Upgrades:** Better beds, equipment (mentioned in outline as future enhancement)
+
+---
+
+## Phase 2.5: Player Stats & Progression (Postponed from Phase 2)
 
 ### Scope
-Phase 2 introduces resource management and pacing through time and energy systems. Players must strategically balance limited time, energy, and money to pursue relationships, personal development, and daily life needs.
+Introduce player character stats and progression system to give activities long-term meaning beyond immediate resource management.
 
-### Core Design Decisions
+### Features to Implement
+- **Player Stats:** Intelligence, Fitness, Creativity, Charisma (0-100 scale)
+- **Stat Gains:** Activities grant stat experience (Study → Intelligence, Gym → Fitness, etc.)
+- **Stat Display:** Show current stats in player profile/HUD
+- **Stat Effects:** Stats influence activity outcomes and unlock new interactions
+  - High Charisma → Better relationship gains
+  - High Fitness → Lower energy cost for physical activities
+  - High Intelligence → New conversation options
+  - High Creativity → New hobby activities
 
-#### 1. Time System
-- **Time Tracking:** Real-time clock (HH:MM format) from wake-up to bedtime
-- **Time Display:** Show both actual time (e.g., "14:30") and derived period (Afternoon)
-- **Time Progression:** Automatic - activities consume specific minutes
-- **Activity Time Costs:**
-  - Quick actions (check phone, browse): 0 minutes
-  - Light activities (coffee, casual chat): 30-60 minutes
-  - Medium activities (dates, study, nap): 60-120 minutes
-  - Heavy activities (work, intense workouts): 180-240 minutes
-- **Day Structure:**
-  - Day starts at wake-up time (6 AM - 8 AM, varies by sleep schedule)
-  - Latest bedtime: 4 AM (activities cannot end after 4 AM)
-  - Activities ending after midnight visually marked (reduces available sleep)
-  - Time slots derived from clock:
-    - Morning: 6 AM - 12 PM
-    - Afternoon: 12 PM - 6 PM
-    - Evening: 6 PM - 12 AM
-    - Night: 12 AM - 6 AM
-- **Wake-Up Schedule:**
-  - Sleep 8+ hours → Wake at 6 AM
-  - Sleep < 8 hours → Wake later (up to 8 AM max)
-  - Go to bed before 10 PM → Still wake at 6 AM (no extra benefit)
-  - Go to bed after midnight → Reduced sleep time (wake at 8 AM max)
+### Optional Player Customization
+- Player name selection
+- Player gender/pronouns selection
+- Appearance customization (basic)
 
-#### 2. Energy System
-- **Single Energy Pool:** 100 points maximum (no stats initially)
-- **Energy Costs:** Activities can cost, restore, or be neutral
-  - Heavy work/study: -25 to -40 energy
-  - Social activities: -15 to -25 energy
-  - Light relaxation: -5 to +10 energy
-  - Napping: +20 to +30 energy (costs time)
-  - Sleeping: Variable restoration (see formula below)
-- **Sleep Energy Restoration Formula:**
-  - Energy restored = Hours slept × 10 (max 80 energy at 8 hours)
-  - Examples:
-    - Sleep 8 hours → +80 energy
-    - Sleep 6 hours → +60 energy
-    - Sleep 4 hours → +40 energy
-  - Sleeping longer than 8 hours provides no extra energy
-  - Does NOT fully restore to 100 (encourages long-term resource management)
-  - Future: Better beds could increase restoration rate or maximum
-
-#### 3. Money System
-- **Basic Resource:** Track money as integer ($)
-- **Sources:** Part-time work activities
-- **Sinks:** Some activities cost money (dates, entertainment, shopping)
-- **Starting Amount:** $200
-- **Future Expansion:** Jobs, gifts for NPCs, purchases
-
-#### 3b. Starting Conditions
-- **Day 1, 6:00 AM**
-- **Energy:** 100/100
-- **Money:** $200
-- **Restart Option:** Available for debugging (resets all progress)
-
-#### 4. Player Character (Minimal)
-- **No name/gender selection** in Phase 2 (defer to Phase 3)
-- **Track only:** Current energy, current money, current time/day
-- **Stats:** Deferred to Phase 3+
-
-#### 5. Activities (Expanded)
-- **Target Count:** ~20 activities covering diverse categories
-- **Categories:**
-  - Work (earn money, high energy cost, long time)
-  - Social with NPCs (varying costs, affect friendship/romance)
-  - Self-improvement (study, exercise - costs resources, future stat gains)
-  - Leisure/Relaxation (low/neutral energy, variable time)
-  - Self-care (nap, sleep - restore energy)
-  - Discovery (Meet Someone New - costs time/energy)
-- **Design Philosophy:**
-  - Heavy activities (work, study) = high energy cost, long time
-  - Light activities (park stroll, relaxing) = low energy, variable time
-  - Some activities restricted by time of day (work in morning/afternoon, etc.)
-  - Social activities maintain Phase 1 relationship effects (friendship/romance deltas)
-  - Some activities OK to have minimal impact if they rely on future systems
-
-#### 6. UI/UX
-- **Top Bar HUD (Always Visible):**
-  ```
-  Day 3  |  14:30 (Afternoon)  |  ⚡ 65/100  |  💰 $180
-  ```
-- **Activity Selection:**
-  - Show time cost (in minutes), energy cost, money cost
-  - Gray out activities player can't afford (insufficient energy/money/wrong time)
-  - Clear tooltips for unavailable activities
-  - Visual warning for activities ending after midnight (⚠️ icon)
-- **Sleep/Day Transition:**
-  - Option to sleep manually before 4 AM
-  - Show projected energy restoration based on current time
-  - Summary of day before advancing to next day
+**Priority:** Medium - Adds depth but not critical for core gameplay
+**Estimated Scope:** 1-2 weeks
 
 ---
 
-### Phase 2 Activity Specifications
+## Phase 3: Locations & Exploration 🔨 NEXT
 
-**Legend:** Time | Energy | Money | Effects
+### Scope
+Transform the neighborhood from an abstract space into a living world with distinct locations. Players navigate between places, discovering NPCs in their natural habitats and unlocking location-specific activities.
 
-#### Work Activities
-1. **Work Part-Time Job**
-   - 240 min (4 hours) | -30 energy | +$80
-   - Available: Morning, Afternoon only
-   - Description: "Work a 4-hour shift at your part-time job"
+### Core Features
 
-2. **Work Full Day**
-   - 480 min (8 hours) | -50 energy | +$150
-   - Available: Morning only (must start early)
-   - Description: "Work a full 8-hour shift for maximum pay"
+#### Location System
+- **Multiple Locations:** 5-8 distinct neighborhood locations
+  - Home (player's apartment)
+  - Coffee Shop
+  - Park
+  - Gym
+  - Library
+  - Downtown/Shopping District
+  - Beach/Waterfront (optional)
+  - Bar/Nightclub (optional)
 
-#### Social Activities (with NPCs)
-3. **Have Coffee Together**
-   - 60 min | -15 energy | -$5 | +10 Friendship
-   - Available: Anytime
-   - Description: "Grab a casual coffee and catch up"
+#### Location Mechanics
+- **Navigation:** Simple location selection UI (no complex maps initially)
+- **Travel Time:** Moving between locations costs time (5-15 minutes depending on distance)
+- **Current Location:** Track player's current location in PlayerCharacter
+- **Activity Filtering:** Activities only available at specific locations
+  - Coffee Shop → Have Coffee, Quick Chat
+  - Gym → Work Out, Exercise Together
+  - Park → Stroll, Picnic (new)
+  - Library → Study, Read
+  - Home → Sleep, Nap, Watch TV, Creative Hobbies
 
-4. **Quick Chat**
-   - 30 min | -10 energy | $0 | +5 Friendship
-   - Available: Anytime
-   - Description: "Have a brief conversation"
+#### NPC Integration
+- **Location Presence:** NPCs have preferred locations based on archetype
+  - Artist → Park, Coffee Shop, Downtown
+  - Athlete → Gym, Park, Beach
+  - Bookworm → Library, Coffee Shop, Home
+  - Musician → Coffee Shop, Bar, Park
+  - Scientist → Library, Coffee Shop, Home
+- **Discovery System:** "Meet Someone New" generates NPC + assigns to current location
+- **NPC Schedules (Basic):** Time-of-day preferences for locations
+  - Morning: NPCs at coffee shops, gyms, parks
+  - Afternoon: Scattered across various locations
+  - Evening: Bars, restaurants, home
+  - Night: Mostly home (limited availability)
 
-5. **Go on Casual Date**
-   - 120 min | -20 energy | -$30 | +15 Romance
-   - Available: Evening, Night
-   - Description: "Go out for dinner or drinks together"
+#### Location-Specific Content
+- **New Activities:** 5-10 new location-exclusive activities
+  - Picnic in Park
+  - Bar Drinks
+  - Beach Walk
+  - Window Shopping
+  - Art Gallery Visit
+- **Ambient Details:** Each location has description/atmosphere text
+- **Visual Enhancement:** Location background images (stretch goal)
 
-6. **Have Deep Conversation**
-   - 90 min | -25 energy | $0 | +20 Friendship
-   - Available: Anytime
-   - Requirement: Friend level or higher
-   - Description: "Share meaningful thoughts and feelings"
+#### UI/UX
+- **Location Selector:** Dropdown or card-based location navigation
+- **Location Header:** Display current location prominently
+- **Neighbor List Filtering:** Option to filter NPCs by current location
+- **Travel Confirmation:** Show time cost before moving to new location
 
-7. **Go to Movies**
-   - 150 min | -15 energy | -$20 | +10 Friendship, +5 Romance
-   - Available: Evening, Night only
-   - Description: "Watch a film together at the cinema"
+### Data Model Changes
 
-8. **Exercise Together**
-   - 90 min | -30 energy | $0 | +10 Friendship
-   - Available: Morning, Afternoon, Evening
-   - Description: "Work out or play sports together"
-
-9. **Cook Dinner Together**
-   - 120 min | -20 energy | -$15 | +12 Friendship, +8 Romance
-   - Available: Evening, Night
-   - Description: "Prepare and share a homemade meal"
-
-10. **Flirt Playfully**
-    - 45 min | -15 energy | $0 | +12 Romance
-    - Available: Anytime
-    - Description: "Engage in some lighthearted flirting"
-
-#### Self-Improvement Activities
-11. **Study at Library**
-    - 120 min | -25 energy | $0
-    - Available: Morning, Afternoon, Evening
-    - Description: "Hit the books and expand your knowledge"
-    - Future: +Intelligence
-
-12. **Work Out at Gym**
-    - 90 min | -30 energy | -$10 (gym fee)
-    - Available: Morning, Afternoon, Evening
-    - Description: "Get a solid workout in at the gym"
-    - Future: +Fitness
-
-13. **Read a Book**
-    - 90 min | -10 energy | $0
-    - Available: Anytime
-    - Description: "Read for pleasure and relaxation"
-    - Future: +Intelligence (small)
-
-14. **Practice Creative Hobby**
-    - 120 min | -20 energy | $0
-    - Available: Anytime
-    - Description: "Work on art, music, or creative projects"
-    - Future: +Creativity
-
-#### Leisure/Relaxation Activities
-15. **Stroll in the Park**
-    - 60 min | -5 energy | $0
-    - Available: Morning, Afternoon, Evening
-    - Description: "Take a peaceful walk outdoors"
-
-16. **Play Video Games**
-    - 120 min | -10 energy | $0
-    - Available: Anytime
-    - Description: "Unwind with some gaming"
-
-17. **Watch TV**
-    - 90 min | +5 energy | $0
-    - Available: Anytime
-    - Description: "Relax and watch your favorite shows"
-
-18. **Listen to Music**
-    - 30 min | +10 energy | $0
-    - Available: Anytime
-    - Description: "Put on some tunes and chill"
-
-#### Self-Care Activities
-19. **Take a Nap**
-    - 60 min | +25 energy | $0
-    - Available: Afternoon, Evening
-    - Description: "Get some quick rest to recharge"
-
-20. **Go to Sleep**
-    - Special (ends day) | +Energy (hours × 10, max 80) | $0
-    - Available: Evening, Night only
-    - Description: "Go to bed and end the day"
-
-#### Discovery Activity
-21. **Meet Someone New**
-    - 45 min | -20 energy | $0
-    - Available: Anytime
-    - Description: "Explore the neighborhood and meet a new person"
-    - Effect: Generates new NPC and creates relationship
-
----
-
-### Data Model Updates for Phase 2
-
-#### PlayerCharacter (NEW)
+#### PlayerCharacter (Updated)
 ```typescript
 interface PlayerCharacter {
-  id: string;
-  userId: string;
-
-  // Resources
-  currentEnergy: number;      // 0-100
-  maxEnergy: number;          // 100 (fixed for Phase 2, variable in future)
-  money: number;              // Starting: $200
-
-  // Time tracking
-  currentDay: number;         // 1, 2, 3...
-  currentTime: string;        // "HH:MM" format (e.g., "14:30")
-  lastSleptAt: string;        // "HH:MM" - for calculating sleep duration
-
-  // Timestamps
-  createdAt: string;
-  updatedAt: string;
+  // ... existing fields ...
+  currentLocation: string;  // 'home', 'coffee_shop', 'park', etc.
 }
 ```
 
-#### Activity (UPDATED - Phase 2)
+#### NPC (Updated)
+```typescript
+interface NPC {
+  // ... existing fields ...
+  favoriteLocations: string[];  // Based on archetype
+  currentLocation?: string;     // Where they are right now (optional for Phase 3)
+}
+```
+
+#### Activity (Updated)
 ```typescript
 interface Activity {
+  // ... existing fields ...
+  location?: string;  // Required location (undefined = available anywhere)
+}
+```
+
+#### Location (New)
+```typescript
+interface Location {
   id: string;
   name: string;
   description: string;
-  category: 'work' | 'social' | 'self_improvement' | 'leisure' | 'self_care' | 'discovery';
-
-  // Costs (Phase 2 additions)
-  timeCost: number;           // Minutes consumed
-  energyCost: number;         // Can be negative (cost) or positive (restore)
-  moneyCost: number;          // Can be negative (cost) or positive (earn)
-
-  // Time restrictions (Phase 2)
-  allowedTimeSlots?: TimeSlot[];  // If undefined, available anytime
-                                   // e.g., ["morning", "afternoon"]
-
-  // Requirements (Phase 2+)
-  minEnergy?: number;              // Minimum energy required
-  minRelationship?: string;        // e.g., "friend" (for relationship-gated activities)
-
-  // Effects (from Phase 1, still used)
-  effects: {
-    friendship?: number;
-    romance?: number;
-    // Future: stats like fitness, intelligence, etc.
-  };
-}
-
-type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';
-```
-
-#### Helper Functions/Logic (Implementation Notes)
-
-**Time Slot Calculation:**
-```typescript
-function getTimeSlot(time: string): TimeSlot {
-  const hour = parseInt(time.split(':')[0]);
-  if (hour >= 6 && hour < 12) return 'morning';
-  if (hour >= 12 && hour < 18) return 'afternoon';
-  if (hour >= 18 && hour < 24) return 'evening';
-  return 'night'; // 0-6
+  travelTimeMinutes: { [fromLocation: string]: number };  // Travel times from other locations
+  availableTimeSlots?: TimeSlot[];  // Some locations might have hours
+  imageUrl?: string;  // Optional background image
 }
 ```
 
-**Sleep Duration & Wake Time Calculation:**
-```typescript
-function calculateSleepResults(bedtime: string) {
-  const bedHour = parseInt(bedtime.split(':')[0]);
-  const bedMinute = parseInt(bedtime.split(':')[1]);
+### Implementation Strategy
+1. Define location data (names, descriptions, travel times)
+2. Add currentLocation to PlayerCharacter table and API
+3. Update Activity definitions with location requirements
+4. Implement location navigation UI
+5. Update NPC generation with favorite locations
+6. Filter activities and NPCs by current location
+7. Test location flow and balance travel times
 
-  let wakeTime: string;
-  let hoursSlept: number;
-
-  // Case 1: Before 10 PM (6 AM - 9:59 PM)
-  // Wake at 6 AM, but only get energy for 8 hours max
-  if (bedHour >= 6 && bedHour < 22) {
-    wakeTime = "06:00";
-    hoursSlept = 8; // Capped at 8 hours for energy purposes
-  }
-  // Case 2: Between 10 PM and midnight (22:00 - 23:59)
-  // Sleep exactly 8 hours, wake 8 hours after bedtime
-  else if (bedHour >= 22) {
-    hoursSlept = 8;
-    const bedTimeInMinutes = bedHour * 60 + bedMinute;
-    const wakeMinutes = bedTimeInMinutes + (8 * 60);
-    const wakeHour = Math.floor(wakeMinutes / 60) % 24;
-    const wakeMin = wakeMinutes % 60;
-    wakeTime = `${String(wakeHour).padStart(2, '0')}:${String(wakeMin).padStart(2, '0')}`;
-  }
-  // Case 3: After midnight, before 4 AM (0:00 - 3:59)
-  // Wake at 8 AM, sleep time gradually declines
-  else if (bedHour >= 0 && bedHour < 4) {
-    wakeTime = "08:00";
-    const bedTimeInMinutes = bedHour * 60 + bedMinute;
-    const wakeTimeInMinutes = 8 * 60; // 8 AM
-    hoursSlept = (wakeTimeInMinutes - bedTimeInMinutes) / 60;
-    // At midnight: 8 hours
-    // At 1 AM: 7 hours
-    // At 2 AM: 6 hours
-    // At 3 AM: 5 hours
-    // At 4 AM: 4 hours
-  }
-  // Case 4: Between 4 AM and 6 AM (4:00 - 5:59)
-  // Edge case: wake at 8 AM
-  else {
-    wakeTime = "08:00";
-    const bedTimeInMinutes = bedHour * 60 + bedMinute;
-    const wakeTimeInMinutes = 8 * 60;
-    hoursSlept = (wakeTimeInMinutes - bedTimeInMinutes) / 60;
-  }
-
-  // Calculate energy restoration (hours × 10)
-  const energyRestored = Math.floor(hoursSlept * 10);
-
-  return { wakeTime, energyRestored, hoursSlept };
-}
-
-// Examples:
-// Bed at 9 PM (21:00) → Wake 06:00, 8 hours, 80 energy
-// Bed at 10 PM (22:00) → Wake 06:00, 8 hours, 80 energy
-// Bed at 11 PM (23:00) → Wake 07:00, 8 hours, 80 energy
-// Bed at midnight (00:00) → Wake 08:00, 8 hours, 80 energy
-// Bed at 1 AM (01:00) → Wake 08:00, 7 hours, 70 energy
-// Bed at 2 AM (02:00) → Wake 08:00, 6 hours, 60 energy
-// Bed at 3 AM (03:00) → Wake 08:00, 5 hours, 50 energy
-// Bed at 4 AM (04:00) → Wake 08:00, 4 hours, 40 energy
-```
-
-**Activity End Time Validation:**
-```typescript
-function canPerformActivity(activity: Activity, currentTime: string, currentEnergy: number, currentMoney: number): { allowed: boolean; reason?: string } {
-  // Check energy
-  if (currentEnergy + activity.energyCost < 0) {
-    return { allowed: false, reason: "Not enough energy" };
-  }
-
-  // Check money
-  if (currentMoney + activity.moneyCost < 0) {
-    return { allowed: false, reason: "Not enough money" };
-  }
-
-  // Check time slot restriction
-  if (activity.allowedTimeSlots) {
-    const currentSlot = getTimeSlot(currentTime);
-    if (!activity.allowedTimeSlots.includes(currentSlot)) {
-      return { allowed: false, reason: "Not available at this time" };
-    }
-  }
-
-  // Check if activity would end after 4 AM
-  const endTime = addMinutes(currentTime, activity.timeCost);
-  const endHour = parseInt(endTime.split(':')[0]);
-  if (endHour >= 4 && endHour < 6) {
-    return { allowed: false, reason: "Would end too late (after 4 AM)" };
-  }
-
-  return { allowed: true };
-}
-```
+**Priority:** High - Critical for expanding game world
+**Estimated Scope:** 2-3 weeks
 
 ---
 
-### Phase 3: Locations & Exploration
-- Multiple neighborhood locations
-- Location-based NPC encounters
-- Activity availability based on location/time
-- Location discovery system
-
-### Phase 4: Advanced NPCs
+## Phase 4: Advanced NPCs
 - NPC daily schedules/routines
 - Rule-based personality generation
 - More complex traits and preferences
