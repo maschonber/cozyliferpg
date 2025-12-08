@@ -1,16 +1,17 @@
 /**
- * Location Selector Modal (Phase 3)
- * Allows player to view all locations and travel between them
+ * Location Selector View (Phase 3)
+ * Full-screen view for traveling between locations
  */
 
-import { Component, inject, computed } from '@angular/core';
+import { Component, inject, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
+import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatBadgeModule } from '@angular/material/badge';
+import { MatCardModule } from '@angular/material/card';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, District } from '../../../../../../shared/types';
 
@@ -18,18 +19,18 @@ import { LocationWithNPCCount, District } from '../../../../../../shared/types';
   selector: 'app-location-selector',
   imports: [
     CommonModule,
-    MatDialogModule,
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    MatBadgeModule
+    MatBadgeModule,
+    MatCardModule
   ],
   templateUrl: './location-selector.html',
   styleUrl: './location-selector.css',
 })
-export class LocationSelector {
-  private dialogRef = inject(MatDialogRef<LocationSelector>);
+export class LocationSelector implements OnInit {
+  private router = inject(Router);
   private facade = inject(GameFacade);
 
   // Expose facade signals
@@ -40,6 +41,13 @@ export class LocationSelector {
 
   // Districts array for template iteration
   readonly districts: District[] = ['residential', 'downtown', 'waterfront'];
+
+  ngOnInit(): void {
+    // Ensure locations are loaded when view is opened
+    if (this.locations().length === 0) {
+      this.facade.loadLocations();
+    }
+  }
 
   // Group locations by district
   locationsByDistrict = computed(() => {
@@ -62,11 +70,54 @@ export class LocationSelector {
    */
   getDistrictName(district: District): string {
     const names: Record<District, string> = {
-      'residential': 'Residential',
-      'downtown': 'Downtown',
+      'residential': 'Residential Quarter',
+      'downtown': 'Town Center',
       'waterfront': 'Waterfront'
     };
     return names[district];
+  }
+
+  /**
+   * Get icon for district
+   */
+  getDistrictIcon(district: District): string {
+    const icons: Record<District, string> = {
+      'residential': 'home_work',
+      'downtown': 'location_city',
+      'waterfront': 'waves'
+    };
+    return icons[district];
+  }
+
+  /**
+   * Get description for district
+   */
+  getDistrictDescription(district: District): string {
+    const descriptions: Record<District, string> = {
+      'residential': '5 min travel within district',
+      'downtown': '5 min within, 15 min from other districts',
+      'waterfront': '5 min within, 15 min from other districts'
+    };
+    return descriptions[district];
+  }
+
+  /**
+   * Get display name for location
+   */
+  getLocationDisplayName(locationId: string): string {
+    const names: Record<string, string> = {
+      'home': 'Home',
+      'park': 'Neighborhood Park',
+      'coffee_shop': 'Corner Coffee Shop',
+      'library': 'Public Library',
+      'shopping_district': 'Shopping District',
+      'gym': 'Fitness Center',
+      'movie_theater': 'Movie Theater',
+      'beach': 'Beach',
+      'boardwalk': 'Boardwalk',
+      'bar': 'Seaside Bar & Grill'
+    };
+    return names[locationId] || locationId;
   }
 
   /**
@@ -108,7 +159,8 @@ export class LocationSelector {
     this.facade.travel(locationId).subscribe({
       next: () => {
         console.log(`Traveled to ${locationId}`);
-        // Modal stays open to show updated NPC counts
+        // Navigate back to game home after traveling
+        this.router.navigate(['/game']);
       },
       error: (error) => {
         console.error('Failed to travel:', error);
@@ -129,7 +181,8 @@ export class LocationSelector {
     this.facade.goHome().subscribe({
       next: () => {
         console.log('Traveled home');
-        // Modal stays open to show updated state
+        // Navigate back to game home after traveling
+        this.router.navigate(['/game']);
       },
       error: (error) => {
         console.error('Failed to go home:', error);
@@ -139,9 +192,9 @@ export class LocationSelector {
   }
 
   /**
-   * Close modal
+   * Navigate back to game home
    */
-  onClose(): void {
-    this.dialogRef.close();
+  onBack(): void {
+    this.router.navigate(['/game']);
   }
 }

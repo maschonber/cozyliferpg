@@ -21,6 +21,10 @@ export const routes: Routes = [
         path: 'neighbor/:id',
         loadComponent: () => import('./features/game/components/neighbor-detail/neighbor-detail').then(m => m.NeighborDetail),
         resolve: { data: neighborDetailResolver }
+      },
+      {
+        path: 'travel',
+        loadComponent: () => import('./features/game/components/location-selector/location-selector').then(m => m.LocationSelector)
       }
     ]
   },

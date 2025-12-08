@@ -1,30 +1,56 @@
-<div class="location-selector-modal">
-  <div class="modal-header">
-    <h2 mat-dialog-title>
-      <mat-icon>map</mat-icon>
-      Choose Your Destination
-    </h2>
-    <button mat-icon-button (click)="onClose()" [disabled]="traveling()">
-      <mat-icon>close</mat-icon>
+<div class="location-selector">
+  <!-- Back Button and Go Home -->
+  <div class="header-actions">
+    <button mat-button (click)="onBack()" [disabled]="traveling()">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Home
+    </button>
+    <button
+      mat-raised-button
+      color="accent"
+      (click)="onGoHome()"
+      [disabled]="isCurrentLocation('home') || traveling()">
+      <mat-icon>home</mat-icon>
+      Go Home
     </button>
   </div>
 
-  <mat-dialog-content>
-    <!-- Loading State -->
-    @if (locationsLoading()) {
-      <div class="loading-container">
-        <mat-spinner diameter="50"></mat-spinner>
-        <p>Loading locations...</p>
-      </div>
+  <!-- Page Title -->
+  <div class="page-header">
+    <h1>
+      <mat-icon>map</mat-icon>
+      Choose Your Destination
+    </h1>
+    @if (player(); as p) {
+      <p class="current-location-info">
+        <mat-icon class="small-icon">place</mat-icon>
+        Currently at: <strong>{{ getLocationDisplayName(p.currentLocation) }}</strong>
+      </p>
     }
+  </div>
 
-    <!-- Locations by District -->
-    @if (!locationsLoading()) {
-      <div class="districts-container">
-        @for (district of districts; track district) {
-          <div class="district-section">
-            <h3 class="district-title">{{ getDistrictName(district) }}</h3>
+  <!-- Loading State -->
+  @if (locationsLoading()) {
+    <div class="loading-container">
+      <mat-spinner diameter="50"></mat-spinner>
+      <p>Loading locations...</p>
+    </div>
+  }
 
+  <!-- Locations by District -->
+  @if (!locationsLoading()) {
+    <div class="districts-container">
+      @for (district of districts; track district) {
+        <mat-card class="district-card">
+          <mat-card-header>
+            <mat-card-title class="district-title">
+              <mat-icon>{{ getDistrictIcon(district) }}</mat-icon>
+              {{ getDistrictName(district) }}
+            </mat-card-title>
+            <mat-card-subtitle>{{ getDistrictDescription(district) }}</mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
             <div class="locations-grid">
               @for (location of locationsByDistrict()[district]; track location.id) {
                 <button
@@ -47,7 +73,7 @@
                     @if (location.npcCount !== undefined && location.npcCount > 0) {
                       <div class="npc-badge">
                         <mat-icon class="small-icon">person</mat-icon>
-                        <span>{{ location.npcCount }}</span>
+                        <span>{{ location.npcCount }} {{ location.npcCount === 1 ? 'neighbor' : 'neighbors' }}</span>
                       </div>
                     }
 
@@ -66,35 +92,26 @@
                       <mat-icon class="tiny-icon">schedule</mat-icon>
                       <span>{{ location.openTime }} - {{ location.closeTime }}</span>
                     </div>
+                  } @else {
+                    <div class="location-hours always-open">
+                      <mat-icon class="tiny-icon">schedule</mat-icon>
+                      <span>Open 24/7</span>
+                    </div>
                   }
                 </button>
               }
             </div>
-          </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
 
-          @if (district !== 'waterfront') {
-            <mat-divider></mat-divider>
-          }
-        }
-      </div>
-    }
-
-    <!-- Traveling Indicator -->
-    @if (traveling()) {
-      <div class="traveling-overlay">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Traveling...</p>
-      </div>
-    }
-  </mat-dialog-content>
-
-  <mat-dialog-actions>
-    <button mat-button (click)="onGoHome()" [disabled]="isCurrentLocation('home') || traveling()">
-      <mat-icon>home</mat-icon>
-      Go Home
-    </button>
-    <button mat-raised-button color="primary" (click)="onClose()" [disabled]="traveling()">
-      Close
-    </button>
-  </mat-dialog-actions>
+  <!-- Traveling Indicator -->
+  @if (traveling()) {
+    <div class="traveling-overlay">
+      <mat-spinner diameter="60"></mat-spinner>
+      <p>Traveling...</p>
+    </div>
+  }
 </div>
