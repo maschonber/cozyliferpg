@@ -288,6 +288,128 @@ export const ACTIVITIES = [
     energyCost: -20,
     moneyCost: 0,
     effects: {}
+  },
+
+  // ===== PHASE 3 NEW ACTIVITIES =====
+
+  // New Solo Activities
+  {
+    id: 'beach_walk',
+    name: 'Beach Walk',
+    description: 'Take a peaceful walk along the shoreline',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'beach' as const,
+    timeCost: 45,
+    energyCost: -5,
+    moneyCost: 0,
+    effects: {}
+  },
+  {
+    id: 'window_shopping',
+    name: 'Window Shopping',
+    description: 'Browse shops without buying anything',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'shopping_district' as const,
+    timeCost: 60,
+    energyCost: -10,
+    moneyCost: 0,
+    effects: {}
+  },
+  {
+    id: 'morning_jog',
+    name: 'Morning Jog',
+    description: 'Go for an energizing run outdoors',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'park' as const,
+    timeCost: 45,
+    energyCost: -20,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
+    effects: {}
+  },
+  {
+    id: 'swim_beach',
+    name: 'Swim at Beach',
+    description: 'Take a refreshing swim in the ocean',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'beach' as const,
+    timeCost: 60,
+    energyCost: -25,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: {}
+  },
+  {
+    id: 'play_arcade',
+    name: 'Play Arcade Games',
+    description: 'Have fun with retro arcade games',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'boardwalk' as const,
+    timeCost: 90,
+    energyCost: -15,
+    moneyCost: -10,
+    effects: {}
+  },
+
+  // New Social Activities
+  {
+    id: 'beach_picnic',
+    name: 'Beach Picnic',
+    description: 'Share food and relaxation by the ocean',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'beach' as const,
+    timeCost: 90,
+    energyCost: -20,
+    moneyCost: -15,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: { friendship: 15, romance: 8 }
+  },
+  {
+    id: 'play_pool_darts',
+    name: 'Play Pool/Darts',
+    description: 'Friendly competition over bar games',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'bar' as const,
+    timeCost: 60,
+    energyCost: -15,
+    moneyCost: -10,
+    allowedTimeSlots: ['evening' as const, 'night' as const],
+    effects: { friendship: 10 }
+  },
+  {
+    id: 'boardwalk_stroll',
+    name: 'Boardwalk Stroll',
+    description: 'Take a romantic walk along the pier',
+    category: 'social' as const,
+    requiresNPC: true,
+    location: 'boardwalk' as const,
+    timeCost: 75,
+    energyCost: -10,
+    moneyCost: -5,
+    allowedTimeSlots: ['evening' as const, 'night' as const],
+    effects: { friendship: 8, romance: 10 }
+  },
+
+  // New Work Activity
+  {
+    id: 'work_barista',
+    name: 'Work as Barista',
+    description: 'Serve coffee and pastries at the cafe',
+    category: 'work' as const,
+    requiresNPC: false,
+    location: 'coffee_shop' as const,
+    timeCost: 240,
+    energyCost: -35,
+    moneyCost: 70,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
+    effects: {}
   }
 ];
 
