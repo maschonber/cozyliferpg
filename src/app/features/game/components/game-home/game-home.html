@@ -33,8 +33,18 @@
       </div>
     }
 
-    <!-- Sleep Button -->
+    <!-- Action Buttons (Phase 3: Added Location Selector) -->
     <div class="action-section">
+      <button
+        mat-raised-button
+        color="accent"
+        class="location-button"
+        (click)="onOpenLocationSelector()"
+        [disabled]="interacting()">
+        <mat-icon>map</mat-icon>
+        Travel
+      </button>
+
       <button
         mat-raised-button
         color="primary"

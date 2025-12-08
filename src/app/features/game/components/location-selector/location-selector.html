@@ -1,0 +1,100 @@
+<div class="location-selector-modal">
+  <div class="modal-header">
+    <h2 mat-dialog-title>
+      <mat-icon>map</mat-icon>
+      Choose Your Destination
+    </h2>
+    <button mat-icon-button (click)="onClose()" [disabled]="traveling()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Loading State -->
+    @if (locationsLoading()) {
+      <div class="loading-container">
+        <mat-spinner diameter="50"></mat-spinner>
+        <p>Loading locations...</p>
+      </div>
+    }
+
+    <!-- Locations by District -->
+    @if (!locationsLoading()) {
+      <div class="districts-container">
+        @for (district of ['residential', 'downtown', 'waterfront']; track district) {
+          <div class="district-section">
+            <h3 class="district-title">{{ getDistrictName(district) }}</h3>
+
+            <div class="locations-grid">
+              @for (location of locationsByDistrict()[district]; track location.id) {
+                <button
+                  mat-raised-button
+                  class="location-card"
+                  [class.current]="isCurrentLocation(location.id)"
+                  [disabled]="isCurrentLocation(location.id) || traveling()"
+                  (click)="onTravelTo(location.id)">
+
+                  <!-- Location Icon -->
+                  <div class="location-icon">
+                    <mat-icon>{{ getLocationIcon(location.id) }}</mat-icon>
+                  </div>
+
+                  <!-- Location Info -->
+                  <div class="location-info">
+                    <div class="location-name">{{ location.name }}</div>
+
+                    <!-- NPC Count Badge -->
+                    @if (location.npcCount !== undefined && location.npcCount > 0) {
+                      <div class="npc-badge">
+                        <mat-icon class="small-icon">person</mat-icon>
+                        <span>{{ location.npcCount }}</span>
+                      </div>
+                    }
+
+                    <!-- Current Location Indicator -->
+                    @if (isCurrentLocation(location.id)) {
+                      <div class="current-badge">
+                        <mat-icon class="small-icon">check_circle</mat-icon>
+                        <span>You are here</span>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Operating Hours (if applicable) -->
+                  @if (location.openTime && location.closeTime) {
+                    <div class="location-hours">
+                      <mat-icon class="tiny-icon">schedule</mat-icon>
+                      <span>{{ location.openTime }} - {{ location.closeTime }}</span>
+                    </div>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (district !== 'waterfront') {
+            <mat-divider></mat-divider>
+          }
+        }
+      </div>
+    }
+
+    <!-- Traveling Indicator -->
+    @if (traveling()) {
+      <div class="traveling-overlay">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Traveling...</p>
+      </div>
+    }
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-button (click)="onGoHome()" [disabled]="isCurrentLocation('home') || traveling()">
+      <mat-icon>home</mat-icon>
+      Go Home
+    </button>
+    <button mat-raised-button color="primary" (click)="onClose()" [disabled]="traveling()">
+      Close
+    </button>
+  </mat-dialog-actions>
+</div>

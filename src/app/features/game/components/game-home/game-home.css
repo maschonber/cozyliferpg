@@ -21,13 +21,15 @@
   margin: 0;
 }
 
-/* Action Section */
+/* Action Section (Phase 3: Updated for multiple buttons) */
 .action-section {
   display: flex;
   justify-content: center;
+  gap: 16px;
   margin: 24px 0;
 }
 
+.location-button,
 .sleep-button {
   font-size: 16px;
   padding: 12px 32px !important;
@@ -35,6 +37,7 @@
   border-radius: 4px !important;
 }
 
+.location-button mat-icon,
 .sleep-button mat-icon {
   margin-right: 8px;
 }
