@@ -5,6 +5,9 @@
   text-align: left;
   border: 1px solid rgba(0, 0, 0, 0.12);
   border-radius: 4px !important;
+  display: flex !important;
+  justify-content: flex-start !important;
+  align-items: flex-start !important;
 }
 
 .activity-button.positive {
