@@ -155,10 +155,11 @@ function generateName(): string {
  * Generate random gender
  */
 function generateGender(): Gender {
-  // Weight distribution: 45% female, 45% male, 10% other
+  // Weight distribution: 75% female, 20% male, 5% other
+  // (Based on demo player preferences: heterosexual male)
   const rand = Math.random();
-  if (rand < 0.45) return 'female';
-  if (rand < 0.90) return 'male';
+  if (rand < 0.75) return 'female';
+  if (rand < 0.95) return 'male';
   return 'other';
 }
 
