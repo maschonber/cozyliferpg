@@ -17,10 +17,7 @@
 
   <!-- Page Title -->
   <div class="page-header">
-    <h1>
-      <mat-icon>map</mat-icon>
-      Choose Your Destination
-    </h1>
+    <h2>Choose Your Destination</h2>
     @if (player(); as p) {
       <p class="current-location-info">
         <mat-icon class="small-icon">place</mat-icon>
@@ -41,68 +38,57 @@
   @if (!locationsLoading()) {
     <div class="districts-container">
       @for (district of districts; track district) {
-        <mat-card class="district-card">
-          <mat-card-header>
-            <mat-card-title class="district-title">
-              <mat-icon>{{ getDistrictIcon(district) }}</mat-icon>
-              {{ getDistrictName(district) }}
-            </mat-card-title>
-            <mat-card-subtitle>{{ getDistrictDescription(district) }}</mat-card-subtitle>
-          </mat-card-header>
+        <div class="district-section">
+          <h3 class="district-title">
+            <mat-icon>{{ getDistrictIcon(district) }}</mat-icon>
+            {{ getDistrictName(district) }}
+          </h3>
 
-          <mat-card-content>
-            <div class="locations-grid">
-              @for (location of locationsByDistrict()[district]; track location.id) {
-                <button
-                  mat-raised-button
-                  class="location-card"
-                  [class.current]="isCurrentLocation(location.id)"
-                  [disabled]="isCurrentLocation(location.id) || traveling()"
-                  (click)="onTravelTo(location.id)">
+          <div class="locations-grid">
+            @for (location of locationsByDistrict()[district]; track location.id) {
+              <button
+                mat-raised-button
+                class="location-card"
+                [class.current]="isCurrentLocation(location.id)"
+                [disabled]="isCurrentLocation(location.id) || traveling()"
+                (click)="onTravelTo(location.id)">
 
-                  <!-- Location Icon -->
-                  <div class="location-icon">
-                    <mat-icon>{{ getLocationIcon(location.id) }}</mat-icon>
-                  </div>
+                <!-- Location Icon -->
+                <div class="location-icon">
+                  <mat-icon>{{ getLocationIcon(location.id) }}</mat-icon>
+                </div>
 
-                  <!-- Location Info -->
-                  <div class="location-info">
-                    <div class="location-name">{{ location.name }}</div>
+                <!-- Location Info -->
+                <div class="location-info">
+                  <span class="location-name">{{ location.name }}</span>
 
-                    <!-- NPC Count Badge -->
-                    @if (location.npcCount !== undefined && location.npcCount > 0) {
-                      <div class="npc-badge">
-                        <mat-icon class="small-icon">person</mat-icon>
-                        <span>{{ location.npcCount }} {{ location.npcCount === 1 ? 'neighbor' : 'neighbors' }}</span>
-                      </div>
-                    }
-
-                    <!-- Current Location Indicator -->
-                    @if (isCurrentLocation(location.id)) {
-                      <div class="current-badge">
-                        <mat-icon class="small-icon">check_circle</mat-icon>
-                        <span>You are here</span>
-                      </div>
-                    }
-                  </div>
-
-                  <!-- Operating Hours (if applicable) -->
-                  @if (location.openTime && location.closeTime) {
-                    <div class="location-hours">
-                      <mat-icon class="tiny-icon">schedule</mat-icon>
-                      <span>{{ location.openTime }} - {{ location.closeTime }}</span>
-                    </div>
-                  } @else {
-                    <div class="location-hours always-open">
-                      <mat-icon class="tiny-icon">schedule</mat-icon>
-                      <span>Open 24/7</span>
-                    </div>
+                  <!-- NPC Count Badge -->
+                  @if (location.npcCount !== undefined && location.npcCount > 0) {
+                    <span class="npc-badge">
+                      <mat-icon class="tiny-icon">person</mat-icon>
+                      {{ location.npcCount }}
+                    </span>
                   }
-                </button>
-              }
-            </div>
-          </mat-card-content>
-        </mat-card>
+
+                  <!-- Current Location Indicator -->
+                  @if (isCurrentLocation(location.id)) {
+                    <span class="current-badge">
+                      <mat-icon class="tiny-icon">check_circle</mat-icon>
+                      Here
+                    </span>
+                  }
+
+                  <!-- Operating Hours -->
+                  @if (location.openTime && location.closeTime) {
+                    <span class="location-hours">
+                      {{ location.openTime }}-{{ location.closeTime }}
+                    </span>
+                  }
+                </div>
+              </button>
+            }
+          </div>
+        </div>
       }
     </div>
   }

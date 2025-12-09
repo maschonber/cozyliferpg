@@ -8,10 +8,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MatBadgeModule } from '@angular/material/badge';
-import { MatCardModule } from '@angular/material/card';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, District } from '../../../../../../shared/types';
 
@@ -21,10 +18,7 @@ import { LocationWithNPCCount, District } from '../../../../../../shared/types';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule,
-    MatProgressSpinnerModule,
-    MatBadgeModule,
-    MatCardModule
+    MatProgressSpinnerModule
   ],
   templateUrl: './location-selector.html',
   styleUrl: './location-selector.css',
@@ -87,18 +81,6 @@ export class LocationSelector implements OnInit {
       'waterfront': 'waves'
     };
     return icons[district];
-  }
-
-  /**
-   * Get description for district
-   */
-  getDistrictDescription(district: District): string {
-    const descriptions: Record<District, string> = {
-      'residential': '5 min travel within district',
-      'downtown': '5 min within, 15 min from other districts',
-      'waterfront': '5 min within, 15 min from other districts'
-    };
-    return descriptions[district];
   }
 
   /**

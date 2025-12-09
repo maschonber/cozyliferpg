@@ -299,7 +299,7 @@ describe('LocationSelector', () => {
 
       const compiled = fixture.nativeElement as HTMLElement;
       expect(compiled.querySelector('.districts-container')).toBeTruthy();
-      expect(compiled.querySelectorAll('.district-card').length).toBe(3);
+      expect(compiled.querySelectorAll('.district-section').length).toBe(3);
     });
 
     it('should show location cards within each district', () => {
