@@ -8,6 +8,7 @@ import { pool } from '../db';
 import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { calculateSleepResults, addMinutes } from '../services/time';
+import { calculateTravelTime } from '../services/location';
 import { ApiResponse, PlayerCharacter, SleepResult } from '../../../shared/types';
 
 const router = Router();
@@ -94,24 +95,36 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
   try {
     const player = await getOrCreatePlayerCharacter(pool, userId);
 
-    // Calculate sleep results
-    const sleepResults = calculateSleepResults(player.currentTime);
+    // Phase 3: Calculate travel time home if not already there
+    let bedtime = player.currentTime;
+    let travelTimeHome = 0;
+
+    if (player.currentLocation !== 'home') {
+      travelTimeHome = calculateTravelTime(player.currentLocation, 'home');
+      bedtime = addMinutes(player.currentTime, travelTimeHome);
+    }
+
+    // Calculate sleep results based on bedtime (after potential travel)
+    const sleepResults = calculateSleepResults(bedtime);
     const newDay = player.currentDay + 1;
     const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
 
-    // Update player character
+    // Update player character (Phase 3: always set location to home)
     await updatePlayerCharacter(pool, player.id, {
       currentTime: sleepResults.wakeTime,
       currentDay: newDay,
       currentEnergy: newEnergy,
-      lastSleptAt: player.currentTime
+      lastSleptAt: bedtime,
+      currentLocation: 'home'
     });
 
     res.json({
       success: true,
       data: {
         ...sleepResults,
-        newDay
+        newDay,
+        traveledHome: travelTimeHome > 0,
+        travelTime: travelTimeHome
       }
     });
   } catch (error) {

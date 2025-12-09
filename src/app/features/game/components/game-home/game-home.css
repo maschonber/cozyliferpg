@@ -21,13 +21,21 @@
   margin: 0;
 }
 
-/* Action Section */
+/* Current Location Section - Now uses shared location-marker component */
+app-location-marker {
+  margin-bottom: 24px;
+  display: block;
+}
+
+/* Action Section (Phase 3: Updated for multiple buttons) */
 .action-section {
   display: flex;
   justify-content: center;
+  gap: 16px;
   margin: 24px 0;
 }
 
+.location-button,
 .sleep-button {
   font-size: 16px;
   padding: 12px 32px !important;
@@ -35,6 +43,7 @@
   border-radius: 4px !important;
 }
 
+.location-button mat-icon,
 .sleep-button mat-icon {
   margin-right: 8px;
 }
@@ -108,7 +117,7 @@ mat-divider {
 /* Card Layout - Avatar on Right */
 .card-layout {
   display: flex;
-  min-height: 250px;
+  min-height: 170px;
 }
 
 .card-content {
@@ -146,9 +155,9 @@ mat-divider {
 }
 
 .avatar-container mat-icon {
-  font-size: 80px;
-  width: 80px;
-  height: 80px;
+  font-size: 60px;
+  width: 60px;
+  height: 60px;
   color: rgba(0, 0, 0, 0.3);
   transition: color 0.3s;
 }
@@ -216,6 +225,28 @@ mat-divider {
 
 .neighbor-card:hover .gender-badge {
   transform: scale(1.1);
+}
+
+/* Subtitle with Location (Phase 3) */
+.subtitle-content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.location-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  opacity: 0.8;
+  color: rgba(98, 0, 234, 0.8);
+}
+
+.tiny-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
 }
 
 /* Relationship Status */

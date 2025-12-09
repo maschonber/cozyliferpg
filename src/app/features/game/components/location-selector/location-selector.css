@@ -1,0 +1,194 @@
+.location-selector {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  position: relative;
+}
+
+/* Header Actions */
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  gap: 16px;
+}
+
+.header-actions button mat-icon {
+  margin-right: 4px;
+}
+
+/* Page Header */
+.page-header {
+  margin-bottom: 24px;
+}
+
+.page-header h2 {
+  font-size: 24px;
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.current-location-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.current-location-info strong {
+  color: rgba(0, 0, 0, 0.87);
+}
+
+/* Loading */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.loading-container p {
+  margin-top: 16px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+/* Districts Container */
+.districts-container {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+/* District Section */
+.district-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.district-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.district-title mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  /* Color set via inline styles for district theming */
+}
+
+/* Locations Grid */
+.locations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+/* Location Wrapper */
+.location-wrapper {
+  display: block;
+  transition: opacity 0.2s;
+}
+
+.location-wrapper.disabled {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+/* Badges - Match game-home styling */
+.npc-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  background: rgba(3, 218, 198, 0.15);
+  color: #00897b;
+}
+
+.current-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(98, 0, 234, 0.15);
+  color: #6200ea;
+}
+
+.location-hours {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+.small-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.tiny-icon {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+}
+
+/* Traveling Overlay */
+.traveling-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  z-index: 1000;
+}
+
+.traveling-overlay p {
+  font-size: 18px;
+  font-weight: 500;
+  color: #6200ea;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .location-selector {
+    padding: 16px;
+  }
+
+  .locations-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
+
+  .location-wrapper {
+    width: 100%;
+  }
+}

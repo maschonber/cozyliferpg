@@ -4,6 +4,19 @@
     <p class="subtitle">Discover interesting people in your neighborhood</p>
   </div>
 
+  <!-- Current Location Section (clickable to travel) -->
+  @if (currentLocation(); as loc) {
+    <app-location-marker
+      [locationId]="loc.id"
+      [locationName]="loc.name"
+      [district]="loc.district"
+      [description]="loc.description"
+      [clickable]="true"
+      [isCurrent]="true"
+      (markerClick)="onOpenLocationSelector()">
+    </app-location-marker>
+  }
+
   <!-- Solo Activities Section (Phase 2) -->
   <div class="activities-section">
     <h2>What Would You Like To Do?</h2>
@@ -33,8 +46,18 @@
       </div>
     }
 
-    <!-- Sleep Button -->
+    <!-- Action Buttons (Phase 3: Added Location Selector) -->
     <div class="action-section">
+      <button
+        mat-raised-button
+        color="accent"
+        class="location-button"
+        (click)="onOpenLocationSelector()"
+        [disabled]="interacting()">
+        <mat-icon>map</mat-icon>
+        Travel
+      </button>
+
       <button
         mat-raised-button
         color="primary"
@@ -73,8 +96,13 @@
     @if (!relationshipsLoading() && !relationshipsError() && npcsWithRelationships().length === 0) {
       <div class="empty-state">
         <mat-icon>group</mat-icon>
-        <p>You haven't met anyone yet.</p>
-        <p class="hint">Click "Meet Someone New" to start discovering neighbors!</p>
+        @if (relationships().length === 0) {
+          <p>You haven't met anyone yet.</p>
+          <p class="hint">Click "Meet Someone New" to start discovering neighbors!</p>
+        } @else {
+          <p>No neighbors at this location.</p>
+          <p class="hint">Try traveling to meet your friends, or meet someone new here!</p>
+        }
       </div>
     }
 
@@ -93,35 +121,16 @@
                 <mat-card-header>
                   <mat-card-title>
                     {{ item.npc.name }}
-                    <span class="gender-badge" [class.gender-female]="item.npc.gender === 'female'"
-                          [class.gender-male]="item.npc.gender === 'male'"
-                          [class.gender-other]="item.npc.gender === 'other'">
-                      @if (item.npc.gender === 'female') {
-                        <mat-icon>female</mat-icon>
-                      } @else if (item.npc.gender === 'male') {
-                        <mat-icon>male</mat-icon>
-                      } @else {
-                        <mat-icon>transgender</mat-icon>
-                      }
-                    </span>
                   </mat-card-title>
-                  <mat-card-subtitle>{{ item.npc.archetype }}</mat-card-subtitle>
+                  <mat-card-subtitle>
+                    {{ item.npc.archetype }}
+                  </mat-card-subtitle>
                 </mat-card-header>
 
                 <mat-card-content>
                   <div class="relationship-status">
                     <div class="status-badge">
                       {{ getStateDisplayName(item.relationship.currentState) }}
-                    </div>
-                    <div class="relationship-values">
-                      <span class="value-item">
-                        <mat-icon class="small-icon">favorite</mat-icon>
-                        Friendship: {{ item.relationship.friendship }}
-                      </span>
-                      <span class="value-item">
-                        <mat-icon class="small-icon">whatshot</mat-icon>
-                        Romance: {{ item.relationship.romance }}
-                      </span>
                     </div>
                   </div>
                 </mat-card-content>

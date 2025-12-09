@@ -219,3 +219,65 @@ export async function seedUsers() {
   }
 }
 
+// Phase 3 Migration: Add location columns
+export async function migratePhase3Locations() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Phase 3 location migration...');
+
+    // Check if current_location column exists in player_characters
+    const playerColCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='current_location'
+    `);
+
+    if (playerColCheck.rows.length === 0) {
+      console.log('  Adding current_location column to player_characters...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN current_location VARCHAR(50) NOT NULL DEFAULT 'home'
+      `);
+      console.log('  ✅ Added current_location to player_characters');
+    } else {
+      console.log('  ⏭️  current_location already exists in player_characters');
+    }
+
+    // Check if current_location column exists in npcs
+    const npcColCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='npcs' AND column_name='current_location'
+    `);
+
+    if (npcColCheck.rows.length === 0) {
+      console.log('  Adding current_location column to npcs...');
+      await client.query(`
+        ALTER TABLE npcs
+        ADD COLUMN current_location VARCHAR(50) NOT NULL DEFAULT 'park'
+      `);
+      console.log('  ✅ Added current_location to npcs');
+
+      // Create index for faster location lookups
+      await client.query(`
+        CREATE INDEX IF NOT EXISTS idx_npcs_location ON npcs(current_location)
+      `);
+      console.log('  ✅ Created index on npcs.current_location');
+    } else {
+      console.log('  ⏭️  current_location already exists in npcs');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Phase 3 location migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Phase 3 migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+

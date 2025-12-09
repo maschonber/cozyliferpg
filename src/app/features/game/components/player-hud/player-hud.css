@@ -32,6 +32,10 @@
   min-width: 150px;
 }
 
+.hud-item.location {
+  min-width: 120px;
+}
+
 .hud-item.money {
   min-width: 100px;
 }
@@ -105,6 +109,11 @@
   .hud-item.day-time {
     min-width: auto;
     flex: 1;
+  }
+
+  /* Hide location in mobile - shown in main game screen instead */
+  .hud-item.location {
+    display: none;
   }
 
   .hud-item.money {

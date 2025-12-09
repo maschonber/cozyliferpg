@@ -8,9 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship } from '../../../../../../shared/types';
+import { Relationship, LocationId, LocationWithNPCCount } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
+import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
+import { getLocationDisplayName } from '../../../../shared/utils/location.utils';
 
 @Component({
   selector: 'app-game-home',
@@ -21,7 +23,8 @@ import { ActivityButtonComponent } from '../../../../shared/components/activity-
     MatProgressSpinnerModule,
     MatIconModule,
     MatDividerModule,
-    ActivityButtonComponent
+    ActivityButtonComponent,
+    LocationMarkerComponent
   ],
   templateUrl: './game-home.html',
   styleUrl: './game-home.css',
@@ -44,10 +47,35 @@ export class GameHome implements OnInit {
   player = this.facade.player;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
+  locations = this.facade.locations;
+  relationships = this.facade.relationships;
 
-  // Filter solo activities (not requiring NPC), excluding sleep since it has a dedicated button
+  // Filter solo activities available at current location
+  // - Not requiring NPC
+  // - Excluding sleep (has dedicated button)
+  // - Available at current location (no location requirement or matches current)
   soloActivities = computed(() => {
-    return this.activities().filter(activity => !activity.requiresNPC && activity.id !== 'go_to_sleep');
+    const player = this.player();
+    const currentLocationId = player?.currentLocation;
+
+    return this.activities().filter(activity => {
+      // Must be solo activity and not sleep
+      if (activity.requiresNPC || activity.id === 'go_to_sleep') return false;
+
+      // If activity has no location requirement, it's available everywhere
+      if (!activity.location) return true;
+
+      // Otherwise, must match current location
+      return activity.location === currentLocationId;
+    });
+  });
+
+  // Get full location data for current location
+  currentLocation = computed((): LocationWithNPCCount | undefined => {
+    const player = this.player();
+    const locations = this.locations();
+    if (!player || locations.length === 0) return undefined;
+    return locations.find(loc => loc.id === player.currentLocation);
   });
 
   ngOnInit(): void {
@@ -116,6 +144,7 @@ export class GameHome implements OnInit {
   /**
    * Meet someone new (generate NPC)
    * First consumes time/energy, then creates NPC
+   * Stays on overview page - neighbor is added to the list
    */
   onMeetSomeoneNew(): void {
     // First, perform the activity to consume time/energy
@@ -124,8 +153,16 @@ export class GameHome implements OnInit {
         // Then create the NPC
         this.facade.createNPC().subscribe({
           next: (npc) => {
-            // Navigate to the new NPC's detail page
-            this.router.navigate(['/game/neighbor', npc.id]);
+            console.log(`✅ Met ${npc.name} at ${npc.currentLocation}`);
+            // Fetch the relationship for the new NPC so they appear in the list
+            this.facade.getRelationship(npc.id).subscribe({
+              next: () => {
+                console.log(`✅ Relationship loaded for ${npc.name}`);
+              },
+              error: (error) => {
+                console.error('Failed to load relationship:', error);
+              }
+            });
           },
           error: (error) => {
             console.error('Failed to create NPC:', error);
@@ -165,4 +202,17 @@ export class GameHome implements OnInit {
       });
     }
   }
+
+  /**
+   * Navigate to travel view (Phase 3)
+   */
+  onOpenLocationSelector(): void {
+    this.router.navigate(['/game/travel']);
+  }
+
+  /**
+   * Get display name for location (Phase 3)
+   * Now uses shared utility function
+   */
+  getLocationDisplayName = getLocationDisplayName;
 }

@@ -20,6 +20,7 @@ function mapRowToPlayerCharacter(row: any): PlayerCharacter {
     currentDay: row.current_day,
     currentTime: row.time_of_day,
     lastSleptAt: row.last_slept_at,
+    currentLocation: row.current_location || 'home', // Phase 3
     createdAt: row.created_at.toISOString(),
     updatedAt: row.updated_at.toISOString()
   };
@@ -107,6 +108,10 @@ export async function updatePlayerCharacter(
     if (updates.lastSleptAt !== undefined) {
       updateFields.push(`last_slept_at = $${paramCount++}`);
       values.push(updates.lastSleptAt);
+    }
+    if (updates.currentLocation !== undefined) {
+      updateFields.push(`current_location = $${paramCount++}`);
+      values.push(updates.currentLocation);
     }
 
     // Always update updated_at
