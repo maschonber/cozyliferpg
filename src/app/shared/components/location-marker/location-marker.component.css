@@ -1,0 +1,147 @@
+/**
+ * Location Marker Component Styles
+ * Based on game-home's location-info styling
+ */
+
+.location-marker {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, rgba(98, 0, 234, 0.08) 0%, rgba(98, 0, 234, 0.04) 100%);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color, #6200ea);
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+/* Clickable variant */
+.location-marker.clickable {
+  cursor: pointer;
+}
+
+.location-marker.clickable:hover {
+  background: linear-gradient(135deg, rgba(98, 0, 234, 0.12) 0%, rgba(98, 0, 234, 0.08) 100%);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(98, 0, 234, 0.15);
+}
+
+/* Current location indicator */
+.location-marker.current {
+  background: linear-gradient(135deg, rgba(98, 0, 234, 0.15) 0%, rgba(98, 0, 234, 0.10) 100%);
+  border-left-color: var(--primary-color, #6200ea);
+  border-left-width: 6px;
+}
+
+/* Compact variant for use in lists/grids */
+.location-marker.compact {
+  padding: 12px 16px;
+  gap: 10px;
+  border-radius: 6px;
+}
+
+/* Location Icon - Circular with solid color */
+.location-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-color, #6200ea);
+  flex-shrink: 0;
+}
+
+.location-marker.compact .location-icon {
+  width: 36px;
+  height: 36px;
+}
+
+.location-icon mat-icon {
+  color: white;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.location-marker.compact .location-icon mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Location Details */
+.location-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 0;
+}
+
+.location-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.location-marker.compact .location-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.location-description {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.4;
+}
+
+.location-marker.compact .location-description {
+  font-size: 12px;
+}
+
+/* Location Extras (badges, additional info) */
+.location-extras {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* Chevron Arrow for clickable markers */
+.location-arrow {
+  color: var(--primary-color, #6200ea);
+  opacity: 0.6;
+  transition: opacity 0.2s, transform 0.2s;
+  flex-shrink: 0;
+}
+
+.location-marker.clickable:hover .location-arrow {
+  opacity: 1;
+  transform: translateX(4px);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .location-marker {
+    padding: 12px 16px;
+  }
+
+  .location-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .location-icon mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+
+  .location-name {
+    font-size: 14px;
+  }
+
+  .location-description {
+    font-size: 13px;
+  }
+}

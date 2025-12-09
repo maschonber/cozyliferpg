@@ -11,6 +11,8 @@ import { GameFacade } from '../../services/game.facade';
 import { Relationship, LocationId, LocationWithNPCCount } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
+import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
+import { getLocationDisplayName } from '../../../../shared/utils/location.utils';
 
 @Component({
   selector: 'app-game-home',
@@ -21,7 +23,8 @@ import { ActivityButtonComponent } from '../../../../shared/components/activity-
     MatProgressSpinnerModule,
     MatIconModule,
     MatDividerModule,
-    ActivityButtonComponent
+    ActivityButtonComponent,
+    LocationMarkerComponent
   ],
   templateUrl: './game-home.html',
   styleUrl: './game-home.css',
@@ -199,20 +202,7 @@ export class GameHome implements OnInit {
 
   /**
    * Get display name for location (Phase 3)
+   * Now uses shared utility function
    */
-  getLocationDisplayName(locationId: LocationId): string {
-    const locationNames: Record<LocationId, string> = {
-      'home': 'Home',
-      'park': 'Park',
-      'coffee_shop': 'Coffee Shop',
-      'library': 'Library',
-      'shopping_district': 'Shopping District',
-      'gym': 'Gym',
-      'movie_theater': 'Movie Theater',
-      'beach': 'Beach',
-      'boardwalk': 'Boardwalk',
-      'bar': 'Bar'
-    };
-    return locationNames[locationId] || locationId;
-  }
+  getLocationDisplayName = getLocationDisplayName;
 }

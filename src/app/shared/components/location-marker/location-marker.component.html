@@ -1,0 +1,27 @@
+<div
+  class="location-marker"
+  [class.clickable]="clickable"
+  [class.current]="isCurrent"
+  [class.compact]="variant === 'compact'"
+  (click)="onClick()">
+
+  <div class="location-icon">
+    <mat-icon>{{ locationIcon }}</mat-icon>
+  </div>
+
+  <div class="location-details">
+    <span class="location-name">{{ locationName }}</span>
+    @if (description) {
+      <span class="location-description">{{ description }}</span>
+    }
+  </div>
+
+  <!-- Content projection for badges and additional info -->
+  <div class="location-extras">
+    <ng-content></ng-content>
+  </div>
+
+  @if (clickable) {
+    <mat-icon class="location-arrow">chevron_right</mat-icon>
+  }
+</div>
