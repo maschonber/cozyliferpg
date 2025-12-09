@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - claude/angular-demo-setup-01UPXYm1eQLUvvydK3z9XS5Y
   workflow_dispatch:
 
 permissions:
