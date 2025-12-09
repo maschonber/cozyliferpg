@@ -20,32 +20,27 @@
 
 /* Page Header */
 .page-header {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
-.page-header h1 {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 2rem;
+.page-header h2 {
+  font-size: 24px;
   font-weight: 500;
   margin: 0 0 8px 0;
-}
-
-.page-header h1 mat-icon {
-  font-size: 2rem;
-  width: 2rem;
-  height: 2rem;
-  color: var(--primary-color, #6200ea);
+  color: rgba(0, 0, 0, 0.87);
 }
 
 .current-location-info {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 4px;
   margin: 0;
-  font-size: 1rem;
-  opacity: 0.8;
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+}
+
+.current-location-info strong {
+  color: rgba(0, 0, 0, 0.87);
 }
 
 /* Loading */
@@ -59,71 +54,71 @@
 
 .loading-container p {
   margin-top: 16px;
-  opacity: 0.7;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 /* Districts Container */
 .districts-container {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 32px;
 }
 
-/* District Card */
-.district-card {
-  padding: 8px;
+/* District Section */
+.district-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 .district-title {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 1.3rem !important;
-  font-weight: 600 !important;
-  text-transform: uppercase;
-  letter-spacing: 1px;
+  font-size: 16px;
+  font-weight: 500;
+  margin: 0;
+  color: rgba(0, 0, 0, 0.7);
 }
 
 .district-title mat-icon {
-  font-size: 1.5rem;
-  width: 1.5rem;
-  height: 1.5rem;
-  color: var(--primary-color, #6200ea);
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+  color: rgba(98, 0, 234, 0.8);
 }
 
 /* Locations Grid */
 .locations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 16px;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
 }
 
-/* Location Card */
+/* Location Card - Horizontal Layout */
 .location-card {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: row;
+  align-items: center;
   gap: 12px;
-  padding: 20px;
+  padding: 12px 16px;
   text-align: left;
-  transition: all 0.2s ease;
-  border: 2px solid transparent;
+  transition: transform 0.2s, box-shadow 0.2s;
+  border-radius: 4px;
   height: auto;
-  min-height: 140px;
-  white-space: normal;
+  min-height: auto;
+  white-space: nowrap;
   line-height: 1.4;
 }
 
 .location-card:not(:disabled):hover {
-  transform: translateY(-3px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
-  border-color: var(--primary-color, #6200ea);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
 .location-card.current {
-  background-color: rgba(98, 0, 234, 0.15);
-  border-color: var(--primary-color, #6200ea);
+  background-color: rgba(98, 0, 234, 0.08);
+  border: 1px solid rgba(98, 0, 234, 0.3);
 }
 
 .location-card:disabled {
@@ -135,71 +130,69 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background-color: rgba(98, 0, 234, 0.1);
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background-color: rgba(98, 0, 234, 0.08);
+  flex-shrink: 0;
 }
 
 .location-icon mat-icon {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-  color: var(--primary-color, #6200ea);
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+  color: rgba(98, 0, 234, 0.8);
 }
 
-/* Location Info */
+/* Location Info - Horizontal */
 .location-info {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
   flex: 1;
-  width: 100%;
+  min-width: 0;
+  flex-wrap: wrap;
 }
 
 .location-name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  color: var(--text-primary, #ffffff);
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(0, 0, 0, 0.87);
 }
 
-/* Badges */
-.npc-badge,
-.current-badge {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.9rem;
-}
-
+/* Badges - Match game-home styling */
 .npc-badge {
-  color: var(--accent-color, #03dac6);
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  background: rgba(3, 218, 198, 0.15);
+  color: #00897b;
 }
 
 .current-badge {
-  color: var(--primary-color, #6200ea);
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  background: rgba(98, 0, 234, 0.15);
+  color: #6200ea;
+}
+
+.location-hours {
+  font-size: 11px;
+  color: rgba(0, 0, 0, 0.5);
 }
 
 .small-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-/* Location Hours */
-.location-hours {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 0.8rem;
-  opacity: 0.7;
-  margin-top: auto;
-}
-
-.location-hours.always-open {
-  color: var(--accent-color, #03dac6);
-  opacity: 1;
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
 }
 
 .tiny-icon {
@@ -215,29 +208,25 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(0, 0, 0, 0.85);
+  background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 20px;
+  gap: 16px;
   z-index: 1000;
 }
 
 .traveling-overlay p {
-  font-size: 1.5rem;
+  font-size: 18px;
   font-weight: 500;
-  color: var(--primary-color, #6200ea);
+  color: #6200ea;
 }
 
 /* Responsive Design */
 @media (max-width: 768px) {
   .location-selector {
     padding: 16px;
-  }
-
-  .page-header h1 {
-    font-size: 1.5rem;
   }
 
   .locations-grid {
