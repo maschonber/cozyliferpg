@@ -85,7 +85,7 @@
   font-size: 20px;
   width: 20px;
   height: 20px;
-  color: rgba(98, 0, 234, 0.8);
+  /* Color set via inline styles for district theming */
 }
 
 /* Locations Grid */

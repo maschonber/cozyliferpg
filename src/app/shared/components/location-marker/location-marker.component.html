@@ -3,9 +3,11 @@
   [class.clickable]="clickable"
   [class.current]="isCurrent"
   [class.compact]="variant === 'compact'"
+  [style.background]="districtColors.gradient"
+  [style.border-left-color]="districtColors.primary"
   (click)="onClick()">
 
-  <div class="location-icon">
+  <div class="location-icon" [style.background]="districtColors.primary">
     <mat-icon>{{ locationIcon }}</mat-icon>
   </div>
 
@@ -22,6 +24,6 @@
   </div>
 
   @if (clickable) {
-    <mat-icon class="location-arrow">chevron_right</mat-icon>
+    <mat-icon class="location-arrow" [style.color]="districtColors.primary">chevron_right</mat-icon>
   }
 </div>
