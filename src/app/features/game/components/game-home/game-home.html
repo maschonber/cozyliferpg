@@ -4,9 +4,9 @@
     <p class="subtitle">Discover interesting people in your neighborhood</p>
   </div>
 
-  <!-- Current Location Section -->
+  <!-- Current Location Section (clickable to travel) -->
   @if (currentLocation(); as loc) {
-    <div class="location-info">
+    <div class="location-info" (click)="onOpenLocationSelector()">
       <div class="location-icon">
         <mat-icon>place</mat-icon>
       </div>
@@ -14,6 +14,7 @@
         <span class="location-name">{{ loc.name }}</span>
         <span class="location-description">{{ loc.description }}</span>
       </div>
+      <mat-icon class="location-arrow">chevron_right</mat-icon>
     </div>
   }
 

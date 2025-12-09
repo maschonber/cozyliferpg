@@ -46,9 +46,24 @@ export class GameHome implements OnInit {
   interactionError = this.facade.interactionError;
   locations = this.facade.locations;
 
-  // Filter solo activities (not requiring NPC), excluding sleep since it has a dedicated button
+  // Filter solo activities available at current location
+  // - Not requiring NPC
+  // - Excluding sleep (has dedicated button)
+  // - Available at current location (no location requirement or matches current)
   soloActivities = computed(() => {
-    return this.activities().filter(activity => !activity.requiresNPC && activity.id !== 'go_to_sleep');
+    const player = this.player();
+    const currentLocationId = player?.currentLocation;
+
+    return this.activities().filter(activity => {
+      // Must be solo activity and not sleep
+      if (activity.requiresNPC || activity.id === 'go_to_sleep') return false;
+
+      // If activity has no location requirement, it's available everywhere
+      if (!activity.location) return true;
+
+      // Otherwise, must match current location
+      return activity.location === currentLocationId;
+    });
   });
 
   // Get full location data for current location
