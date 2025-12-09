@@ -40,7 +40,7 @@
       @for (district of districts; track district) {
         <div class="district-section">
           <h3 class="district-title">
-            <mat-icon>{{ getDistrictIcon(district) }}</mat-icon>
+            <mat-icon [style.color]="getDistrictColor(district)">{{ getDistrictIcon(district) }}</mat-icon>
             {{ getDistrictName(district) }}
           </h3>
 
@@ -50,6 +50,7 @@
                 <app-location-marker
                   [locationId]="location.id"
                   [locationName]="location.name"
+                  [district]="location.district"
                   [clickable]="!isCurrentLocation(location.id) && !traveling()"
                   [isCurrent]="isCurrentLocation(location.id)"
                   [variant]="'compact'"

@@ -12,7 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, District } from '../../../../../../shared/types';
 import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
-import { getLocationDisplayName } from '../../../../shared/utils/location.utils';
+import { getLocationDisplayName, getDistrictColors } from '../../../../shared/utils/location.utils';
 
 @Component({
   selector: 'app-location-selector',
@@ -84,6 +84,13 @@ export class LocationSelector implements OnInit {
       'waterfront': 'waves'
     };
     return icons[district];
+  }
+
+  /**
+   * Get color for district
+   */
+  getDistrictColor(district: District): string {
+    return getDistrictColors(district).primary;
   }
 
   /**

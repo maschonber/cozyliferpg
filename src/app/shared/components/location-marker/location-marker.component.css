@@ -8,9 +8,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  background: linear-gradient(135deg, rgba(98, 0, 234, 0.08) 0%, rgba(98, 0, 234, 0.04) 100%);
+  /* Background and border-left-color set via inline styles for district theming */
   border-radius: 8px;
-  border-left: 4px solid var(--primary-color, #6200ea);
+  border-left: 4px solid;
   transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
 }
 
@@ -20,15 +20,14 @@
 }
 
 .location-marker.clickable:hover {
-  background: linear-gradient(135deg, rgba(98, 0, 234, 0.12) 0%, rgba(98, 0, 234, 0.08) 100%);
+  filter: brightness(1.05);
   transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(98, 0, 234, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Current location indicator */
 .location-marker.current {
-  background: linear-gradient(135deg, rgba(98, 0, 234, 0.15) 0%, rgba(98, 0, 234, 0.10) 100%);
-  border-left-color: var(--primary-color, #6200ea);
+  filter: brightness(1.1);
   border-left-width: 6px;
 }
 
@@ -47,7 +46,7 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: var(--primary-color, #6200ea);
+  /* Background set via inline styles for district theming */
   flex-shrink: 0;
 }
 
@@ -109,7 +108,7 @@
 
 /* Chevron Arrow for clickable markers */
 .location-arrow {
-  color: var(--primary-color, #6200ea);
+  /* Color set via inline styles for district theming */
   opacity: 0.6;
   transition: opacity 0.2s, transform 0.2s;
   flex-shrink: 0;

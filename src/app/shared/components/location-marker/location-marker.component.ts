@@ -4,11 +4,11 @@
  * Reusable across game-home and location-selector views
  */
 
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatIconModule } from '@angular/material/icon';
-import { LocationId } from '../../../../../shared/types';
-import { getLocationIcon } from '../../utils/location.utils';
+import { LocationId, District } from '../../../../../shared/types';
+import { getLocationIcon, getDistrictColors, DistrictColors } from '../../utils/location.utils';
 
 @Component({
   selector: 'app-location-marker',
@@ -26,6 +26,11 @@ export class LocationMarkerComponent {
    * Location name to display
    */
   @Input({ required: true }) locationName!: string;
+
+  /**
+   * District for color theming
+   */
+  @Input({ required: true }) district!: District;
 
   /**
    * Optional description text
@@ -57,6 +62,13 @@ export class LocationMarkerComponent {
    */
   get locationIcon(): string {
     return getLocationIcon(this.locationId);
+  }
+
+  /**
+   * Get district colors for theming
+   */
+  get districtColors(): DistrictColors {
+    return getDistrictColors(this.district);
   }
 
   /**
