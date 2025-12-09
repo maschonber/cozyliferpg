@@ -70,6 +70,47 @@
   height: fit-content;
 }
 
+/* Gender Badge */
+.gender-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  margin-left: 8px;
+}
+
+.gender-badge mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+}
+
+.gender-badge.gender-female {
+  background-color: rgba(233, 30, 99, 0.1);
+}
+
+.gender-badge.gender-female mat-icon {
+  color: #c2185b;
+}
+
+.gender-badge.gender-male {
+  background-color: rgba(33, 150, 243, 0.1);
+}
+
+.gender-badge.gender-male mat-icon {
+  color: #1976d2;
+}
+
+.gender-badge.gender-other {
+  background-color: rgba(156, 39, 176, 0.1);
+}
+
+.gender-badge.gender-other mat-icon {
+  color: #7b1fa2;
+}
+
 .npc-image-placeholder {
   width: 100%;
   height: 300px;

@@ -116,26 +116,9 @@
                 <mat-card-header>
                   <mat-card-title>
                     {{ item.npc.name }}
-                    <span class="gender-badge" [class.gender-female]="item.npc.gender === 'female'"
-                          [class.gender-male]="item.npc.gender === 'male'"
-                          [class.gender-other]="item.npc.gender === 'other'">
-                      @if (item.npc.gender === 'female') {
-                        <mat-icon>female</mat-icon>
-                      } @else if (item.npc.gender === 'male') {
-                        <mat-icon>male</mat-icon>
-                      } @else {
-                        <mat-icon>transgender</mat-icon>
-                      }
-                    </span>
                   </mat-card-title>
                   <mat-card-subtitle>
-                    <div class="subtitle-content">
-                      <span>{{ item.npc.archetype }}</span>
-                      <span class="location-badge">
-                        <mat-icon class="tiny-icon">place</mat-icon>
-                        {{ getLocationDisplayName(item.npc.currentLocation) }}
-                      </span>
-                    </div>
+                    {{ item.npc.archetype }}
                   </mat-card-subtitle>
                 </mat-card-header>
 
@@ -143,16 +126,6 @@
                   <div class="relationship-status">
                     <div class="status-badge">
                       {{ getStateDisplayName(item.relationship.currentState) }}
-                    </div>
-                    <div class="relationship-values">
-                      <span class="value-item">
-                        <mat-icon class="small-icon">favorite</mat-icon>
-                        Friendship: {{ item.relationship.friendship }}
-                      </span>
-                      <span class="value-item">
-                        <mat-icon class="small-icon">whatshot</mat-icon>
-                        Romance: {{ item.relationship.romance }}
-                      </span>
                     </div>
                   </div>
                 </mat-card-content>

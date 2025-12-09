@@ -47,7 +47,20 @@
         </div>
 
         <mat-card-header>
-          <mat-card-title>{{ selectedNPC()!.name }}</mat-card-title>
+          <mat-card-title>
+            {{ selectedNPC()!.name }}
+            <span class="gender-badge" [class.gender-female]="selectedNPC()!.gender === 'female'"
+                  [class.gender-male]="selectedNPC()!.gender === 'male'"
+                  [class.gender-other]="selectedNPC()!.gender === 'other'">
+              @if (selectedNPC()!.gender === 'female') {
+                <mat-icon>female</mat-icon>
+              } @else if (selectedNPC()!.gender === 'male') {
+                <mat-icon>male</mat-icon>
+              } @else {
+                <mat-icon>transgender</mat-icon>
+              }
+            </span>
+          </mat-card-title>
           <mat-card-subtitle>{{ selectedNPC()!.archetype }}</mat-card-subtitle>
         </mat-card-header>
 

@@ -106,13 +106,24 @@ export const GameStore = signalStore(
 
     /**
      * Get NPCs with their relationships (for neighbor list)
+     * Only shows neighbors at the player's current location
      */
     npcsWithRelationships: computed(() => {
       const rels = store.relationships();
-      return rels.map(rel => ({
-        npc: rel.npc!,
-        relationship: rel
-      }));
+      const player = store.player();
+
+      // If no player or no current location, return empty array
+      if (!player?.currentLocation) {
+        return [];
+      }
+
+      // Filter relationships to only include NPCs at the player's current location
+      return rels
+        .filter(rel => rel.npc?.currentLocation === player.currentLocation)
+        .map(rel => ({
+          npc: rel.npc!,
+          relationship: rel
+        }));
     }),
 
     /**
