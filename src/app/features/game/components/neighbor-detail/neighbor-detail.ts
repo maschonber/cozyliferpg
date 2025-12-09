@@ -50,9 +50,21 @@ export class NeighborDetail implements OnInit, OnDestroy {
   isLoading = this.facade.isLoading;
   player = this.facade.player;
 
-  // Filter social activities (require NPC)
+  // Filter social activities (require NPC and available at current location)
   socialActivities = computed(() => {
-    return this.activities().filter(activity => activity.requiresNPC);
+    const player = this.player();
+    const currentLocationId = player?.currentLocation;
+
+    return this.activities().filter(activity => {
+      // Must be social activity
+      if (!activity.requiresNPC) return false;
+
+      // If activity has no location requirement, it's available everywhere
+      if (!activity.location) return true;
+
+      // Otherwise, must match current location
+      return activity.location === currentLocationId;
+    });
   });
 
   ngOnInit(): void {

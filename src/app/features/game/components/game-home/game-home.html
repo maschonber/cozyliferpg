@@ -96,8 +96,13 @@
     @if (!relationshipsLoading() && !relationshipsError() && npcsWithRelationships().length === 0) {
       <div class="empty-state">
         <mat-icon>group</mat-icon>
-        <p>You haven't met anyone yet.</p>
-        <p class="hint">Click "Meet Someone New" to start discovering neighbors!</p>
+        @if (relationships().length === 0) {
+          <p>You haven't met anyone yet.</p>
+          <p class="hint">Click "Meet Someone New" to start discovering neighbors!</p>
+        } @else {
+          <p>No neighbors at this location.</p>
+          <p class="hint">Try traveling to meet your friends, or meet someone new here!</p>
+        }
       </div>
     }
 
