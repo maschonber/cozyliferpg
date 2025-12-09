@@ -51,7 +51,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'coffee_shop' as const,
     timeCost: 60,
-    energyCost: -15,
+    energyCost: -8,
     moneyCost: -5,
     effects: { friendship: 10 }
   },
@@ -63,7 +63,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     // No location - available anywhere with NPC
     timeCost: 30,
-    energyCost: -10,
+    energyCost: -5,
     moneyCost: 0,
     effects: { friendship: 5 }
   },
@@ -75,7 +75,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'bar' as const,
     timeCost: 120,
-    energyCost: -20,
+    energyCost: -10,
     moneyCost: -30,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { romance: 15 }
@@ -88,7 +88,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     // No location - available anywhere with NPC
     timeCost: 90,
-    energyCost: -25,
+    energyCost: -12,
     moneyCost: 0,
     minRelationship: 'friend',
     effects: { friendship: 20 }
@@ -101,7 +101,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'movie_theater' as const,
     timeCost: 150,
-    energyCost: -15,
+    energyCost: -8,
     moneyCost: -20,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 10, romance: 5 }
@@ -114,7 +114,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'gym' as const,
     timeCost: 90,
-    energyCost: -30,
+    energyCost: -15,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: { friendship: 10 }
@@ -127,7 +127,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'home' as const,
     timeCost: 120,
-    energyCost: -20,
+    energyCost: -10,
     moneyCost: -15,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 12, romance: 8 }
@@ -140,7 +140,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     // No location - available anywhere with NPC
     timeCost: 45,
-    energyCost: -15,
+    energyCost: -8,
     moneyCost: 0,
     effects: { romance: 12 }
   },
@@ -154,7 +154,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'library' as const,
     timeCost: 120,
-    energyCost: -25,
+    energyCost: -12,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {}
@@ -167,7 +167,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'gym' as const,
     timeCost: 90,
-    energyCost: -30,
+    energyCost: -15,
     moneyCost: -10,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {}
@@ -180,7 +180,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'home' as const,
     timeCost: 90,
-    energyCost: -10,
+    energyCost: -5,
     moneyCost: 0,
     effects: {}
   },
@@ -192,7 +192,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'home' as const,
     timeCost: 120,
-    energyCost: -20,
+    energyCost: -10,
     moneyCost: 0,
     effects: {}
   },
@@ -206,7 +206,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'park' as const,
     timeCost: 60,
-    energyCost: -5,
+    energyCost: -3,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {}
@@ -219,7 +219,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'home' as const,
     timeCost: 120,
-    energyCost: -10,
+    energyCost: -5,
     moneyCost: 0,
     effects: {}
   },
@@ -259,7 +259,6 @@ export const ACTIVITIES = [
     timeCost: 60,
     energyCost: 5,
     moneyCost: 0,
-    allowedTimeSlots: ['afternoon' as const, 'evening' as const],
     effects: {}
   },
   {
@@ -301,7 +300,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'beach' as const,
     timeCost: 45,
-    energyCost: -5,
+    energyCost: -3,
     moneyCost: 0,
     effects: {}
   },
@@ -313,7 +312,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'shopping_district' as const,
     timeCost: 60,
-    energyCost: -10,
+    energyCost: -5,
     moneyCost: 0,
     effects: {}
   },
@@ -325,7 +324,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'park' as const,
     timeCost: 45,
-    energyCost: -20,
+    energyCost: -10,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {}
@@ -338,7 +337,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'beach' as const,
     timeCost: 60,
-    energyCost: -25,
+    energyCost: -12,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {}
@@ -351,7 +350,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'boardwalk' as const,
     timeCost: 90,
-    energyCost: -15,
+    energyCost: -8,
     moneyCost: -10,
     effects: {}
   },
@@ -365,7 +364,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'beach' as const,
     timeCost: 90,
-    energyCost: -20,
+    energyCost: -10,
     moneyCost: -15,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: { friendship: 15, romance: 8 }
@@ -378,7 +377,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'bar' as const,
     timeCost: 60,
-    energyCost: -15,
+    energyCost: -8,
     moneyCost: -10,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 10 }
@@ -391,7 +390,7 @@ export const ACTIVITIES = [
     requiresNPC: true,
     location: 'boardwalk' as const,
     timeCost: 75,
-    energyCost: -10,
+    energyCost: -5,
     moneyCost: -5,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 8, romance: 10 }
