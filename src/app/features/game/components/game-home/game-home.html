@@ -4,6 +4,19 @@
     <p class="subtitle">Discover interesting people in your neighborhood</p>
   </div>
 
+  <!-- Current Location Section -->
+  @if (currentLocation(); as loc) {
+    <div class="location-info">
+      <div class="location-icon">
+        <mat-icon>place</mat-icon>
+      </div>
+      <div class="location-details">
+        <span class="location-name">{{ loc.name }}</span>
+        <span class="location-description">{{ loc.description }}</span>
+      </div>
+    </div>
+  }
+
   <!-- Solo Activities Section (Phase 2) -->
   <div class="activities-section">
     <h2>What Would You Like To Do?</h2>

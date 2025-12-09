@@ -8,7 +8,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship, LocationId } from '../../../../../../shared/types';
+import { Relationship, LocationId, LocationWithNPCCount } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 
@@ -44,10 +44,19 @@ export class GameHome implements OnInit {
   player = this.facade.player;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
+  locations = this.facade.locations;
 
   // Filter solo activities (not requiring NPC), excluding sleep since it has a dedicated button
   soloActivities = computed(() => {
     return this.activities().filter(activity => !activity.requiresNPC && activity.id !== 'go_to_sleep');
+  });
+
+  // Get full location data for current location
+  currentLocation = computed((): LocationWithNPCCount | undefined => {
+    const player = this.player();
+    const locations = this.locations();
+    if (!player || locations.length === 0) return undefined;
+    return locations.find(loc => loc.id === player.currentLocation);
   });
 
   ngOnInit(): void {

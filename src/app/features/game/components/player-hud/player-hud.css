@@ -111,6 +111,11 @@
     flex: 1;
   }
 
+  /* Hide location in mobile - shown in main game screen instead */
+  .hud-item.location {
+    display: none;
+  }
+
   .hud-item.money {
     min-width: auto;
     flex: 0 0 auto;

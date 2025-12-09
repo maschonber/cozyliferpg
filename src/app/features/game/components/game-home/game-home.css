@@ -21,6 +21,54 @@
   margin: 0;
 }
 
+/* Current Location Info Section */
+.location-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  margin-bottom: 24px;
+  background: linear-gradient(135deg, rgba(98, 0, 234, 0.08) 0%, rgba(98, 0, 234, 0.04) 100%);
+  border-radius: 8px;
+  border-left: 4px solid var(--primary-color, #6200ea);
+}
+
+.location-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--primary-color, #6200ea);
+  flex-shrink: 0;
+}
+
+.location-icon mat-icon {
+  color: white;
+  font-size: 22px;
+  width: 22px;
+  height: 22px;
+}
+
+.location-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.location-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.87);
+}
+
+.location-description {
+  font-size: 14px;
+  color: rgba(0, 0, 0, 0.6);
+  line-height: 1.4;
+}
+
 /* Action Section (Phase 3: Updated for multiple buttons) */
 .action-section {
   display: flex;
