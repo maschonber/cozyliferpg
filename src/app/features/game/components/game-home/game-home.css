@@ -117,7 +117,7 @@ mat-divider {
 /* Card Layout - Avatar on Right */
 .card-layout {
   display: flex;
-  min-height: 250px;
+  min-height: 170px;
 }
 
 .card-content {
@@ -155,9 +155,9 @@ mat-divider {
 }
 
 .avatar-container mat-icon {
-  font-size: 80px;
-  width: 80px;
-  height: 80px;
+  font-size: 60px;
+  width: 60px;
+  height: 60px;
   color: rgba(0, 0, 0, 0.3);
   transition: color 0.3s;
 }

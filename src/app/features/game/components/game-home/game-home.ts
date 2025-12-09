@@ -48,6 +48,7 @@ export class GameHome implements OnInit {
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
   locations = this.facade.locations;
+  relationships = this.facade.relationships;
 
   // Filter solo activities available at current location
   // - Not requiring NPC
@@ -143,6 +144,7 @@ export class GameHome implements OnInit {
   /**
    * Meet someone new (generate NPC)
    * First consumes time/energy, then creates NPC
+   * Stays on overview page - neighbor is added to the list
    */
   onMeetSomeoneNew(): void {
     // First, perform the activity to consume time/energy
@@ -151,8 +153,8 @@ export class GameHome implements OnInit {
         // Then create the NPC
         this.facade.createNPC().subscribe({
           next: (npc) => {
-            // Navigate to the new NPC's detail page
-            this.router.navigate(['/game/neighbor', npc.id]);
+            console.log(`✅ Met ${npc.name} at ${npc.currentLocation}`);
+            // Stay on overview page - neighbor appears in the list
           },
           error: (error) => {
             console.error('Failed to create NPC:', error);
