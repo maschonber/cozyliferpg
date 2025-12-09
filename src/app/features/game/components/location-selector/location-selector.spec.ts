@@ -5,6 +5,7 @@ import { of, throwError } from 'rxjs';
 import { LocationSelector } from './location-selector';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, PlayerCharacter, District } from '../../../../../../shared/types';
+import { getLocationIcon, getLocationDisplayName } from '../../../../shared/utils/location.utils';
 
 describe('LocationSelector', () => {
   let component: LocationSelector;
@@ -267,12 +268,13 @@ describe('LocationSelector', () => {
       expect(component.getDistrictIcon('waterfront')).toBe('waves');
     });
 
-    it('should return correct location icons', () => {
-      expect(component.getLocationIcon('home')).toBe('home');
-      expect(component.getLocationIcon('park')).toBe('park');
-      expect(component.getLocationIcon('coffee_shop')).toBe('local_cafe');
-      expect(component.getLocationIcon('beach')).toBe('beach_access');
-      expect(component.getLocationIcon('unknown')).toBe('place');
+    it('should return correct location icons via utility function', () => {
+      // getLocationIcon is now a shared utility function
+      expect(getLocationIcon('home')).toBe('home');
+      expect(getLocationIcon('park')).toBe('park');
+      expect(getLocationIcon('coffee_shop')).toBe('local_cafe');
+      expect(getLocationIcon('beach')).toBe('beach_access');
+      expect(getLocationIcon('unknown')).toBe('place');
     });
 
     it('should return correct location display names', () => {
@@ -302,15 +304,15 @@ describe('LocationSelector', () => {
       expect(compiled.querySelectorAll('.district-section').length).toBe(3);
     });
 
-    it('should show location cards within each district', () => {
+    it('should show location markers within each district', () => {
       locationsSignal.set(mockLocations);
       fixture.detectChanges();
 
       const compiled = fixture.nativeElement as HTMLElement;
-      const locationCards = compiled.querySelectorAll('.location-card');
+      const locationWrappers = compiled.querySelectorAll('.location-wrapper');
 
       // We have 5 mock locations
-      expect(locationCards.length).toBe(5);
+      expect(locationWrappers.length).toBe(5);
     });
 
     it('should show traveling overlay when traveling is true', () => {
