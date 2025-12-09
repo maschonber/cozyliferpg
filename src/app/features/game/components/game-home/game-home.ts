@@ -154,7 +154,15 @@ export class GameHome implements OnInit {
         this.facade.createNPC().subscribe({
           next: (npc) => {
             console.log(`✅ Met ${npc.name} at ${npc.currentLocation}`);
-            // Stay on overview page - neighbor appears in the list
+            // Fetch the relationship for the new NPC so they appear in the list
+            this.facade.getRelationship(npc.id).subscribe({
+              next: () => {
+                console.log(`✅ Relationship loaded for ${npc.name}`);
+              },
+              error: (error) => {
+                console.error('Failed to load relationship:', error);
+              }
+            });
           },
           error: (error) => {
             console.error('Failed to create NPC:', error);
