@@ -6,16 +6,14 @@
 
   <!-- Current Location Section (clickable to travel) -->
   @if (currentLocation(); as loc) {
-    <div class="location-info" (click)="onOpenLocationSelector()">
-      <div class="location-icon">
-        <mat-icon>place</mat-icon>
-      </div>
-      <div class="location-details">
-        <span class="location-name">{{ loc.name }}</span>
-        <span class="location-description">{{ loc.description }}</span>
-      </div>
-      <mat-icon class="location-arrow">chevron_right</mat-icon>
-    </div>
+    <app-location-marker
+      [locationId]="loc.id"
+      [locationName]="loc.name"
+      [description]="loc.description"
+      [clickable]="true"
+      [isCurrent]="true"
+      (markerClick)="onOpenLocationSelector()">
+    </app-location-marker>
   }
 
   <!-- Solo Activities Section (Phase 2) -->

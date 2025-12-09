@@ -91,73 +91,19 @@
 /* Locations Grid */
 .locations-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 12px;
 }
 
-/* Location Card - Horizontal Layout */
-.location-card {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  text-align: left;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border-radius: 4px;
-  height: auto;
-  min-height: auto;
-  white-space: nowrap;
-  line-height: 1.4;
+/* Location Wrapper */
+.location-wrapper {
+  display: block;
+  transition: opacity 0.2s;
 }
 
-.location-card:not(:disabled):hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-}
-
-.location-card.current {
-  background-color: rgba(98, 0, 234, 0.08);
-  border: 1px solid rgba(98, 0, 234, 0.3);
-}
-
-.location-card:disabled {
-  opacity: 1;
-}
-
-/* Location Icon */
-.location-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 4px;
-  background-color: rgba(98, 0, 234, 0.08);
-  flex-shrink: 0;
-}
-
-.location-icon mat-icon {
-  font-size: 24px;
-  width: 24px;
-  height: 24px;
-  color: rgba(98, 0, 234, 0.8);
-}
-
-/* Location Info - Horizontal */
-.location-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-  flex-wrap: wrap;
-}
-
-.location-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.87);
+.location-wrapper.disabled {
+  opacity: 0.6;
+  pointer-events: none;
 }
 
 /* Badges - Match game-home styling */
@@ -239,6 +185,10 @@
   }
 
   .header-actions button {
+    width: 100%;
+  }
+
+  .location-wrapper {
     width: 100%;
   }
 }

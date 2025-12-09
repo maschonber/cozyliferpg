@@ -21,72 +21,10 @@
   margin: 0;
 }
 
-/* Current Location Info Section */
-.location-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
+/* Current Location Section - Now uses shared location-marker component */
+app-location-marker {
   margin-bottom: 24px;
-  background: linear-gradient(135deg, rgba(98, 0, 234, 0.08) 0%, rgba(98, 0, 234, 0.04) 100%);
-  border-radius: 8px;
-  border-left: 4px solid var(--primary-color, #6200ea);
-  cursor: pointer;
-  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
-}
-
-.location-info:hover {
-  background: linear-gradient(135deg, rgba(98, 0, 234, 0.12) 0%, rgba(98, 0, 234, 0.08) 100%);
-  transform: translateX(4px);
-  box-shadow: 0 2px 8px rgba(98, 0, 234, 0.15);
-}
-
-.location-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: var(--primary-color, #6200ea);
-  flex-shrink: 0;
-}
-
-.location-icon mat-icon {
-  color: white;
-  font-size: 22px;
-  width: 22px;
-  height: 22px;
-}
-
-.location-details {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  flex: 1;
-}
-
-.location-arrow {
-  color: var(--primary-color, #6200ea);
-  opacity: 0.6;
-  transition: opacity 0.2s, transform 0.2s;
-}
-
-.location-info:hover .location-arrow {
-  opacity: 1;
-  transform: translateX(4px);
-}
-
-.location-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: rgba(0, 0, 0, 0.87);
-}
-
-.location-description {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.6);
-  line-height: 1.4;
+  display: block;
 }
 
 /* Action Section (Phase 3: Updated for multiple buttons) */

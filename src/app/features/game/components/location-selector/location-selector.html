@@ -46,21 +46,14 @@
 
           <div class="locations-grid">
             @for (location of locationsByDistrict()[district]; track location.id) {
-              <button
-                mat-raised-button
-                class="location-card"
-                [class.current]="isCurrentLocation(location.id)"
-                [disabled]="isCurrentLocation(location.id) || traveling()"
-                (click)="onTravelTo(location.id)">
-
-                <!-- Location Icon -->
-                <div class="location-icon">
-                  <mat-icon>{{ getLocationIcon(location.id) }}</mat-icon>
-                </div>
-
-                <!-- Location Info -->
-                <div class="location-info">
-                  <span class="location-name">{{ location.name }}</span>
+              <div class="location-wrapper" [class.disabled]="isCurrentLocation(location.id) || traveling()">
+                <app-location-marker
+                  [locationId]="location.id"
+                  [locationName]="location.name"
+                  [clickable]="!isCurrentLocation(location.id) && !traveling()"
+                  [isCurrent]="isCurrentLocation(location.id)"
+                  [variant]="'compact'"
+                  (markerClick)="onTravelTo(location.id)">
 
                   <!-- NPC Count Badge -->
                   @if (location.npcCount !== undefined && location.npcCount > 0) {
@@ -84,8 +77,8 @@
                       {{ location.openTime }}-{{ location.closeTime }}
                     </span>
                   }
-                </div>
-              </button>
+                </app-location-marker>
+              </div>
             }
           </div>
         </div>

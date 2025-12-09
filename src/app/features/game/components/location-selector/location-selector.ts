@@ -11,6 +11,8 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, District } from '../../../../../../shared/types';
+import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
+import { getLocationDisplayName } from '../../../../shared/utils/location.utils';
 
 @Component({
   selector: 'app-location-selector',
@@ -18,7 +20,8 @@ import { LocationWithNPCCount, District } from '../../../../../../shared/types';
     CommonModule,
     MatButtonModule,
     MatIconModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    LocationMarkerComponent
   ],
   templateUrl: './location-selector.html',
   styleUrl: './location-selector.css',
@@ -85,41 +88,9 @@ export class LocationSelector implements OnInit {
 
   /**
    * Get display name for location
+   * Now uses shared utility function
    */
-  getLocationDisplayName(locationId: string): string {
-    const names: Record<string, string> = {
-      'home': 'Home',
-      'park': 'Neighborhood Park',
-      'coffee_shop': 'Corner Coffee Shop',
-      'library': 'Public Library',
-      'shopping_district': 'Shopping District',
-      'gym': 'Fitness Center',
-      'movie_theater': 'Movie Theater',
-      'beach': 'Beach',
-      'boardwalk': 'Boardwalk',
-      'bar': 'Seaside Bar & Grill'
-    };
-    return names[locationId] || locationId;
-  }
-
-  /**
-   * Get icon for location
-   */
-  getLocationIcon(locationId: string): string {
-    const icons: Record<string, string> = {
-      'home': 'home',
-      'park': 'park',
-      'coffee_shop': 'local_cafe',
-      'library': 'local_library',
-      'shopping_district': 'shopping_bag',
-      'gym': 'fitness_center',
-      'movie_theater': 'movie',
-      'beach': 'beach_access',
-      'boardwalk': 'deck',
-      'bar': 'local_bar'
-    };
-    return icons[locationId] || 'place';
-  }
+  getLocationDisplayName = getLocationDisplayName;
 
   /**
    * Check if location is current location
