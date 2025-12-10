@@ -195,6 +195,21 @@ export class GameRepository {
   }
 
   /**
+   * Set player archetype and reset stats to match
+   * (Phase 2.5: Character creation/customization)
+   */
+  setPlayerArchetype(archetype: string): Observable<PlayerCharacter> {
+    return this.http.post<ApiResponse<PlayerCharacter>>(`${this.API_URL}/player/archetype`, { archetype }).pipe(
+      map(response => {
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to set archetype');
+        }
+        return response.data;
+      })
+    );
+  }
+
+  /**
    * Reset player character to initial state
    */
   resetPlayer(): Observable<PlayerCharacter> {

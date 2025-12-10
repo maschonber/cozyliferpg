@@ -6,11 +6,11 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { AuthRequest } from '../auth/auth.middleware';
-import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter } from '../services/player';
+import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter, updatePlayerArchetype } from '../services/player';
 import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
 import { processDailyStatChanges } from '../services/stat';
-import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName } from '../../../shared/types';
+import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype } from '../../../shared/types';
 
 const router = Router();
 
@@ -39,6 +39,56 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerCharact
   } catch (error) {
     console.error('❌ Error fetching player character:', error);
     const errorMessage = error instanceof Error ? error.message : 'Failed to fetch player character';
+    res.status(500).json({
+      success: false,
+      error: errorMessage
+    });
+  }
+});
+
+/**
+ * POST /api/player/archetype
+ * Set player archetype and reset stats to match
+ * (Phase 2.5: Character creation/customization)
+ */
+router.post('/archetype', async (req: AuthRequest, res: Response<ApiResponse<PlayerCharacter>>) => {
+  if (!req.user || !req.user.userId) {
+    res.status(401).json({
+      success: false,
+      error: 'User not authenticated'
+    });
+    return;
+  }
+
+  const userId = req.user.userId;
+  const { archetype }: { archetype: PlayerArchetype } = req.body;
+
+  // Validate archetype
+  const validArchetypes: PlayerArchetype[] = ['athlete', 'scholar', 'social_butterfly', 'artist', 'professional', 'balanced'];
+  if (!archetype || !validArchetypes.includes(archetype)) {
+    res.status(400).json({
+      success: false,
+      error: 'Invalid archetype. Must be one of: ' + validArchetypes.join(', ')
+    });
+    return;
+  }
+
+  try {
+    // Get player character
+    const player = await getOrCreatePlayerCharacter(pool, userId);
+
+    // Update archetype and reset stats
+    const updatedPlayer = await updatePlayerArchetype(pool, player.id, archetype);
+
+    console.log(`✅ Updated player ${userId} archetype to ${archetype}`);
+
+    res.json({
+      success: true,
+      data: updatedPlayer
+    });
+  } catch (error) {
+    console.error('❌ Error setting player archetype:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Failed to set archetype';
     res.status(500).json({
       success: false,
       error: errorMessage
