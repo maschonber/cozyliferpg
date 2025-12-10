@@ -356,6 +356,30 @@ export class GameFacade {
   }
 
   /**
+   * Set player archetype and reset stats to match
+   * (Phase 2.5: Character creation/customization)
+   */
+  setPlayerArchetype(archetype: string): Observable<PlayerCharacter> {
+    this.store.setPlayerLoading(true);
+
+    return this.repository.setPlayerArchetype(archetype).pipe(
+      tap({
+        next: (player) => {
+          this.store.setPlayer(player);
+          // Reload activities to reflect new stat requirements
+          this.loadActivities();
+          console.log(`✅ Player archetype set to ${archetype}`);
+        },
+        error: (error) => {
+          const errorMessage = error.message || 'Failed to set archetype';
+          this.store.setPlayerError(errorMessage);
+          console.error('❌ Error setting archetype:', error);
+        }
+      })
+    );
+  }
+
+  /**
    * Reset player character to initial state
    */
   resetPlayer(): Observable<PlayerCharacter> {

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -12,6 +12,7 @@ import { GameFacade } from '../../services/game.facade';
 import { Relationship, LocationId, LocationWithNPCCount, Activity } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
+import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-selection-modal';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
 import { StatsPanelComponent } from '../stats-panel/stats-panel';
@@ -39,6 +40,9 @@ export class GameHome implements OnInit {
   private router = inject(Router);
   private dialog = inject(MatDialog);
 
+  // Track whether archetype selection has been shown
+  private archetypeShown = signal(false);
+
   // Expose Math for template
   Math = Math;
 
@@ -54,6 +58,19 @@ export class GameHome implements OnInit {
   interactionError = this.facade.interactionError;
   locations = this.facade.locations;
   relationships = this.facade.relationships;
+
+  constructor() {
+    // Watch for player loading to show archetype selection for new players
+    effect(() => {
+      const player = this.player();
+      const loading = this.facade.playerLoading();
+
+      // Only show archetype selection once, when player is loaded and not loading
+      if (!loading && player && !this.archetypeShown()) {
+        this.checkAndShowArchetypeSelection(player);
+      }
+    });
+  }
 
   // Filter solo activities available at current location
   // - Not requiring NPC
@@ -86,6 +103,53 @@ export class GameHome implements OnInit {
   ngOnInit(): void {
     // Initialize game data
     this.facade.initialize();
+  }
+
+  /**
+   * Check if player needs archetype selection and show modal
+   * Shows for new players (Day 1, balanced archetype with default stats)
+   */
+  private checkAndShowArchetypeSelection(player: any): void {
+    // Check if player is new (Day 1, balanced archetype, all stats at 15)
+    const isNewPlayer =
+      player.currentDay === 1 &&
+      player.archetype === 'balanced' &&
+      player.stats.baseFitness === 15 &&
+      player.stats.baseKnowledge === 15;
+
+    if (isNewPlayer) {
+      this.archetypeShown.set(true);
+      this.showArchetypeSelection();
+    }
+  }
+
+  /**
+   * Show archetype selection modal
+   */
+  private showArchetypeSelection(): void {
+    const dialogRef = this.dialog.open(ArchetypeSelectionModal, {
+      width: '900px',
+      maxWidth: '95vw',
+      disableClose: true  // Can't dismiss - must choose
+    });
+
+    dialogRef.afterClosed().subscribe((archetype: string | null) => {
+      if (archetype) {
+        console.log(`Selected archetype: ${archetype}`);
+        this.facade.setPlayerArchetype(archetype).subscribe({
+          next: () => {
+            console.log('✅ Archetype set successfully');
+          },
+          error: (error) => {
+            console.error('❌ Failed to set archetype:', error);
+            alert('Failed to set archetype. Please try again.');
+          }
+        });
+      } else {
+        // If user somehow closes without selecting, show again
+        setTimeout(() => this.showArchetypeSelection(), 100);
+      }
+    });
   }
 
   /**

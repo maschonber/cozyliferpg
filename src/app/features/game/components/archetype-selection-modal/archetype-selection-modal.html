@@ -1,0 +1,74 @@
+<div class="modal-container">
+  <h1 mat-dialog-title>Choose Your Starting Archetype</h1>
+
+  <div mat-dialog-content class="modal-content">
+    <p class="intro-text">
+      Your archetype determines your starting stat distribution. You can grow any stat over time,
+      but your archetype gives you a head start in certain areas.
+    </p>
+
+    <div class="archetypes-grid">
+      @for (archetype of archetypes; track archetype.id) {
+        <mat-card
+          class="archetype-card"
+          [class.selected]="selectedArchetype === archetype.id"
+          (click)="selectArchetype(archetype.id)">
+          <mat-card-header>
+            <div class="archetype-icon">{{ archetype.icon }}</div>
+            <mat-card-title>{{ archetype.name }}</mat-card-title>
+          </mat-card-header>
+
+          <mat-card-content>
+            <p class="archetype-description">{{ archetype.description }}</p>
+
+            <div class="stats-preview">
+              @if (archetype.highStats.length > 0) {
+                <div class="stat-tier high">
+                  <strong>High (25):</strong>
+                  <span class="stat-list">
+                    @for (s of archetype.highStats; track s.stat; let last = $last) {
+                      <span>{{ getStatLabel(s.stat) }}@if (!last) {<span>, </span>}</span>
+                    }
+                  </span>
+                </div>
+              }
+
+              @if (archetype.mediumStats.length > 0) {
+                <div class="stat-tier medium">
+                  <strong>Medium (15):</strong>
+                  <span class="stat-list">
+                    @for (s of archetype.mediumStats; track s.stat; let last = $last) {
+                      <span>{{ getStatLabel(s.stat) }}@if (!last) {<span>, </span>}</span>
+                    }
+                  </span>
+                </div>
+              }
+
+              @if (archetype.lowStats.length > 0) {
+                <div class="stat-tier low">
+                  <strong>Low (5):</strong>
+                  <span class="stat-list">
+                    @for (s of archetype.lowStats; track s.stat; let last = $last) {
+                      <span>{{ getStatLabel(s.stat) }}@if (!last) {<span>, </span>}</span>
+                    }
+                  </span>
+                </div>
+              }
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  </div>
+
+  <div mat-dialog-actions class="modal-actions">
+    <button mat-button (click)="cancel()">Cancel</button>
+    <button
+      mat-raised-button
+      color="primary"
+      (click)="confirm()"
+      [disabled]="!selectedArchetype">
+      Confirm Selection
+    </button>
+  </div>
+</div>
