@@ -379,28 +379,412 @@ Features deliberately deferred for future development:
 
 ---
 
-## Phase 2.5: Player Stats & Progression (Postponed from Phase 2)
+## Phase 2.5: Player Stats & Progression
 
-### Scope
-Introduce player character stats and progression system to give activities long-term meaning beyond immediate resource management.
+### Vision
 
-### Features to Implement
-- **Player Stats:** Intelligence, Fitness, Creativity, Charisma (0-100 scale)
-- **Stat Gains:** Activities grant stat experience (Study → Intelligence, Gym → Fitness, etc.)
-- **Stat Display:** Show current stats in player profile/HUD
-- **Stat Effects:** Stats influence activity outcomes and unlock new interactions
-  - High Charisma → Better relationship gains
-  - High Fitness → Lower energy cost for physical activities
-  - High Intelligence → New conversation options
-  - High Creativity → New hobby activities
+Introduce a meaningful, long-term progression system that rewards diverse gameplay. Player stats grow through both dedicated training AND organic gameplay, encouraging players to forge genuine connections, maintain healthy habits, and balance work with social life. The dual-value system (Base + Current) creates interesting tension between short-term optimization and long-term growth.
 
-### Optional Player Customization
-- Player name selection
-- Player gender/pronouns selection
-- Appearance customization (basic)
+### Design Philosophy
 
-**Priority:** Medium - Adds depth but not critical for core gameplay
-**Estimated Scope:** 1-2 weeks
+- **Organic Growth Over Grinding:** Stats grow through relationships and lifestyle, not just repetitive activities
+- **Lifestyle Matters:** Good habits (sleep, self-care) directly impact progression
+- **Specialization is Valid:** Can't max everything; playstyle shapes your character
+- **Progress Feels Earned:** Base stat represents true growth that can't be lost
+- **Consequences Exist:** Negative actions impact Current stat, slowing overall progress
+
+---
+
+### The 9 Player Stats
+
+#### Physical Stats
+| Stat | Description |
+|------|-------------|
+| **Fitness** | Athletic capability, strength, physical attractiveness through exercise |
+| **Vitality** | Overall wellness, health, natural energy, recovery speed |
+| **Poise** | Body language, posture, physical grace, how you carry yourself |
+
+#### Mental Stats
+| Stat | Description |
+|------|-------------|
+| **Knowledge** | Book smarts, trivia, conversational depth, intellectual capability |
+| **Creativity** | Artistic expression, problem-solving, spontaneity, original thinking |
+| **Ambition** | Career drive, goal-setting, work ethic, professional motivation |
+
+#### Social Stats
+| Stat | Description |
+|------|-------------|
+| **Confidence** | Self-assurance, social courage, willingness to take initiative |
+| **Wit** | Quick thinking, humor, clever responses, conversational agility |
+| **Empathy** | Emotional intelligence, listening skills, understanding others |
+
+*Note: Each stat can grow through multiple methods - dedicated training activities, organic gameplay triggers, lifestyle choices, and social interactions. Specific growth sources will be defined during implementation.*
+
+---
+
+### Dual-Value System: Base & Current
+
+Each stat has two values that work together:
+
+#### Base Stat
+- **Nature:** Long-term, permanent progress - your true capability floor
+- **Range:** 0-100 (hard cap at 100, represents mastery)
+- **Direction:** Only increases, never decreases
+- **Growth:** Rises slowly when Current is considerably higher than Base
+- **Purpose:** Represents genuine character development that can't be lost
+
+#### Current Stat
+- **Nature:** Short-term, active level - your recent performance
+- **Range:** 0 to Base+30 (capped relative to Base), can exceed 100 with effort
+- **Direction:** Can increase AND decrease based on actions
+- **Decay:** Moves toward Base daily when not actively maintained
+- **Purpose:** Represents recent training, habits, and behavior
+
+#### Base Growth Mechanics
+```
+Daily calculation (during sleep):
+  If Current >= Base + 10: Base += 0.3
+  If Current >= Base + 20: Base += 0.5
+  If Current >= Base + 30: Base += 0.8 (maximum)
+```
+
+#### Current Decay Mechanics
+```
+Daily calculation (during sleep):
+  Gap = Current - Base
+  If Gap > 0 and stat wasn't trained today:
+    If Gap <= 10: Current -= 0.5
+    If Gap <= 20: Current -= 1.0
+    If Gap <= 30: Current -= 1.5
+  Current never drops below Base
+```
+
+#### Current Cap Mechanics
+```
+Maximum Current = Base + 30
+This prevents "overtraining" Current while ignoring Base growth
+Players must let Base catch up to push Current higher
+```
+
+---
+
+### Stat Growth Methods
+
+*To be designed in detail during implementation.* Each stat will have multiple growth sources including:
+- Dedicated training activities (e.g., gym for Fitness)
+- Organic gameplay triggers (e.g., social success for Confidence)
+- Lifestyle factors (e.g., sleep habits for Vitality)
+- Interaction outcomes (e.g., deep conversations for Empathy)
+
+Specific activities and their stat effects will be defined iteratively during development.
+
+---
+
+### Negative Growth (Current Stat Only)
+
+*To be designed in detail during implementation.* Bad behavior and poor habits will reduce Current stat values, which slows Base growth. Specific triggers and penalties will be determined after core stat mechanics are stable.
+
+**Note:** Negative effects only impact Current, never Base. This means poor behavior slows progress but doesn't undo permanent growth.
+
+---
+
+### Diminishing Returns
+
+Higher stats are harder to improve:
+
+```
+Effective Gain = Base Gain × (1 - Current/150)
+
+At Current 0:   100% of base gain
+At Current 50:  67% of base gain
+At Current 75:  50% of base gain
+At Current 100: 33% of base gain
+At Current 120: 20% of base gain
+```
+
+Additionally, maintaining a high Current-Base gap becomes harder at higher values due to increased decay rates and reduced gains.
+
+---
+
+### Gameplay Effects
+
+Stats influence gameplay through three mechanisms:
+
+#### 1. Percentage Modifiers
+
+*To be designed in detail during implementation.* Stats will provide scaling bonuses to resource costs, gains, and other numerical effects. Specific modifiers will be determined after playtesting the core stat system.
+
+#### 2. Unlock Gates (Uses Base Stat)
+
+Certain activities require minimum **Base** stat thresholds (not Current). This ensures players have achieved genuine, permanent growth before accessing advanced content.
+
+*Unlock requirements and thresholds to be defined during implementation.*
+
+#### 3. Success Probability (Primary Mechanic)
+
+Activities have a **difficulty rating** (1-100) that determines how challenging they are. Player stats improve odds but never guarantee success or eliminate failure.
+
+**Outcome Tiers:**
+| Tier | Description |
+|------|-------------|
+| **Catastrophic** | Everything goes wrong - relationship loss, extra costs, setbacks |
+| **Mixed** | Partial success with complications - reduced gains, minor issues |
+| **Okay** | Standard expected outcome - normal gains as designed |
+| **Best** | Exceptional success - bonus gains, special benefits (always somewhat rare) |
+
+**Roll Mechanic:**
+```
+Activity Difficulty: 1-100 (easy activities low, hard activities high)
+Roll: random(1-100)
+Stat Bonus: RelevantStat / 3 (rounded)
+Difficulty Penalty: Difficulty / 2 (rounded)
+
+Adjusted Roll = Roll + Stat Bonus - Difficulty Penalty
+
+Catastrophic:  Adjusted Roll < 20
+Mixed:         Adjusted Roll 20-44
+Okay:          Adjusted Roll 45-79
+Best:          Adjusted Roll >= 80
+```
+
+**Key Properties:**
+- **No guaranteed success:** Even at 100 stat, bad rolls can still produce Catastrophic/Mixed outcomes
+- **No guaranteed failure:** Even at 0 stat on easy activities, good rolls can produce Best outcomes
+- **Best is rare:** Typically 10-25% chance even when well-matched to difficulty
+- **Difficulty creates challenge tiers:** Easy activities (10-20) vs Hard activities (60-80)
+
+**Example Difficulties:**
+| Activity | Difficulty | Notes |
+|----------|------------|-------|
+| Stroll in the Park | 10 | Easy, relaxing activity |
+| Quick Chat | 20 | Basic social interaction |
+| Gym Workout | 35 | Moderate physical challenge |
+| Deep Conversation | 45 | Requires emotional engagement |
+| Job Interview | 60 | High-stakes social situation |
+| Marathon | 75 | Serious athletic challenge |
+| Give a Speech | 70 | Demanding public performance |
+
+**Probability Examples:**
+
+*Stroll in the Park (Difficulty 10) - using Fitness:*
+| Fitness | Catastrophic | Mixed | Okay | Best |
+|---------|--------------|-------|------|------|
+| 5 | ~17% | ~25% | ~35% | ~23% |
+| 50 | ~3% | ~22% | ~35% | ~40% |
+| 100 | ~0% | ~7% | ~35% | ~58% |
+
+*Marathon (Difficulty 75) - using Fitness:*
+| Fitness | Catastrophic | Mixed | Okay | Best |
+|---------|--------------|-------|------|------|
+| 5 | ~57% | ~25% | ~17% | ~1% |
+| 50 | ~40% | ~25% | ~30% | ~5% |
+| 100 | ~22% | ~25% | ~35% | ~18% |
+
+*Note: Even a max-Fitness athlete has meaningful failure chance on a marathon, and Best outcome remains uncommon (~18%). Meanwhile, a beginner can reliably enjoy a park stroll.*
+
+---
+
+### Starting Values & Character Archetypes
+
+Players begin with different stat distributions based on chosen archetype:
+
+| Archetype | High Stats (25) | Medium Stats (15) | Low Stats (5) |
+|-----------|-----------------|-------------------|---------------|
+| **Athlete** | Fitness, Vitality | Confidence, Ambition, Poise | Knowledge, Creativity, Wit, Empathy |
+| **Scholar** | Knowledge, Creativity | Ambition, Wit, Vitality | Fitness, Confidence, Poise, Empathy |
+| **Social Butterfly** | Confidence, Wit, Empathy | Poise, Vitality | Fitness, Knowledge, Creativity, Ambition |
+| **Artist** | Creativity, Empathy | Poise, Wit, Vitality | Fitness, Ambition, Knowledge, Confidence |
+| **Professional** | Ambition, Knowledge | Vitality, Confidence, Poise | Creativity, Empathy, Fitness, Wit |
+| **Balanced** | — | All stats at 15 | — |
+
+*Note: Exact stat assignments per archetype to be finalized during implementation.*
+*Future: Point-buy character creation for custom distributions*
+
+---
+
+### UI Requirements
+
+#### Player Profile Screen
+- Display all 9 stats with both Base and Current values
+- Visual representation (bars or numbers) showing:
+  - Base value (solid portion)
+  - Current value (extended portion above base)
+  - Gap indicator when Current > Base
+- Category grouping (Physical / Mental / Social)
+
+#### Activity Summary (After Each Activity)
+- Show stat changes from each action
+- Show roll result and outcome tier for activities with success probability
+- Display any negative effects clearly
+
+#### Sleep Summary (End of Day)
+- Daily stat change summary for all stats
+- Base growth notifications when Base increases
+- Current decay notifications when Current moves toward Base
+- Highlight stats that grew vs declined
+
+#### Development Mode (Current Phase)
+- Full transparency: show all numbers, rolls, modifiers
+- Useful for playtesting and balance tweaking
+
+#### Production Mode (Future)
+- Consider hiding exact numbers
+- Show tiers/ranks instead of precise values
+- Make gains feel more natural, less "gamey"
+
+---
+
+### Data Model Updates
+
+#### PlayerCharacter (Extended)
+```typescript
+interface PlayerStats {
+  // Base stats (permanent, 0-100)
+  baseFitness: number;
+  baseVitality: number;
+  basePoise: number;
+  baseKnowledge: number;
+  baseCreativity: number;
+  baseAmbition: number;
+  baseConfidence: number;
+  baseWit: number;
+  baseEmpathy: number;
+
+  // Current stats (active, 0 to base+30)
+  currentFitness: number;
+  currentVitality: number;
+  currentPoise: number;
+  currentKnowledge: number;
+  currentCreativity: number;
+  currentAmbition: number;
+  currentConfidence: number;
+  currentWit: number;
+  currentEmpathy: number;
+}
+
+interface PlayerCharacter {
+  // ... existing fields ...
+  stats: PlayerStats;
+  archetype: PlayerArchetype;  // Starting archetype chosen
+}
+
+type PlayerArchetype =
+  | 'athlete'
+  | 'scholar'
+  | 'social_butterfly'
+  | 'artist'
+  | 'professional'
+  | 'balanced';
+```
+
+#### Activity (Extended)
+```typescript
+interface Activity {
+  // ... existing fields ...
+
+  // Stat effects (to be implemented)
+  statEffects?: {
+    [statName: string]: number;  // Base gain before modifiers
+  };
+
+  // Success roll configuration
+  difficulty?: number;  // 1-100, determines challenge level
+  relevantStats?: string[];  // Stats that modify the roll
+
+  // Unlock requirements (uses Base stat)
+  statRequirements?: {
+    [statName: string]: number;  // Minimum Base stat required
+  };
+}
+
+interface ActivityOutcome {
+  tier: 'catastrophic' | 'mixed' | 'okay' | 'best';
+  friendshipDelta?: number;
+  romanceDelta?: number;
+  energyDelta?: number;
+  moneyDelta?: number;
+  statEffects?: { [statName: string]: number };
+  description: string;  // Flavor text for this outcome
+}
+```
+
+---
+
+### Implementation Strategy
+
+#### Phase 2.5.1: Foundation
+1. Extend database schema with stat columns (Base and Current for all 9)
+2. Create PlayerStats interface and types
+3. Implement stat service with Base/Current logic
+4. Add archetype selection to character creation flow
+5. Initialize stats based on chosen archetype
+
+#### Phase 2.5.2: Core Mechanics
+6. Implement Current stat cap (Base + 30)
+7. Implement Base growth during sleep (when Current > Base)
+8. Implement Current decay during sleep (toward Base)
+9. Implement diminishing returns formula
+10. Add stat tracking to daily cycle
+
+#### Phase 2.5.3: Activity Integration
+11. Add difficulty ratings to existing activities
+12. Implement success roll system
+13. Create outcome determination logic
+14. Add stat requirements (Base) to select activities
+15. Integrate rolls into activity execution flow
+
+#### Phase 2.5.4: UI Implementation
+16. Build stats display component for player profile
+17. Add stat changes to activity summary screen
+18. Add stat summary to sleep/end-of-day screen
+19. Show unlock requirements on gated activities
+20. Display roll results and outcome tiers
+
+#### Phase 2.5.5: Growth Sources (Iterative)
+21. Define stat effects for existing activities
+22. Implement organic growth triggers
+23. Implement negative growth triggers
+24. Playtest and balance stat progression
+
+#### Phase 2.5.6: Testing & Balance
+25. Playtest stat progression over 30+ days
+26. Adjust Base growth rates if needed
+27. Adjust Current decay rates if needed
+28. Tune activity difficulties
+29. Balance outcome tier thresholds
+
+---
+
+### Success Criteria
+
+Phase 2.5 is complete when:
+- [ ] 9 stats exist with Base and Current values for each
+- [ ] Character archetype selection works with varied starting stats (25/15/5)
+- [ ] Current stat is capped at Base + 30
+- [ ] Base grows during sleep when Current exceeds it
+- [ ] Current decays toward Base when not maintained
+- [ ] Diminishing returns affect stat gains at higher levels
+- [ ] Activities have difficulty ratings
+- [ ] Success roll system produces four outcome tiers
+- [ ] At least some activities have stat unlock requirements (using Base)
+- [ ] UI shows all stat information (Base, Current, changes)
+- [ ] Activity summary shows roll results and outcomes
+- [ ] Sleep summary shows daily stat changes
+- [ ] System feels balanced over 30+ day playtest
+
+---
+
+### Future Enhancements (Post Phase 2.5)
+
+- **Percentage Modifiers:** Stat-based bonuses to costs and gains
+- **Negative Growth Triggers:** Specific penalties for bad behavior
+- **NPC Stat Preferences:** Archetypes impressed by matching player stats
+- **Point-Buy Creation:** Custom stat distribution instead of archetypes
+- **Stat-Based Dialogue:** Different conversation options based on stats
+- **Achievements:** Milestones for reaching stat thresholds
+- **Stat Synergies:** Bonuses when multiple stats are high together
+- **Mentor System:** High-stat NPCs can boost your training
+- **Stat Visibility Options:** Toggle between detailed and minimal UI
 
 ---
 
