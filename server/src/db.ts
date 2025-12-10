@@ -352,6 +352,22 @@ export async function migratePhase25Stats() {
       console.log('  ⏭️  Phase 2.5 stat columns already exist');
     }
 
+    // Check if stats_trained_today column exists
+    const trainedCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='stats_trained_today'
+    `);
+
+    if (trainedCheck.rows.length === 0) {
+      console.log('  Adding stats_trained_today column...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN stats_trained_today TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]
+      `);
+      console.log('  ✅ Added stats_trained_today column');
+    }
+
     await client.query('COMMIT');
     console.log('✅ Phase 2.5 stats migration completed');
   } catch (error) {

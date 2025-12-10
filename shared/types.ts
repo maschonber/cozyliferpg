@@ -435,6 +435,7 @@ export interface StatTracking {
   lateNightStreak: number;      // Consecutive days sleeping after 2am
   workedToday: boolean;         // Did work activity today
   hadCatastrophicFailureToday: boolean;  // Had a catastrophic outcome today
+  statsTrainedToday: StatName[]; // Stats that gained experience today (won't decay)
 }
 
 /**

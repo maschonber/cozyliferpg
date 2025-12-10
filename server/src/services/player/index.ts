@@ -57,7 +57,8 @@ function mapRowToPlayerCharacter(row: any): PlayerCharacter {
       burnoutStreak: row.burnout_streak ?? 0,
       lateNightStreak: row.late_night_streak ?? 0,
       workedToday: row.worked_today ?? false,
-      hadCatastrophicFailureToday: row.had_catastrophic_failure_today ?? false
+      hadCatastrophicFailureToday: row.had_catastrophic_failure_today ?? false,
+      statsTrainedToday: row.stats_trained_today ?? []
     },
 
     createdAt: row.created_at.toISOString(),
@@ -107,12 +108,14 @@ export async function getOrCreatePlayerCharacter(
         min_energy_today, work_streak, rest_streak,
         burnout_streak, late_night_streak,
         worked_today, had_catastrophic_failure_today,
+        stats_trained_today,
         created_at, updated_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6, $7, $8, $9,
         $10, $11, $12, $13, $14, $15, $16, $17, $18,
         $19, $20, $21, $22, $23, $24, $25, $26, $27,
-        $28, $29, $30, $31, $32, $33, $34, $35, $36
+        $28, $29, $30, $31, $32, $33, $34, $35, $36,
+        $37, $38
       )
       RETURNING *
       `,
@@ -128,6 +131,7 @@ export async function getOrCreatePlayerCharacter(
         tracking.minEnergyToday, tracking.workStreak, tracking.restStreak,
         tracking.burnoutStreak, tracking.lateNightStreak,
         tracking.workedToday, tracking.hadCatastrophicFailureToday,
+        tracking.statsTrainedToday,
         now, now
       ]
     );
@@ -222,6 +226,7 @@ export async function updatePlayerCharacter(
       if (t.lateNightStreak !== undefined) { updateFields.push(`late_night_streak = $${paramCount++}`); values.push(t.lateNightStreak); }
       if (t.workedToday !== undefined) { updateFields.push(`worked_today = $${paramCount++}`); values.push(t.workedToday); }
       if (t.hadCatastrophicFailureToday !== undefined) { updateFields.push(`had_catastrophic_failure_today = $${paramCount++}`); values.push(t.hadCatastrophicFailureToday); }
+      if (t.statsTrainedToday !== undefined) { updateFields.push(`stats_trained_today = $${paramCount++}`); values.push(t.statsTrainedToday); }
     }
 
     // Always update updated_at
@@ -310,8 +315,9 @@ export async function resetPlayerCharacter(
           min_energy_today = $19, work_streak = $20, rest_streak = $21,
           burnout_streak = $22, late_night_streak = $23,
           worked_today = $24, had_catastrophic_failure_today = $25,
-          updated_at = $26
-      WHERE id = $27
+          stats_trained_today = $26,
+          updated_at = $27
+      WHERE id = $28
       RETURNING *
       `,
       [
@@ -324,6 +330,7 @@ export async function resetPlayerCharacter(
         tracking.minEnergyToday, tracking.workStreak, tracking.restStreak,
         tracking.burnoutStreak, tracking.lateNightStreak,
         tracking.workedToday, tracking.hadCatastrophicFailureToday,
+        tracking.statsTrainedToday,
         now, playerId
       ]
     );

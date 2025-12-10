@@ -129,7 +129,8 @@ export function getDefaultTracking(): StatTracking {
     burnoutStreak: 0,
     lateNightStreak: 0,
     workedToday: false,
-    hadCatastrophicFailureToday: false
+    hadCatastrophicFailureToday: false,
+    statsTrainedToday: []
   };
 }
 

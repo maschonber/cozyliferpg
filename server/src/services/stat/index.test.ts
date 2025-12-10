@@ -93,6 +93,7 @@ describe('Stat Service', () => {
       expect(tracking.lateNightStreak).toBe(0);
       expect(tracking.workedToday).toBe(false);
       expect(tracking.hadCatastrophicFailureToday).toBe(false);
+      expect(tracking.statsTrainedToday).toEqual([]);
     });
   });
 
