@@ -468,23 +468,174 @@ Players must let Base catch up to push Current higher
 
 ---
 
-### Stat Growth Methods
+### Stat Training Types
 
-*To be designed in detail during implementation.* Each stat will have multiple growth sources including:
-- Dedicated training activities (e.g., gym for Fitness)
-- Organic gameplay triggers (e.g., social success for Confidence)
-- Lifestyle factors (e.g., sleep habits for Vitality)
-- Interaction outcomes (e.g., deep conversations for Empathy)
+Each category contains one stat of each training type, creating a balanced progression system:
 
-Specific activities and their stat effects will be defined iteratively during development.
+| Category | Active (Grindable) | Mixed (Training + Conditions) | Defensive (Lifestyle Patterns) |
+|----------|-------------------|------------------------------|-------------------------------|
+| **Physical** | Fitness | Poise | Vitality |
+| **Mental** | Knowledge | Creativity | Ambition |
+| **Social** | Confidence | Wit | Empathy |
 
 ---
 
-### Negative Growth (Current Stat Only)
+### Active Stats (Grindable)
 
-*To be designed in detail during implementation.* Bad behavior and poor habits will reduce Current stat values, which slows Base growth. Specific triggers and penalties will be determined after core stat mechanics are stable.
+These stats grow primarily through dedicated, repeatable activities.
 
-**Note:** Negative effects only impact Current, never Base. This means poor behavior slows progress but doesn't undo permanent growth.
+| Stat | Direct Training Activities | Gain per Activity |
+|------|---------------------------|-------------------|
+| **Fitness** | Gym Workout, Morning Jog, Swimming, Exercise Together, Marathon | +2 to +5 |
+| **Knowledge** | Study at Library, Read a Book, Research | +2 to +5 |
+| **Confidence** | Initiate interactions, Approach new NPCs, Flirt, Take social risks | +1 to +3 |
+
+---
+
+### Mixed Stats (Training + Conditions)
+
+These stats have minor direct training options but also grow through gameplay conditions and variety.
+
+| Stat | Minor Training (Gain) | Growth Conditions |
+|------|----------------------|-------------------|
+| **Poise** | Yoga, Dance, Meditation (+1 to +2) | Successful high-stakes social situations, maintaining composure under pressure |
+| **Creativity** | Creative Hobbies, Art activities (+1 to +2) | Activity variety (trying new things), not repeating same routine daily |
+| **Wit** | Comedy shows, Clever reading (+0.5 to +1) | Successful banter, playful interactions, quick chats |
+
+---
+
+### Defensive Stats (Lifestyle Patterns)
+
+These stats cannot be grinded through single actions. They grow through sustained patterns and lifestyle choices, calculated daily during sleep using 7-day rolling averages for pattern detection.
+
+#### Vitality - "Sustainable Living"
+
+Rewards balanced energy management - neither burning out nor wasting potential. Progressive penalties for sustained bad habits.
+
+**Daily Calculation (during sleep):**
+```
+Vitality Change = 0
+bad_habit_streak = consecutive days with same bad habit
+
+// Positive factors
+If minimum_energy_today >= 30: +0.5 (never bottomed out)
+If slept_before_midnight: +0.3
+If ending_energy between 20-50: +0.3 (used energy well, kept reserve)
+If no_catastrophic_failures_today: +0.2
+If rest_day_after_work (worked yesterday, rested today): +0.4
+
+// Negative factors (with progressive penalties)
+If energy_hit_zero:
+  -0.5 × (1 + burnout_streak × 0.2)  // Gets worse if repeated
+If slept_after_2am:
+  -0.5 × (1 + late_night_streak × 0.2)
+If ending_energy > 50:
+  -0.3 (wasted potential - could have done more)
+If consecutive_work_days >= 3 without rest:
+  -0.3 × (work_streak - 2)  // Escalates: -0.3, -0.6, -0.9...
+If consecutive_rest_days >= 3 (slacking):
+  -0.3 × (rest_streak - 2)  // Also penalize pure laziness
+```
+
+#### Ambition - "Pushing Your Limits"
+
+Rewards consistent effort and challenging yourself relative to your current abilities. Quick to decline without effort, scales expectations with skill.
+
+**Daily Calculation (during sleep):**
+```
+Ambition Change = 0
+relevant_stat = highest stat used in today's activities
+easy_threshold = max(20, relevant_stat - 20)  // Scales with progression
+
+// Positive factors
+If completed_work_today: +0.4
+If work_streak >= 2 days: +0.3 bonus
+If work_streak >= 5 days: +0.5 bonus (additional)
+If trained_above_comfort (activity difficulty > relevant_stat):
+  +0.4 per such activity
+If attempted_hard_activity (difficulty >= 50): +0.2
+
+// Negative factors (aggressive scaling)
+If no_work_today (single day): -0.2
+If no_work_streak >= 2 days:
+  -0.3 × no_work_streak  // Escalates: -0.6, -0.9, -1.2...
+If all_activities_easy (all difficulty < easy_threshold):
+  -0.3 (coasting on existing skills)
+If avoided_available_challenge (hard activity available but chose easy):
+  -0.2 per instance
+```
+
+#### Empathy - "Genuine Connection"
+
+Rewards authentic care for others, diverse relationships, and maintaining bonds without romantic ulterior motives.
+
+**Daily Calculation (during sleep):**
+```
+Empathy Change = 0
+
+// 7-day rolling window metrics
+platonic_friends = NPCs with friendship > 30 AND romance < 10
+romantic_interests = NPCs with romance > 20
+unique_npcs_this_week = distinct NPCs interacted with in last 7 days
+neglected_friends = friends (friendship > 40) not contacted in 7+ days
+
+// Daily triggers
+If had_meaningful_conversation_today: +0.3
+If interacted_with_platonic_friend_today: +0.5
+
+// Pattern bonuses (daily, based on rolling averages)
+If platonic_friends >= 2: +0.2
+If platonic_friends >= 4: +0.3 (additional)
+If unique_npcs_this_week >= 5: +0.2 (diversity)
+If all_friends_contacted_this_week: +0.2
+
+// Negative factors
+If only_interacted_with_romantic_interests_today: -0.4
+If romantic_interactions > 2× platonic_interactions (this week): -0.3
+If neglected_friend exists: -0.3 per neglected friend (details TBD with NPC system)
+If was_dismissive_or_rude_today: -0.5
+```
+
+---
+
+### Tracking Requirements
+
+To implement defensive stats, the system must track:
+
+**Daily tracking (reset each day):**
+- Activities performed with their difficulties
+- Minimum/maximum/ending energy levels
+- NPCs interacted with and interaction types
+- Whether work was done
+- Sleep time
+
+**Rolling window (7 days):**
+- Unique NPCs interacted with
+- Work days vs rest days
+- Last contact date per NPC
+- Platonic vs romantic interaction counts
+
+**Streak tracking:**
+- Consecutive work days
+- Consecutive rest days
+- Consecutive burnout days (energy hit 0)
+- Consecutive late nights (slept after 2am)
+
+---
+
+### Negative Growth Summary
+
+**Note:** Negative effects only impact Current stat, never Base. This means poor behavior slows progress but doesn't undo permanent growth.
+
+Negative triggers are integrated into the defensive stat calculations above. Key anti-patterns:
+
+| Stat | Anti-Patterns |
+|------|---------------|
+| **Vitality** | Energy to 0, late nights (after 2am), overwork streaks, wasted energy (end >50), pure laziness (3+ rest days) |
+| **Ambition** | Any day without work, coasting on easy activities, avoiding available challenges |
+| **Empathy** | Only pursuing romance, neglecting friends, dismissive behavior, imbalanced attention |
+
+For Active and Mixed stats, negative growth is simpler: primarily through Current decay when not maintained, plus catastrophic activity outcomes.
 
 ---
 
