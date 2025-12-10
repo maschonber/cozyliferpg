@@ -20,6 +20,7 @@ describe('GameHome', () => {
   let activitiesSignal: WritableSignal<Activity[]>;
   let activityAvailabilitySignal: WritableSignal<ActivityAvailability[]>;
   let playerSignal: WritableSignal<PlayerCharacter | null>;
+  let playerLoadingSignal: WritableSignal<boolean>;
   let interactingSignal: WritableSignal<boolean>;
   let interactionErrorSignal: WritableSignal<string | null>;
   let locationsSignal: WritableSignal<LocationWithNPCCount[]>;
@@ -34,7 +35,35 @@ describe('GameHome', () => {
     currentDay: 1,
     currentTime: '09:00',
     lastSleptAt: '00:00',
-    currentLocation: 'park'
+    currentLocation: 'park',
+    archetype: 'balanced',
+    stats: {
+      baseFitness: 50,
+      baseVitality: 50,
+      basePoise: 50,
+      baseKnowledge: 50,
+      baseCreativity: 50,
+      baseAmbition: 50,
+      baseConfidence: 50,
+      baseWit: 50,
+      baseEmpathy: 50,
+      currentFitness: 50,
+      currentVitality: 50,
+      currentPoise: 50,
+      currentKnowledge: 50,
+      currentCreativity: 50,
+      currentAmbition: 50,
+      currentConfidence: 50,
+      currentWit: 50,
+      currentEmpathy: 50
+    },
+    tracking: {
+      minEnergyToday: 100,
+      workStreak: 0,
+      restStreak: 0
+    },
+    createdAt: '2024-01-01T00:00:00Z',
+    updatedAt: '2024-01-01T00:00:00Z'
   };
 
   const mockNPC: NPC = {
@@ -84,6 +113,7 @@ describe('GameHome', () => {
     activitiesSignal = signal([]);
     activityAvailabilitySignal = signal([]);
     playerSignal = signal(mockPlayer);
+    playerLoadingSignal = signal(false);
     interactingSignal = signal(false);
     interactionErrorSignal = signal(null);
     locationsSignal = signal([]);
@@ -98,6 +128,7 @@ describe('GameHome', () => {
       activities: activitiesSignal,
       activityAvailability: activityAvailabilitySignal,
       player: playerSignal,
+      playerLoading: playerLoadingSignal,
       interacting: interactingSignal,
       interactionError: interactionErrorSignal,
       locations: locationsSignal,
