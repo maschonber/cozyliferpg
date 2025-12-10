@@ -185,14 +185,35 @@ router.post(
 
           const statResult = applyStatEffects(player.stats, scaledEffects);
           newStats = statResult.newStats;
-          statChanges = statResult.changes;
+
+          // Convert actualChanges to StatChange format
+          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => ({
+            stat: stat as StatName,
+            previousBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            newBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            previousCurrent: player.stats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            newCurrent: newStats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            baseDelta: 0,
+            currentDelta: change || 0
+          }));
         }
       } else {
         // No roll required - apply stat effects directly (for passive/leisure activities)
         if (activity.statEffects) {
           const statResult = applyStatEffects(player.stats, activity.statEffects);
           newStats = statResult.newStats;
-          statChanges = statResult.changes;
+
+          // Convert actualChanges to StatChange format
+          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => ({
+            stat: stat as StatName,
+            previousBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            newBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            previousCurrent: player.stats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            newCurrent: newStats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
+            baseDelta: 0,
+            currentDelta: change || 0
+          }));
+
           statsTrainedThisActivity = Object.keys(activity.statEffects).filter(
             stat => (activity.statEffects as any)[stat] > 0
           ) as StatName[];
