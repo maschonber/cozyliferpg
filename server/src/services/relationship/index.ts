@@ -44,10 +44,11 @@ export const ACTIVITIES = [
     moneyCost: 150,
     allowedTimeSlots: ['morning' as const],
     effects: {},
-    // Phase 2.5: Stats
+    // Phase 2.5: Stats - Requires commitment
     difficulty: 40,
     relevantStats: ['ambition', 'vitality'] as StatName[],
-    statEffects: { ambition: 4 }
+    statEffects: { ambition: 4 },
+    statRequirements: { ambition: 20 }
   },
 
   // Social Activities (with NPCs) - Train: Confidence, Wit, Empathy
@@ -112,10 +113,11 @@ export const ACTIVITIES = [
     moneyCost: 0,
     minRelationship: 'friend',
     effects: { friendship: 20 },
-    // Phase 2.5: Stats
+    // Phase 2.5: Stats - Requires emotional depth
     difficulty: 50,
     relevantStats: ['empathy', 'wit'] as StatName[],
-    statEffects: { empathy: 3, knowledge: 1 }
+    statEffects: { empathy: 3, knowledge: 1 },
+    statRequirements: { empathy: 25 }
   },
   {
     id: 'go_to_movies',
@@ -198,10 +200,11 @@ export const ACTIVITIES = [
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
-    // Phase 2.5: Stats - Train Knowledge
+    // Phase 2.5: Stats - Train Knowledge (requires basic learning skills)
     difficulty: 45,
     relevantStats: ['knowledge'] as StatName[],
-    statEffects: { knowledge: 5 }
+    statEffects: { knowledge: 5 },
+    statRequirements: { knowledge: 10 }
   },
   {
     id: 'work_out_gym',
