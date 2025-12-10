@@ -477,3 +477,26 @@ export interface SleepResultWithStats extends SleepResult {
   baseGrowth: StatChange[];      // Stats where base increased
   currentDecay: StatChange[];    // Stats where current decayed toward base
 }
+
+/**
+ * Solo activity outcome from roll system (Phase 2.5)
+ * Different from NPC ActivityOutcome - includes roll details
+ */
+export interface SoloActivityOutcome {
+  tier: OutcomeTier;        // 'catastrophic' | 'mixed' | 'okay' | 'best'
+  roll: number;             // Raw d100 roll
+  adjustedRoll: number;     // Roll after stat bonus and difficulty
+  statBonus: number;        // Bonus from relevant stats
+  difficultyPenalty: number; // Penalty from difficulty
+}
+
+/**
+ * Solo activity result (Phase 2.5)
+ * Returned from POST /api/activities/perform
+ */
+export interface SoloActivityResult {
+  player: PlayerCharacter;
+  outcome?: SoloActivityOutcome;
+  statChanges?: StatChange[];
+  statsTrainedThisActivity?: StatName[];
+}

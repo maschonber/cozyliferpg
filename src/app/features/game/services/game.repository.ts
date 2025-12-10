@@ -16,6 +16,8 @@ import {
   ApiResponse,
   PlayerCharacter,
   SleepResult,
+  SleepResultWithStats,
+  SoloActivityResult,
   ActivityAvailability,
   Location,
   LocationWithNPCCount,
@@ -140,19 +142,20 @@ export class GameRepository {
 
   /**
    * Perform a solo activity (no NPC required)
+   * Phase 2.5: Returns stat changes and outcome info
    */
-  performSoloActivity(activityId: string): Observable<any> {
+  performSoloActivity(activityId: string): Observable<SoloActivityResult> {
     const request: PerformActivityRequest = { activityId };
 
-    return this.http.post<ApiResponse<{ player: any }>>(
+    return this.http.post<ApiResponse<SoloActivityResult>>(
       `${this.API_URL}/activities/perform`,
       request
     ).pipe(
       map(response => {
-        if (!response.success) {
+        if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to perform solo activity');
         }
-        return response;
+        return response.data;
       })
     );
   }
@@ -207,9 +210,10 @@ export class GameRepository {
 
   /**
    * Go to sleep and advance to next day
+   * Phase 2.5: Returns stat changes (base growth, current decay)
    */
-  sleep(): Observable<SleepResult> {
-    return this.http.post<ApiResponse<SleepResult>>(`${this.API_URL}/player/sleep`, {}).pipe(
+  sleep(): Observable<SleepResultWithStats> {
+    return this.http.post<ApiResponse<SleepResultWithStats>>(`${this.API_URL}/player/sleep`, {}).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to process sleep');

@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed } from '@angular/core';
+import { Component, inject, OnInit, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -6,12 +6,15 @@ import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
+import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship, LocationId, LocationWithNPCCount } from '../../../../../../shared/types';
+import { Relationship, LocationId, LocationWithNPCCount, Activity } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
+import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
+import { StatsPanelComponent } from '../stats-panel/stats-panel';
 import { getLocationDisplayName } from '../../../../shared/utils/location.utils';
 
 @Component({
@@ -23,8 +26,10 @@ import { getLocationDisplayName } from '../../../../shared/utils/location.utils'
     MatProgressSpinnerModule,
     MatIconModule,
     MatDividerModule,
+    MatExpansionModule,
     ActivityButtonComponent,
-    LocationMarkerComponent
+    LocationMarkerComponent,
+    StatsPanelComponent
   ],
   templateUrl: './game-home.html',
   styleUrl: './game-home.css',
@@ -123,6 +128,7 @@ export class GameHome implements OnInit {
 
   /**
    * Perform solo activity (no NPC required)
+   * Phase 2.5: Shows result modal with stat changes and outcome
    */
   onPerformSoloActivity(activityId: string): void {
     // Special handling for "Meet Someone New" activity
@@ -131,9 +137,19 @@ export class GameHome implements OnInit {
       return;
     }
 
+    const activity = this.activities().find(a => a.id === activityId);
+    if (!activity) return;
+
     this.facade.performSoloActivity(activityId).subscribe({
-      next: () => {
-        console.log(`Performed solo activity: ${activityId}`);
+      next: (result) => {
+        // Show result modal with stat changes (Phase 2.5)
+        this.dialog.open(ActivityResultModal, {
+          width: '450px',
+          data: {
+            activity,
+            result
+          }
+        });
       },
       error: (error) => {
         console.error('Failed to perform activity:', error);
