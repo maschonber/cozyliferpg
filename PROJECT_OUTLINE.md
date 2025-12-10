@@ -757,8 +757,8 @@ Best:          Adjusted Roll >= 80
 |------|---------|-------------|-----------|-------------|
 | Best | +5 | +0.5 Vitality, +0.3 Confidence | Standard | Perfect form, great pump, left feeling amazing |
 | Okay | +3 | — | Standard | Solid workout, steady progress |
-| Mixed | +2 | -0.5 Vitality | +10 min | Pushed too hard, mild muscle strain, equipment wait |
-| Catastrophic | +0 | -1 Vitality, -0.5 Confidence | +10 energy | Dropped weight, embarrassed yourself, limped home |
+| Mixed | +1 | -0.5 Vitality, -0.3 Confidence | +15 min | Pushed too hard, mild strain, waited for equipment |
+| Catastrophic | +0 | -1 Vitality, -0.5 Confidence | +15 energy cost | Dropped weight, injured yourself, limped home embarrassed |
 
 **Casual Date** (Social Romance Activity)
 - Difficulty: 40 | Relevant Stats: Confidence, Wit | Base Cost: 90 min, -20 energy, -$30
@@ -767,9 +767,9 @@ Best:          Adjusted Roll >= 80
 |------|---------|------------|-------|-----------|-------------|
 | Best | +12 | +8 | +1.5 Confidence, +0.5 Wit | -$15 saved | Amazing chemistry, they insisted on paying half |
 | Okay | +8 | +5 | +0.8 Confidence | Standard | Nice evening, good connection |
-| Mixed | +10 | -2 | +0.5 Confidence | Standard | Came on too strong - romantic but awkward |
-| Mixed (alt) | +3 | +8 | — | Standard | Great as friends, no romantic spark |
-| Catastrophic | -5 | -3 | -1 Confidence | +$10 extra | Disaster - spilled wine, awkward silence, offensive joke |
+| Mixed | +5 | -3 | -0.3 Confidence | Standard | Awkward moments, mixed signals, left uncertain |
+| Mixed (alt) | +2 | +3 | -0.3 Wit | +$10 extra | Tried too hard to impress, overspent, felt like a try-hard |
+| Catastrophic | -5 | -5 | -1 Confidence, -0.5 Empathy | +$15 extra | Disaster - spilled wine, said something offensive, they left early |
 
 **Study at Library** (Mental Solo Activity)
 - Difficulty: 30 | Relevant Stat: Knowledge | Base Cost: 120 min, -20 energy
@@ -778,8 +778,8 @@ Best:          Adjusted Roll >= 80
 |------|-----------|-------------|-----------|-------------|
 | Best | +5 | +0.5 Creativity | -15 min | Flow state, inspired connections, felt brilliant |
 | Okay | +3 | — | Standard | Productive session, learned something new |
-| Mixed | +2 | -0.3 Vitality | +30 min | Got distracted, eventually focused, eye strain |
-| Catastrophic | +1 | -0.5 Ambition | +10 energy | Fell asleep in the stacks, wasted afternoon |
+| Mixed | +1 | -0.3 Vitality, -0.2 Ambition | +30 min | Kept getting distracted, headache, wasted time |
+| Catastrophic | +0 | -0.5 Ambition, -0.3 Confidence | +10 energy cost | Fell asleep, got shushed, accomplished nothing |
 
 ---
 
