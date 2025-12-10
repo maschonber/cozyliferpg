@@ -195,6 +195,12 @@ export interface Activity {
     friendship?: number;
     romance?: number;
   };
+
+  // Stat system (Phase 2.5)
+  difficulty?: number;              // 1-100, determines challenge level
+  relevantStats?: StatName[];       // Stats that modify the success roll
+  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers
+  statRequirements?: Partial<Record<StatName, number>>;  // Minimum BASE stat required
 }
 
 /**
@@ -276,7 +282,7 @@ export interface Location {
 }
 
 /**
- * Player Character (Phase 2+3)
+ * Player Character (Phase 2+3+2.5)
  */
 export interface PlayerCharacter {
   id: string;
@@ -294,6 +300,11 @@ export interface PlayerCharacter {
 
   // Location tracking (Phase 3)
   currentLocation: LocationId; // Where the player currently is
+
+  // Stats (Phase 2.5)
+  archetype: PlayerArchetype;
+  stats: PlayerStats;
+  tracking: StatTracking;
 
   // Timestamps
   createdAt: string;
@@ -344,4 +355,124 @@ export interface TravelResult {
   newLocation: LocationId;
   travelTime: number;  // Minutes spent traveling
   arrivedAt: string;   // New time after travel
+}
+
+// ===== Phase 2.5: Player Stats & Progression =====
+
+/**
+ * Stat names (Phase 2.5)
+ */
+export type StatName =
+  // Physical stats
+  | 'fitness'
+  | 'vitality'
+  | 'poise'
+  // Mental stats
+  | 'knowledge'
+  | 'creativity'
+  | 'ambition'
+  // Social stats
+  | 'confidence'
+  | 'wit'
+  | 'empathy';
+
+/**
+ * Stat category (Phase 2.5)
+ */
+export type StatCategory = 'physical' | 'mental' | 'social';
+
+/**
+ * Player archetype for starting stat distribution (Phase 2.5)
+ */
+export type PlayerArchetype =
+  | 'athlete'
+  | 'scholar'
+  | 'social_butterfly'
+  | 'artist'
+  | 'professional'
+  | 'balanced';
+
+/**
+ * Activity outcome tier (Phase 2.5)
+ */
+export type OutcomeTier = 'catastrophic' | 'mixed' | 'okay' | 'best';
+
+/**
+ * Player stats - both base and current values (Phase 2.5)
+ */
+export interface PlayerStats {
+  // Base stats (permanent, 0-100)
+  baseFitness: number;
+  baseVitality: number;
+  basePoise: number;
+  baseKnowledge: number;
+  baseCreativity: number;
+  baseAmbition: number;
+  baseConfidence: number;
+  baseWit: number;
+  baseEmpathy: number;
+
+  // Current stats (active, 0 to base+30)
+  currentFitness: number;
+  currentVitality: number;
+  currentPoise: number;
+  currentKnowledge: number;
+  currentCreativity: number;
+  currentAmbition: number;
+  currentConfidence: number;
+  currentWit: number;
+  currentEmpathy: number;
+}
+
+/**
+ * Stat tracking for defensive stat calculations (Phase 2.5)
+ */
+export interface StatTracking {
+  minEnergyToday: number;       // Lowest energy reached today
+  workStreak: number;           // Consecutive days with work
+  restStreak: number;           // Consecutive days without work
+  burnoutStreak: number;        // Consecutive days hitting 0 energy
+  lateNightStreak: number;      // Consecutive days sleeping after 2am
+  workedToday: boolean;         // Did work activity today
+  hadCatastrophicFailureToday: boolean;  // Had a catastrophic outcome today
+}
+
+/**
+ * Stat change record for UI display (Phase 2.5)
+ */
+export interface StatChange {
+  stat: StatName;
+  previousBase: number;
+  newBase: number;
+  previousCurrent: number;
+  newCurrent: number;
+  baseDelta: number;
+  currentDelta: number;
+}
+
+/**
+ * Activity outcome with all effects (Phase 2.5)
+ */
+export interface ActivityOutcome {
+  tier: OutcomeTier;
+  roll: number;                  // Raw roll (1-100)
+  adjustedRoll: number;          // After stat bonus and difficulty penalty
+  description: string;           // Flavor text for this outcome
+
+  // Effects (deltas from base activity values)
+  friendshipDelta?: number;
+  romanceDelta?: number;
+  energyDelta?: number;          // Additional energy cost/savings
+  moneyDelta?: number;           // Additional money cost/savings
+  timeDelta?: number;            // Additional time cost/savings (minutes)
+  statEffects?: Partial<Record<StatName, number>>;  // Stat changes
+}
+
+/**
+ * Sleep result with stat changes (Phase 2.5 extension)
+ */
+export interface SleepResultWithStats extends SleepResult {
+  statChanges: StatChange[];     // All stat changes that occurred
+  baseGrowth: StatChange[];      // Stats where base increased
+  currentDecay: StatChange[];    // Stats where current decayed toward base
 }

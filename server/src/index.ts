@@ -10,7 +10,7 @@ import locationsRouter from './routes/locations';
 import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers, migratePhase3Locations } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers, migratePhase3Locations, migratePhase25Stats } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -126,6 +126,8 @@ async function startServer() {
         await seedUsers();
         console.log('🗺️  Running Phase 3 migration...');
         await migratePhase3Locations();
+        console.log('📊 Running Phase 2.5 stats migration...');
+        await migratePhase25Stats();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }
