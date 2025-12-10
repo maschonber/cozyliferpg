@@ -9,7 +9,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { GameStore } from '../store/game.store';
 import { GameRepository } from './game.repository';
-import { NPC, Relationship, Activity, PerformActivityResponse, PlayerCharacter, SleepResult } from '../../../../../shared/types';
+import { NPC, Relationship, Activity, PerformActivityResponse, PlayerCharacter, SleepResult, SleepResultWithStats, SoloActivityResult } from '../../../../../shared/types';
 
 @Injectable({
   providedIn: 'root'
@@ -281,17 +281,19 @@ export class GameFacade {
 
   /**
    * Perform a solo activity (no NPC required)
+   * Phase 2.5: Returns stat changes and outcome info
    */
-  performSoloActivity(activityId: string): Observable<any> {
+  performSoloActivity(activityId: string): Observable<SoloActivityResult> {
     this.store.setInteracting(true);
 
     return this.repository.performSoloActivity(activityId).pipe(
-      switchMap((response) => {
+      switchMap((result) => {
         this.store.setInteracting(false);
 
-        // Log activity result
+        // Log activity result with outcome
         const activity = this.store.activities().find(a => a.id === activityId);
-        console.log(`✅ Solo activity "${activity?.name}" completed`);
+        const outcomeText = result.outcome ? ` (${result.outcome.tier})` : '';
+        console.log(`✅ Solo activity "${activity?.name}" completed${outcomeText}`);
 
         // Reload player to get updated resources and reload activities to get updated availability
         return this.repository.getPlayer().pipe(
@@ -299,7 +301,7 @@ export class GameFacade {
           switchMap(() => this.repository.getActivities().pipe(
             tap((data) => this.store.setActivities(data.activities, data.availability))
           )),
-          map(() => response)
+          map(() => result)
         );
       }),
       catchError((error) => {

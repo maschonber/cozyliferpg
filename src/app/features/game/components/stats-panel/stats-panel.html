@@ -1,0 +1,53 @@
+<!-- Stats Panel (Phase 2.5) -->
+<div class="stats-panel">
+  @if (isLoading()) {
+    <div class="loading-container">
+      <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+    </div>
+  } @else {
+    @for (category of statCategories(); track category.name) {
+      <mat-card class="stat-category-card" [style.--category-color]="category.color">
+        <mat-card-header>
+          <mat-icon mat-card-avatar class="category-icon" [style.color]="category.color">
+            {{ category.icon }}
+          </mat-icon>
+          <mat-card-title>{{ category.name }}</mat-card-title>
+          <mat-card-subtitle>{{ category.description }}</mat-card-subtitle>
+        </mat-card-header>
+
+        <mat-card-content>
+          <div class="stats-list">
+            @for (stat of category.stats; track stat.name) {
+              <div class="stat-row" [matTooltip]="getStatTooltip(stat)" matTooltipPosition="left">
+                <div class="stat-header">
+                  <mat-icon class="stat-icon">{{ stat.icon }}</mat-icon>
+                  <span class="stat-label">{{ stat.label }}</span>
+                  <span class="stat-values">
+                    <span class="current-value" [class.has-bonus]="getCurrentBonus(stat) > 0">
+                      {{ stat.current | number:'1.0-0' }}
+                    </span>
+                    @if (getCurrentBonus(stat) > 0) {
+                      <span class="bonus-indicator">(+{{ getCurrentBonus(stat) | number:'1.0-0' }})</span>
+                    }
+                    <span class="base-value">/ {{ stat.base | number:'1.0-0' }}</span>
+                  </span>
+                </div>
+
+                <div class="stat-bar-container">
+                  <!-- Base stat bar (background) -->
+                  <div class="base-bar" [style.width.%]="getBasePercent(stat)"></div>
+                  <!-- Current stat bar (overlay) - can extend past base -->
+                  <div
+                    class="current-bar"
+                    [style.width.%]="getCurrentPercent(stat)"
+                    [class.above-base]="stat.current > stat.base">
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    }
+  }
+</div>

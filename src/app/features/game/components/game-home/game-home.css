@@ -27,6 +27,28 @@ app-location-marker {
   display: block;
 }
 
+/* Stats Expansion Panel (Phase 2.5) */
+.stats-expansion-panel {
+  margin-bottom: 24px;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 8px;
+}
+
+.stats-expansion-panel mat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+
+.stats-expansion-panel mat-panel-title mat-icon {
+  color: var(--primary-color, #6200ea);
+}
+
+.stats-expansion-panel mat-panel-description {
+  color: rgba(0, 0, 0, 0.6);
+}
+
 /* Action Section (Phase 3: Updated for multiple buttons) */
 .action-section {
   display: flex;

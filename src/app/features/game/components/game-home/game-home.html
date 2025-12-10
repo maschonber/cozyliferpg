@@ -17,6 +17,20 @@
     </app-location-marker>
   }
 
+  <!-- Character Stats Section (Phase 2.5) -->
+  <mat-expansion-panel class="stats-expansion-panel">
+    <mat-expansion-panel-header>
+      <mat-panel-title>
+        <mat-icon>assessment</mat-icon>
+        Character Stats
+      </mat-panel-title>
+      <mat-panel-description>
+        View your abilities
+      </mat-panel-description>
+    </mat-expansion-panel-header>
+    <app-stats-panel></app-stats-panel>
+  </mat-expansion-panel>
+
   <!-- Solo Activities Section (Phase 2) -->
   <div class="activities-section">
     <h2>What Would You Like To Do?</h2>
@@ -33,6 +47,7 @@
         <app-activity-button
           [activity]="activity"
           [availability]="getActivityAvailability(activity.id)"
+          [playerStats]="player()?.stats"
           [disabled]="interacting()"
           (activityClick)="onPerformSoloActivity($event)">
         </app-activity-button>

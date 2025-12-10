@@ -1,0 +1,119 @@
+<div class="activity-result-modal">
+  <h2 mat-dialog-title>
+    <mat-icon>{{ data.activity.category === 'work' ? 'work' :
+                 data.activity.category === 'social' ? 'groups' :
+                 data.activity.category === 'self_improvement' ? 'school' : 'local_activity' }}</mat-icon>
+    {{ data.activity.name }}
+  </h2>
+
+  <mat-dialog-content>
+    <div class="result-content">
+      <!-- Outcome Section (for activities with rolls) -->
+      @if (hasOutcome) {
+        @let outcome = data.result.outcome!;
+        @let tierInfo = getTierInfo(outcome.tier);
+
+        <div class="outcome-section" [style.--tier-color]="tierInfo.color">
+          <div class="tier-badge">
+            <mat-icon [style.color]="tierInfo.color">{{ tierInfo.icon }}</mat-icon>
+            <span class="tier-label">{{ tierInfo.label }}</span>
+          </div>
+
+          <p class="tier-description">{{ tierInfo.description }}</p>
+
+          <!-- Roll Details -->
+          <div class="roll-details">
+            <div class="roll-item">
+              <span class="roll-label">Roll</span>
+              <span class="roll-value">{{ outcome.roll }}</span>
+            </div>
+            <div class="roll-item">
+              <span class="roll-label">Stat Bonus</span>
+              <span class="roll-value positive">+{{ outcome.statBonus | number:'1.0-0' }}</span>
+            </div>
+            <div class="roll-item">
+              <span class="roll-label">Difficulty</span>
+              <span class="roll-value negative">-{{ outcome.difficultyPenalty }}</span>
+            </div>
+            <div class="roll-item total">
+              <span class="roll-label">Final</span>
+              <span class="roll-value">{{ outcome.adjustedRoll | number:'1.0-0' }}</span>
+            </div>
+          </div>
+        </div>
+
+        @if (hasStatChanges) {
+          <mat-divider></mat-divider>
+        }
+      }
+
+      <!-- Stat Changes Section -->
+      @if (hasStatChanges) {
+        <div class="stat-changes-section">
+          <h3>Stat Changes</h3>
+
+          <!-- Positive Changes -->
+          @if (positiveChanges.length > 0) {
+            <div class="stat-changes positive">
+              @for (change of positiveChanges; track change.stat) {
+                <div class="stat-change-item">
+                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
+                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
+                  <span class="stat-delta positive">+{{ change.currentDelta | number:'1.1-1' }}</span>
+                  <span class="stat-new-value">({{ change.newCurrent | number:'1.0-0' }})</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Negative Changes -->
+          @if (negativeChanges.length > 0) {
+            <div class="stat-changes negative">
+              @for (change of negativeChanges; track change.stat) {
+                <div class="stat-change-item">
+                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
+                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
+                  <span class="stat-delta negative">{{ change.currentDelta | number:'1.1-1' }}</span>
+                  <span class="stat-new-value">({{ change.newCurrent | number:'1.0-0' }})</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
+      <!-- No Roll Activities (leisure, etc.) -->
+      @if (!hasOutcome && !hasStatChanges) {
+        <div class="simple-result">
+          <mat-icon>check_circle</mat-icon>
+          <p>Activity completed successfully!</p>
+        </div>
+      }
+
+      <!-- Resource Summary -->
+      <div class="resource-summary">
+        <div class="resource-item">
+          <mat-icon>bolt</mat-icon>
+          <span>{{ data.activity.energyCost > 0 ? '+' : '' }}{{ data.activity.energyCost }} Energy</span>
+        </div>
+        @if (data.activity.moneyCost !== 0) {
+          <div class="resource-item">
+            <mat-icon>payments</mat-icon>
+            <span>{{ data.activity.moneyCost > 0 ? '+' : '' }}${{ data.activity.moneyCost }}</span>
+          </div>
+        }
+        <div class="resource-item">
+          <mat-icon>schedule</mat-icon>
+          <span>{{ data.activity.timeCost }} min</span>
+        </div>
+      </div>
+    </div>
+  </mat-dialog-content>
+
+  <mat-dialog-actions>
+    <button mat-raised-button color="primary" (click)="onContinue()">
+      <mat-icon>check</mat-icon>
+      Continue
+    </button>
+  </mat-dialog-actions>
+</div>

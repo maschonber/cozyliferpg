@@ -47,6 +47,51 @@
         </div>
       </div>
 
+      <!-- Stat Changes (Phase 2.5) -->
+      @if (hasStatChanges) {
+        <mat-divider></mat-divider>
+
+        <div class="stat-changes-section">
+          <h3>Overnight Stat Changes</h3>
+
+          <!-- Base Growth -->
+          @if (data.sleepResult.baseGrowth && data.sleepResult.baseGrowth.length > 0) {
+            <div class="stat-changes growth">
+              <span class="changes-label">
+                <mat-icon>trending_up</mat-icon>
+                Permanent Growth
+              </span>
+              @for (change of data.sleepResult.baseGrowth; track change.stat) {
+                <div class="stat-change-item">
+                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
+                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
+                  <span class="stat-delta positive">+{{ change.baseDelta | number:'1.1-1' }}</span>
+                  <span class="stat-new-value">({{ change.newBase | number:'1.0-0' }})</span>
+                </div>
+              }
+            </div>
+          }
+
+          <!-- Current Decay -->
+          @if (data.sleepResult.currentDecay && data.sleepResult.currentDecay.length > 0) {
+            <div class="stat-changes decay">
+              <span class="changes-label">
+                <mat-icon>trending_down</mat-icon>
+                Temporary Decay
+              </span>
+              @for (change of data.sleepResult.currentDecay; track change.stat) {
+                <div class="stat-change-item">
+                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
+                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
+                  <span class="stat-delta negative">{{ change.currentDelta | number:'1.1-1' }}</span>
+                  <span class="stat-new-value">({{ change.newCurrent | number:'1.0-0' }})</span>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+
       <!-- Summary Message -->
       <div class="summary-message">
         <p>You had a @if (data.sleepResult.hoursSlept >= 8) {

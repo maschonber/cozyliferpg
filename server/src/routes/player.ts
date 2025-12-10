@@ -1,5 +1,5 @@
 /**
- * Player Routes (Phase 2)
+ * Player Routes (Phase 2 + Phase 2.5)
  * API endpoints for player character management
  */
 
@@ -9,7 +9,8 @@ import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
-import { ApiResponse, PlayerCharacter, SleepResult } from '../../../shared/types';
+import { processDailyStatChanges } from '../services/stat';
+import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName } from '../../../shared/types';
 
 const router = Router();
 
@@ -80,8 +81,9 @@ router.post('/reset', async (req: AuthRequest, res: Response<ApiResponse<PlayerC
 /**
  * POST /api/player/sleep
  * Go to sleep and advance to next day
+ * Phase 2.5: Process stat changes (base growth, current decay)
  */
-router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepResult>>) => {
+router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepResultWithStats>>) => {
   if (!req.user || !req.user.userId) {
     res.status(401).json({
       success: false,
@@ -109,13 +111,40 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     const newDay = player.currentDay + 1;
     const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
 
-    // Update player character (Phase 3: always set location to home)
+    // Phase 2.5: Process daily stat changes (base growth, current decay)
+    const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
+    const statResult = processDailyStatChanges(player.stats, trainedStats);
+
+    // Separate changes into growth vs decay for the response
+    const baseGrowth = statResult.changes.filter(c => c.baseDelta > 0);
+    const currentDecay = statResult.changes.filter(c => c.currentDelta < 0);
+
+    // Update player character with new stats and reset tracking
     await updatePlayerCharacter(pool, player.id, {
       currentTime: sleepResults.wakeTime,
       currentDay: newDay,
       currentEnergy: newEnergy,
       lastSleptAt: bedtime,
-      currentLocation: 'home'
+      currentLocation: 'home',
+      stats: statResult.newStats,
+      tracking: {
+        minEnergyToday: 100,  // Reset for new day
+        workStreak: player.tracking.workedToday
+          ? player.tracking.workStreak + 1
+          : 0,
+        restStreak: player.tracking.workedToday
+          ? 0
+          : player.tracking.restStreak + 1,
+        burnoutStreak: player.tracking.minEnergyToday <= 0
+          ? player.tracking.burnoutStreak + 1
+          : 0,
+        lateNightStreak: parseInt(bedtime.split(':')[0]) >= 2
+          ? player.tracking.lateNightStreak + 1
+          : 0,
+        workedToday: false,
+        hadCatastrophicFailureToday: false,
+        statsTrainedToday: []  // Reset for new day
+      }
     });
 
     res.json({
@@ -124,7 +153,10 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
         ...sleepResults,
         newDay,
         traveledHome: travelTimeHome > 0,
-        travelTime: travelTimeHome
+        travelTime: travelTimeHome,
+        statChanges: statResult.changes,
+        baseGrowth,
+        currentDecay
       }
     });
   } catch (error) {

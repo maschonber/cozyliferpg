@@ -281,3 +281,101 @@ export async function migratePhase3Locations() {
   }
 }
 
+// Phase 2.5 Migration: Add player stats and archetype
+export async function migratePhase25Stats() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Phase 2.5 stats migration...');
+
+    // Check if archetype column exists (use as migration marker)
+    const archetypeCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='archetype'
+    `);
+
+    if (archetypeCheck.rows.length === 0) {
+      console.log('  Adding archetype column...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN archetype VARCHAR(50) NOT NULL DEFAULT 'balanced'
+      `);
+
+      // Add Base stats (permanent, 0-100)
+      console.log('  Adding base stat columns...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN base_fitness REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_vitality REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_poise REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_knowledge REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_creativity REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_ambition REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_confidence REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_wit REAL NOT NULL DEFAULT 15,
+        ADD COLUMN base_empathy REAL NOT NULL DEFAULT 15
+      `);
+
+      // Add Current stats (active, 0 to base+30)
+      console.log('  Adding current stat columns...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN current_fitness REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_vitality REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_poise REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_knowledge REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_creativity REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_ambition REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_confidence REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_wit REAL NOT NULL DEFAULT 15,
+        ADD COLUMN current_empathy REAL NOT NULL DEFAULT 15
+      `);
+
+      // Add tracking columns for defensive stats
+      console.log('  Adding stat tracking columns...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN min_energy_today INTEGER NOT NULL DEFAULT 100,
+        ADD COLUMN work_streak INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN rest_streak INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN burnout_streak INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN late_night_streak INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN worked_today BOOLEAN NOT NULL DEFAULT false,
+        ADD COLUMN had_catastrophic_failure_today BOOLEAN NOT NULL DEFAULT false
+      `);
+
+      console.log('  ✅ Added all Phase 2.5 stat columns');
+    } else {
+      console.log('  ⏭️  Phase 2.5 stat columns already exist');
+    }
+
+    // Check if stats_trained_today column exists
+    const trainedCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='stats_trained_today'
+    `);
+
+    if (trainedCheck.rows.length === 0) {
+      console.log('  Adding stats_trained_today column...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN stats_trained_today TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[]
+      `);
+      console.log('  ✅ Added stats_trained_today column');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Phase 2.5 stats migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Phase 2.5 migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
