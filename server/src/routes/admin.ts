@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pool, initDatabase } from '../db';
+import { pool, initDatabase, migratePhase3Locations, migratePhase25Stats } from '../db';
 
 const router = Router();
 
@@ -89,6 +89,51 @@ router.get('/schema-status', async (req: Request, res: Response) => {
     return res.status(500).json({
       success: false,
       error: 'Failed to check schema status',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Run database migrations for Phase 2.5 and Phase 3
+ * This adds stat columns and location columns to existing tables
+ *
+ * Usage: POST /api/admin/migrate?token=ADMIN_SECRET
+ */
+router.post('/migrate', async (req: Request, res: Response) => {
+  try {
+    // Simple token-based auth
+    const adminToken = process.env.ADMIN_TOKEN || 'dev-admin-token';
+    const providedToken = req.query.token;
+
+    if (providedToken !== adminToken) {
+      return res.status(403).json({
+        success: false,
+        error: 'Invalid admin token'
+      });
+    }
+
+    console.log('🔧 Admin: Running database migrations...');
+
+    // Run Phase 3 migration (locations)
+    console.log('  Running Phase 3 migration (locations)...');
+    await migratePhase3Locations();
+
+    // Run Phase 2.5 migration (stats)
+    console.log('  Running Phase 2.5 migration (stats)...');
+    await migratePhase25Stats();
+
+    return res.json({
+      success: true,
+      message: 'Database migrations completed successfully',
+      migrations: ['Phase 3 Locations', 'Phase 2.5 Stats'],
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Admin migrate error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Migration failed',
       details: error instanceof Error ? error.message : 'Unknown error'
     });
   }
