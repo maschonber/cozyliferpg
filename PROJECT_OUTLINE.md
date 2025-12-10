@@ -733,6 +733,54 @@ Best:          Adjusted Roll >= 80
 
 *Note: Even a max-Fitness athlete has meaningful failure chance on a marathon, and Best outcome remains uncommon (~18%). Meanwhile, a beginner can reliably enjoy a park stroll.*
 
+#### Outcome Tier Guidelines
+
+| Tier | Target Frequency | Primary Effect | Secondary Effects | Narrative Feel |
+|------|------------------|----------------|-------------------|----------------|
+| **Best** | ~10-20% at appropriate difficulty | 150-200% of expected gains | Bonus secondary stat gain, resource savings | "Everything clicked" - memorable success |
+| **Okay** | ~35-45% at appropriate difficulty | Expected gains as designed | Standard resource costs | Reliable progress, no surprises |
+| **Mixed** | ~25-35% | Partial gains OR full gains with tradeoffs | One stat up + another down, or gains + extra cost | "Got something, but..." - interesting story |
+| **Catastrophic** | ~10-20% at appropriate difficulty | Minimal or no primary gains | Stat loss, relationship damage, extra resource costs | "Disaster" - memorable failure, actual setback |
+
+**Design Principles:**
+- **Best**: Should feel rewarding and memorable. Player exceeded expectations.
+- **Okay**: The baseline. What the activity promises when things go normally.
+- **Mixed**: Creates interesting narrative moments. Success came at a price, or partial success.
+- **Catastrophic**: Real consequences. The player screwed up - insulted their date, injured themselves, wasted time. Should be uncommon at appropriate difficulty but a real risk when overreaching.
+
+#### Example Outcome Tables
+
+**Gym Workout** (Physical Solo Activity)
+- Difficulty: 35 | Relevant Stat: Fitness | Base Cost: 60 min, -25 energy
+
+| Tier | Fitness | Other Stats | Resources | Description |
+|------|---------|-------------|-----------|-------------|
+| Best | +5 | +0.5 Vitality, +0.3 Confidence | Standard | Perfect form, great pump, left feeling amazing |
+| Okay | +3 | — | Standard | Solid workout, steady progress |
+| Mixed | +2 | -0.5 Vitality | +10 min | Pushed too hard, mild muscle strain, equipment wait |
+| Catastrophic | +0 | -1 Vitality, -0.5 Confidence | +10 energy | Dropped weight, embarrassed yourself, limped home |
+
+**Casual Date** (Social Romance Activity)
+- Difficulty: 40 | Relevant Stats: Confidence, Wit | Base Cost: 90 min, -20 energy, -$30
+
+| Tier | Romance | Friendship | Stats | Resources | Description |
+|------|---------|------------|-------|-----------|-------------|
+| Best | +12 | +8 | +1.5 Confidence, +0.5 Wit | -$15 saved | Amazing chemistry, they insisted on paying half |
+| Okay | +8 | +5 | +0.8 Confidence | Standard | Nice evening, good connection |
+| Mixed | +10 | -2 | +0.5 Confidence | Standard | Came on too strong - romantic but awkward |
+| Mixed (alt) | +3 | +8 | — | Standard | Great as friends, no romantic spark |
+| Catastrophic | -5 | -3 | -1 Confidence | +$10 extra | Disaster - spilled wine, awkward silence, offensive joke |
+
+**Study at Library** (Mental Solo Activity)
+- Difficulty: 30 | Relevant Stat: Knowledge | Base Cost: 120 min, -20 energy
+
+| Tier | Knowledge | Other Stats | Resources | Description |
+|------|-----------|-------------|-----------|-------------|
+| Best | +5 | +0.5 Creativity | -15 min | Flow state, inspired connections, felt brilliant |
+| Okay | +3 | — | Standard | Productive session, learned something new |
+| Mixed | +2 | -0.3 Vitality | +30 min | Got distracted, eventually focused, eye strain |
+| Catastrophic | +1 | -0.5 Ambition | +10 energy | Fell asleep in the stacks, wasted afternoon |
+
 ---
 
 ### Starting Values & Character Archetypes
