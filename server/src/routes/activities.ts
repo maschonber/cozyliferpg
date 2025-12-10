@@ -10,7 +10,7 @@ import { getActivityById, getAvailableActivities } from '../services/relationshi
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
 import { rollOutcome, scaleEffectByTier, meetsStatRequirements } from '../services/outcome';
-import { applyStatEffects } from '../services/stat';
+import { applyStatEffects, getBaseStat, getCurrentStat } from '../services/stat';
 import {
   ApiResponse,
   PerformActivityRequest,
@@ -18,7 +18,8 @@ import {
   ActivityAvailability,
   ActivityOutcome,
   StatName,
-  StatChange
+  StatChange,
+  PlayerStats
 } from '../../../shared/types';
 
 const router = Router();
@@ -187,15 +188,22 @@ router.post(
           newStats = statResult.newStats;
 
           // Convert actualChanges to StatChange format
-          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => ({
-            stat: stat as StatName,
-            previousBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            newBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            previousCurrent: player.stats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            newCurrent: newStats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            baseDelta: 0,
-            currentDelta: change || 0
-          }));
+          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => {
+            const statName = stat as StatName;
+            const previousCurrent = getCurrentStat(player.stats, statName);
+            const newCurrent = getCurrentStat(newStats, statName);
+            const baseStat = getBaseStat(player.stats, statName);
+
+            return {
+              stat: statName,
+              previousBase: baseStat,
+              newBase: baseStat,
+              previousCurrent: previousCurrent,
+              newCurrent: newCurrent,
+              baseDelta: 0,
+              currentDelta: change || 0
+            };
+          });
         }
       } else {
         // No roll required - apply stat effects directly (for passive/leisure activities)
@@ -204,15 +212,22 @@ router.post(
           newStats = statResult.newStats;
 
           // Convert actualChanges to StatChange format
-          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => ({
-            stat: stat as StatName,
-            previousBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            newBase: player.stats[`base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            previousCurrent: player.stats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            newCurrent: newStats[`current${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats] as number,
-            baseDelta: 0,
-            currentDelta: change || 0
-          }));
+          statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => {
+            const statName = stat as StatName;
+            const previousCurrent = getCurrentStat(player.stats, statName);
+            const newCurrent = getCurrentStat(newStats, statName);
+            const baseStat = getBaseStat(player.stats, statName);
+
+            return {
+              stat: statName,
+              previousBase: baseStat,
+              newBase: baseStat,
+              previousCurrent: previousCurrent,
+              newCurrent: newCurrent,
+              baseDelta: 0,
+              currentDelta: change || 0
+            };
+          });
 
           statsTrainedThisActivity = Object.keys(activity.statEffects).filter(
             stat => (activity.statEffects as any)[stat] > 0
