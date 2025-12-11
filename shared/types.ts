@@ -471,12 +471,22 @@ export interface ActivityOutcome {
 }
 
 /**
+ * Defensive stat changes (Phase 2.5.2)
+ */
+export interface DefensiveStatChanges {
+  vitality: number;
+  ambition: number;
+  empathy: number;
+}
+
+/**
  * Sleep result with stat changes (Phase 2.5 extension)
  */
 export interface SleepResultWithStats extends SleepResult {
   statChanges: StatChange[];     // All stat changes that occurred
   baseGrowth: StatChange[];      // Stats where base increased
   currentDecay: StatChange[];    // Stats where current decayed toward base
+  defensiveStatChanges?: DefensiveStatChanges;  // Defensive stat changes (Phase 2.5.2)
 }
 
 /**
