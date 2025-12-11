@@ -68,12 +68,12 @@ export const ACTIVITIES = [
     relevantStats: ['confidence'] as StatName[],
     // Phase 2.5.3: Outcome Profile - minimal stat training, relationship is main benefit
     outcomeProfile: {
-      mainStats: ['confidence'],
+      mainStats: ['confidence'] as StatName[],
       mainStatGain: 0.5,  // Small stat gain
-      secondaryStats: ['wit', 'poise'],
+      secondaryStats: ['wit', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 0.5,
         moneyCost: 5  // Had to pay for them too
       }
@@ -95,12 +95,12 @@ export const ACTIVITIES = [
     relevantStats: ['confidence'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['confidence'],
+      mainStats: ['confidence'] as StatName[],
       mainStatGain: 0.3,  // Very small
-      secondaryStats: ['wit'],
+      secondaryStats: ['wit'] as StatName[],
       secondaryStatGain: 0.3,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 0.3
       }
     }
@@ -122,12 +122,12 @@ export const ACTIVITIES = [
     relevantStats: ['confidence', 'wit'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['confidence'],
+      mainStats: ['confidence'] as StatName[],
       mainStatGain: 1,
-      secondaryStats: ['wit', 'poise'],
+      secondaryStats: ['wit', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 1,
         moneyCost: 15  // They didn't offer to split
       }
@@ -151,12 +151,12 @@ export const ACTIVITIES = [
     statRequirements: { empathy: 25 },  // Still requires empathy as gate
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['wit'],  // Mixed stat as main (deep conversations train wit)
+      mainStats: ['wit'] as StatName[],  // Mixed stat as main (deep conversations train wit)
       mainStatGain: 2,
-      secondaryStats: ['knowledge', 'poise'],
+      secondaryStats: ['knowledge', 'poise'] as StatName[],
       secondaryStatGain: 1,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 1,
         energyCost: 10  // Emotionally draining
       }
@@ -179,9 +179,9 @@ export const ACTIVITIES = [
     relevantStats: [] as StatName[],
     // Phase 2.5.3: Outcome Profile - passive activity, minimal gains
     outcomeProfile: {
-      mainStats: ['poise'],  // Mixed stat, relaxing together
+      mainStats: ['poise'] as StatName[],  // Mixed stat, relaxing together
       mainStatGain: 0.5,
-      secondaryStats: [],
+      secondaryStats: [] as StatName[],
       negativeEffects: {
         moneyCost: 10  // Bought extra snacks
       }
@@ -204,12 +204,12 @@ export const ACTIVITIES = [
     relevantStats: ['fitness'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['fitness'],
+      mainStats: ['fitness'] as StatName[],
       mainStatGain: 1.5,  // Social fitness is less effective than solo
-      secondaryStats: ['poise'],
+      secondaryStats: ['poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 0.5,
         energyCost: 10  // Injured or embarrassed
       }
@@ -232,12 +232,12 @@ export const ACTIVITIES = [
     relevantStats: ['creativity'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['creativity'],  // Mixed stat as main
+      mainStats: ['creativity'] as StatName[],  // Mixed stat as main
       mainStatGain: 1.5,
-      secondaryStats: ['poise'],
+      secondaryStats: ['poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 1,
         moneyCost: 10,  // Burned the food, ordered pizza
         timeCost: 30
@@ -260,12 +260,12 @@ export const ACTIVITIES = [
     relevantStats: ['confidence', 'wit'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['wit'],  // Mixed stat as main
+      mainStats: ['wit'] as StatName[],  // Mixed stat as main
       mainStatGain: 1.5,
-      secondaryStats: ['confidence', 'poise'],
+      secondaryStats: ['confidence', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 1.5,  // They didn't find it funny
         energyCost: 8
       }
@@ -292,12 +292,12 @@ export const ACTIVITIES = [
     statRequirements: { knowledge: 10 },
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['knowledge'],  // Active stat
+      mainStats: ['knowledge'] as StatName[],  // Active stat
       mainStatGain: 2.5,  // Reduced from 5
-      secondaryStats: ['creativity', 'poise'],  // Removed defensive stat (ambition)
+      secondaryStats: ['creativity', 'poise'] as StatName[],  // Removed defensive stat (ambition)
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 0.5,
         energyCost: 8  // Mental exhaustion/frustration
       }
@@ -320,12 +320,12 @@ export const ACTIVITIES = [
     relevantStats: ['fitness'] as StatName[],
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['fitness'],  // Active stat
+      mainStats: ['fitness'] as StatName[],  // Active stat
       mainStatGain: 3,  // Reduced from 5
-      secondaryStats: ['poise', 'confidence'],  // Removed defensive stat (vitality)
+      secondaryStats: ['poise', 'confidence'] as StatName[],  // Removed defensive stat (vitality)
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 1,
         energyCost: 10,  // Injury or strain
         timeCost: 15  // Waited for equipment
@@ -347,12 +347,12 @@ export const ACTIVITIES = [
     difficulty: 25,
     relevantStats: ['knowledge'] as StatName[],
     outcomeProfile: {
-      mainStats: ['knowledge'],
+      mainStats: ['knowledge'] as StatName[],
       mainStatGain: 2,
-      secondaryStats: ['creativity'],
+      secondaryStats: ['creativity'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['fitness'],
+        stats: ['fitness'] as StatName[],
         statPenalty: 0.5,
         timeCost: 15
       }
@@ -373,12 +373,12 @@ export const ACTIVITIES = [
     difficulty: 45,
     relevantStats: ['creativity'] as StatName[],
     outcomeProfile: {
-      mainStats: ['creativity'],
+      mainStats: ['creativity'] as StatName[],
       mainStatGain: 2.5,
-      secondaryStats: ['knowledge', 'poise'],
+      secondaryStats: ['knowledge', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['fitness', 'confidence'],
+        stats: ['fitness', 'confidence'] as StatName[],
         statPenalty: 0.5,
         moneyCost: 5,  // Materials used up
         timeCost: 20  // Lost in flow state
@@ -444,9 +444,9 @@ export const ACTIVITIES = [
     difficulty: 10,
     relevantStats: ['poise'] as StatName[],
     outcomeProfile: {
-      mainStats: ['poise'],
+      mainStats: ['poise'] as StatName[],
       mainStatGain: 1,
-      secondaryStats: ['creativity'],
+      secondaryStats: ['creativity'] as StatName[],
       secondaryStatGain: 0.3,
       negativeEffects: {
         timeCost: 10  // Time flies when enjoying music
@@ -500,12 +500,12 @@ export const ACTIVITIES = [
     difficulty: 50,
     relevantStats: ['confidence'] as StatName[],
     outcomeProfile: {
-      mainStats: ['confidence'],
+      mainStats: ['confidence'] as StatName[],
       mainStatGain: 2.5,
-      secondaryStats: ['wit', 'poise'],
+      secondaryStats: ['wit', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence', 'poise'],
+        stats: ['confidence', 'poise'] as StatName[],
         statPenalty: 1,
         energyCost: 10,  // Social anxiety
         timeCost: 20  // Awkward conversation
@@ -560,12 +560,12 @@ export const ACTIVITIES = [
     difficulty: 30,
     relevantStats: ['fitness'] as StatName[],
     outcomeProfile: {
-      mainStats: ['fitness'],
+      mainStats: ['fitness'] as StatName[],
       mainStatGain: 3,
-      secondaryStats: ['poise'],
+      secondaryStats: ['poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['fitness'],
+        stats: ['fitness'] as StatName[],
         statPenalty: 0.5,
         energyCost: 5,  // Overexertion
         timeCost: 10  // Got lost/distracted
@@ -588,12 +588,12 @@ export const ACTIVITIES = [
     difficulty: 40,
     relevantStats: ['fitness'] as StatName[],
     outcomeProfile: {
-      mainStats: ['fitness'],
+      mainStats: ['fitness'] as StatName[],
       mainStatGain: 3,
-      secondaryStats: ['poise', 'confidence'],
+      secondaryStats: ['poise', 'confidence'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['fitness'],
+        stats: ['fitness'] as StatName[],
         statPenalty: 0.5,
         energyCost: 8,  // Water too cold/rough
         timeCost: 15  // Had to rest
@@ -615,9 +615,9 @@ export const ACTIVITIES = [
     difficulty: 15,
     relevantStats: ['wit'] as StatName[],
     outcomeProfile: {
-      mainStats: ['wit'],
+      mainStats: ['wit'] as StatName[],
       mainStatGain: 1.5,
-      secondaryStats: ['poise'],
+      secondaryStats: ['poise'] as StatName[],
       secondaryStatGain: 0.3,
       negativeEffects: {
         moneyCost: 5,  // Spent more tokens
@@ -643,12 +643,12 @@ export const ACTIVITIES = [
     difficulty: 25,
     relevantStats: ['poise', 'confidence'] as StatName[],
     outcomeProfile: {
-      mainStats: ['poise'],
+      mainStats: ['poise'] as StatName[],
       mainStatGain: 0.8,
-      secondaryStats: ['confidence', 'wit'],
+      secondaryStats: ['confidence', 'wit'] as StatName[],
       secondaryStatGain: 0.3,
       negativeEffects: {
-        stats: ['confidence', 'poise'],
+        stats: ['confidence', 'poise'] as StatName[],
         statPenalty: 0.5,
         moneyCost: 5,  // Food cost more
         timeCost: 15  // Awkward silences
@@ -671,12 +671,12 @@ export const ACTIVITIES = [
     difficulty: 30,
     relevantStats: ['poise', 'confidence'] as StatName[],
     outcomeProfile: {
-      mainStats: ['poise'],
+      mainStats: ['poise'] as StatName[],
       mainStatGain: 1,
-      secondaryStats: ['confidence', 'wit'],
+      secondaryStats: ['confidence', 'wit'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence', 'poise'],
+        stats: ['confidence', 'poise'] as StatName[],
         statPenalty: 0.5,
         moneyCost: 5,  // Bought extra drinks
         energyCost: 5  // Stayed too late
@@ -699,12 +699,12 @@ export const ACTIVITIES = [
     difficulty: 15,
     relevantStats: ['poise', 'confidence'] as StatName[],
     outcomeProfile: {
-      mainStats: ['poise'],
+      mainStats: ['poise'] as StatName[],
       mainStatGain: 0.5,
-      secondaryStats: ['confidence'],
+      secondaryStats: ['confidence'] as StatName[],
       secondaryStatGain: 0.3,
       negativeEffects: {
-        stats: ['confidence'],
+        stats: ['confidence'] as StatName[],
         statPenalty: 0.3,
         moneyCost: 3,  // Bought snacks
         timeCost: 10  // Lost track of time

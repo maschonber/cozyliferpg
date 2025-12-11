@@ -19,6 +19,7 @@ import {
   Activity,
   ActivityAvailability,
   ActivityOutcome,
+  OutcomeTier,
   StatName,
   StatChange,
   PlayerStats
@@ -32,7 +33,7 @@ const router = Router();
 interface ActivityResult {
   player: any;
   outcome?: {
-    tier: string;
+    tier: OutcomeTier;
     roll: number;
     adjustedRoll: number;
     statBonus: number;
