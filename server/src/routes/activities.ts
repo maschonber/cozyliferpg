@@ -12,6 +12,7 @@ import { canPerformActivity, addMinutes } from '../services/time';
 import { rollOutcome, scaleEffectByTier, meetsStatRequirements } from '../services/outcome';
 import { applyStatEffects, getBaseStat, getCurrentStat } from '../services/stat';
 import { recordPlayerActivity } from '../services/activity-history';
+import { generateOutcome, generateOutcomeDescription } from '../services/outcome-generator';
 import {
   ApiResponse,
   PerformActivityRequest,
@@ -149,11 +150,14 @@ router.post(
         return;
       }
 
-      // Phase 2.5: Roll for outcome if activity has difficulty
+      // Phase 2.5 & 2.5.3: Roll for outcome if activity has difficulty
       let outcome: ActivityResult['outcome'];
       let statChanges: StatChange[] = [];
       let statsTrainedThisActivity: StatName[] = [];
       let newStats = player.stats;
+      let additionalEnergyCost = 0;
+      let additionalMoneyCost = 0;
+      let additionalTimeCost = 0;
 
       if (activity.difficulty !== undefined && activity.difficulty > 0) {
         // Roll using relevant stats
@@ -171,8 +175,47 @@ router.post(
           difficultyPenalty: rollResult.difficultyPenalty
         };
 
-        // Apply stat effects scaled by outcome tier
-        if (activity.statEffects) {
+        // Phase 2.5.3: Use outcome profile if available, otherwise fallback to old system
+        if (activity.outcomeProfile) {
+          // NEW: Generate outcome from profile
+          const generatedOutcome = generateOutcome(rollResult.tier, activity.outcomeProfile);
+
+          // Apply stat effects from generated outcome
+          if (Object.keys(generatedOutcome.statEffects).length > 0) {
+            const statResult = applyStatEffects(player.stats, generatedOutcome.statEffects);
+            newStats = statResult.newStats;
+
+            // Convert actualChanges to StatChange format
+            statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => {
+              const statName = stat as StatName;
+              const previousCurrent = getCurrentStat(player.stats, statName);
+              const newCurrent = getCurrentStat(newStats, statName);
+              const baseStat = getBaseStat(player.stats, statName);
+
+              return {
+                stat: statName,
+                previousBase: baseStat,
+                newBase: baseStat,
+                previousCurrent: previousCurrent,
+                newCurrent: newCurrent,
+                baseDelta: 0,
+                currentDelta: change || 0
+              };
+            });
+
+            // Track which stats were trained (positive gains)
+            statsTrainedThisActivity = Object.entries(generatedOutcome.statEffects)
+              .filter(([_, value]) => value > 0)
+              .map(([stat, _]) => stat as StatName);
+          }
+
+          // Apply additional resource costs from outcome
+          additionalEnergyCost = generatedOutcome.additionalEnergyCost;
+          additionalMoneyCost = generatedOutcome.additionalMoneyCost;
+          additionalTimeCost = generatedOutcome.additionalTimeCost;
+
+        } else if (activity.statEffects) {
+          // OLD: Use legacy scaling system (deprecated)
           const scaledEffects: Partial<Record<StatName, number>> = {};
 
           for (const [stat, baseValue] of Object.entries(activity.statEffects)) {
@@ -236,10 +279,10 @@ router.post(
         }
       }
 
-      // Calculate new resource values
-      const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost));
-      const newMoney = player.money + activity.moneyCost;
-      const newTime = addMinutes(player.currentTime, activity.timeCost);
+      // Calculate new resource values (including outcome-based additional costs)
+      const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost + additionalEnergyCost));
+      const newMoney = player.money + activity.moneyCost + additionalMoneyCost;
+      const newTime = addMinutes(player.currentTime, activity.timeCost + additionalTimeCost);
 
       // Track minimum energy (for defensive stats)
       const minEnergy = Math.min(player.tracking.minEnergyToday, newEnergy);

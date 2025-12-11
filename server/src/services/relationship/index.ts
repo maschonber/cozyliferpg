@@ -30,7 +30,20 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats
     difficulty: 30,
     relevantStats: ['ambition'] as StatName[],
-    statEffects: { ambition: 2 }
+    statEffects: { ambition: 2 },  // Deprecated - use outcomeProfile
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['ambition'],
+      mainStatGain: 2,
+      secondaryStats: ['vitality', 'confidence', 'poise'],
+      secondaryStatGain: 1,
+      negativeEffects: {
+        stats: ['vitality', 'confidence'],
+        statPenalty: 1,
+        energyCost: 10,  // Extra exhaustion
+        timeCost: 30  // Manager kept you late
+      }
+    }
   },
   {
     id: 'work_full_day',
@@ -47,8 +60,21 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats - Requires commitment
     difficulty: 40,
     relevantStats: ['ambition', 'vitality'] as StatName[],
-    statEffects: { ambition: 4 },
-    statRequirements: { ambition: 20 }
+    statEffects: { ambition: 4 },  // Deprecated - use outcomeProfile
+    statRequirements: { ambition: 20 },
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['ambition'],
+      mainStatGain: 4,
+      secondaryStats: ['vitality', 'confidence', 'knowledge'],
+      secondaryStatGain: 1.5,
+      negativeEffects: {
+        stats: ['vitality', 'confidence'],
+        statPenalty: 1.5,
+        energyCost: 15,  // Exhaustion from mistakes
+        timeCost: 60  // Had to stay late to fix errors
+      }
+    }
   },
 
   // Social Activities (with NPCs) - Train: Confidence, Wit, Empathy
@@ -66,7 +92,19 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats
     difficulty: 20,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 1, empathy: 1 }
+    statEffects: { confidence: 1, empathy: 1 },  // Deprecated - use outcomeProfile
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['confidence'],
+      mainStatGain: 1,
+      secondaryStats: ['empathy', 'wit', 'poise'],
+      secondaryStatGain: 1,
+      negativeEffects: {
+        stats: ['confidence', 'empathy'],
+        statPenalty: 0.5,
+        moneyCost: 5  // Had to pay for them too
+      }
+    }
   },
   {
     id: 'quick_chat',
@@ -116,8 +154,20 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats - Requires emotional depth
     difficulty: 50,
     relevantStats: ['empathy', 'wit'] as StatName[],
-    statEffects: { empathy: 3, knowledge: 1 },
-    statRequirements: { empathy: 25 }
+    statEffects: { empathy: 3, knowledge: 1 },  // Deprecated - use outcomeProfile
+    statRequirements: { empathy: 25 },
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['empathy'],
+      mainStatGain: 3,
+      secondaryStats: ['wit', 'knowledge', 'poise'],
+      secondaryStatGain: 1,
+      negativeEffects: {
+        stats: ['empathy', 'confidence'],
+        statPenalty: 1.5,
+        energyCost: 10  // Emotionally draining
+      }
+    }
   },
   {
     id: 'go_to_movies',
@@ -203,8 +253,20 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats - Train Knowledge (requires basic learning skills)
     difficulty: 45,
     relevantStats: ['knowledge'] as StatName[],
-    statEffects: { knowledge: 5 },
-    statRequirements: { knowledge: 10 }
+    statEffects: { knowledge: 5 },  // Deprecated - use outcomeProfile
+    statRequirements: { knowledge: 10 },
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['knowledge'],
+      mainStatGain: 5,
+      secondaryStats: ['creativity', 'ambition', 'poise'],
+      secondaryStatGain: 1,
+      negativeEffects: {
+        stats: ['confidence', 'vitality'],
+        statPenalty: 1,
+        energyCost: 8  // Mental exhaustion/frustration
+      }
+    }
   },
   {
     id: 'work_out_gym',
@@ -221,7 +283,20 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats - Train Fitness & Vitality
     difficulty: 40,
     relevantStats: ['fitness'] as StatName[],
-    statEffects: { fitness: 5, vitality: 2 }
+    statEffects: { fitness: 5, vitality: 2 },  // Deprecated - use outcomeProfile
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['fitness'],
+      mainStatGain: 5,
+      secondaryStats: ['vitality', 'poise', 'confidence'],
+      secondaryStatGain: 1.5,
+      negativeEffects: {
+        stats: ['vitality', 'confidence'],
+        statPenalty: 1,
+        energyCost: 10,  // Injury or strain
+        timeCost: 15  // Waited for equipment
+      }
+    }
   },
   {
     id: 'read_book',

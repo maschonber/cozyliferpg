@@ -164,6 +164,29 @@ export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';
 export type ActivityCategory = 'work' | 'social' | 'self_improvement' | 'leisure' | 'self_care' | 'discovery';
 
 /**
+ * Activity outcome profile (Phase 2.5.3)
+ * Defines how activity outcomes vary by tier
+ */
+export interface ActivityOutcomeProfile {
+  // Main stat benefits (granted except on catastrophic)
+  mainStats: StatName[];
+  mainStatGain: number;  // Base value before outcome scaling
+
+  // Secondary benefits (granted on best/okay outcomes)
+  secondaryStats?: StatName[];  // Pool to randomly select from
+  secondaryStatGain?: number;
+
+  // Negative effects (applied on mixed/catastrophic outcomes)
+  negativeEffects?: {
+    stats?: StatName[];  // Pool of stats that can be penalized
+    statPenalty?: number;  // Base penalty per stat
+    energyCost?: number;  // Additional energy cost
+    moneyCost?: number;  // Additional money cost
+    timeCost?: number;  // Additional time cost (minutes)
+  };
+}
+
+/**
  * Activity that player can perform with an NPC or alone
  */
 export interface Activity {
@@ -199,8 +222,11 @@ export interface Activity {
   // Stat system (Phase 2.5)
   difficulty?: number;              // 1-100, determines challenge level
   relevantStats?: StatName[];       // Stats that modify the success roll
-  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers
+  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers (deprecated - use outcomeProfile)
   statRequirements?: Partial<Record<StatName, number>>;  // Minimum BASE stat required
+
+  // Outcome system (Phase 2.5.3)
+  outcomeProfile?: ActivityOutcomeProfile;  // Defines varied outcomes by tier
 }
 
 /**
