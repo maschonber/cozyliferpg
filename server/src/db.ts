@@ -368,11 +368,123 @@ export async function migratePhase25Stats() {
       console.log('  ✅ Added stats_trained_today column');
     }
 
+    // Check if ending_energy_today column exists
+    const endingEnergyCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='ending_energy_today'
+    `);
+
+    if (endingEnergyCheck.rows.length === 0) {
+      console.log('  Adding ending_energy_today column...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN ending_energy_today INTEGER NOT NULL DEFAULT 100
+      `);
+      console.log('  ✅ Added ending_energy_today column');
+    }
+
     await client.query('COMMIT');
     console.log('✅ Phase 2.5 stats migration completed');
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('❌ Phase 2.5 migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Phase 2.5.1 Migration: Add player_activities table for activity history
+export async function migratePhase251ActivityHistory() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Phase 2.5.1 activity history migration...');
+
+    // Check if player_activities table exists
+    const tableCheck = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name='player_activities'
+    `);
+
+    if (tableCheck.rows.length === 0) {
+      console.log('  Creating player_activities table...');
+      await client.query(`
+        CREATE TABLE player_activities (
+          id VARCHAR(255) PRIMARY KEY,
+          player_id VARCHAR(255) NOT NULL,
+          activity_id VARCHAR(100) NOT NULL,
+
+          -- When it happened
+          performed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          day_number INTEGER NOT NULL,
+          time_of_day VARCHAR(5) NOT NULL,
+
+          -- Activity details (denormalized for historical accuracy)
+          activity_name VARCHAR(200),
+          category VARCHAR(50),
+          difficulty INTEGER,
+          relevant_stats TEXT[],
+
+          -- Costs (actual costs paid)
+          time_cost INTEGER NOT NULL,
+          energy_cost INTEGER NOT NULL,
+          money_cost INTEGER NOT NULL,
+
+          -- Outcome (if activity had a roll)
+          outcome_tier VARCHAR(20),  -- 'best', 'okay', 'mixed', 'catastrophic', NULL
+          roll INTEGER,
+          adjusted_roll INTEGER,
+          stat_bonus INTEGER,
+          difficulty_penalty INTEGER,
+
+          -- Effects (actual effects received)
+          stat_effects JSONB,  -- { "fitness": 3.5, "vitality": 1.2 }
+          energy_delta INTEGER,
+          money_delta INTEGER,
+
+          -- For social activities (if NPC was involved)
+          npc_id VARCHAR(255),
+          interaction_id VARCHAR(255),
+
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+          -- Foreign keys
+          FOREIGN KEY (player_id) REFERENCES player_characters(id) ON DELETE CASCADE,
+          FOREIGN KEY (npc_id) REFERENCES npcs(id) ON DELETE SET NULL,
+          FOREIGN KEY (interaction_id) REFERENCES interactions(id) ON DELETE SET NULL
+        )
+      `);
+
+      // Create indexes for efficient querying
+      console.log('  Creating indexes...');
+      await client.query(`
+        CREATE INDEX idx_player_activities_player_day
+        ON player_activities(player_id, day_number DESC)
+      `);
+      await client.query(`
+        CREATE INDEX idx_player_activities_performed_at
+        ON player_activities(player_id, performed_at DESC)
+      `);
+      await client.query(`
+        CREATE INDEX idx_player_activities_category
+        ON player_activities(player_id, category)
+      `);
+
+      console.log('  ✅ Created player_activities table and indexes');
+    } else {
+      console.log('  ⏭️  player_activities table already exists');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Phase 2.5.1 activity history migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Phase 2.5.1 migration failed:', error);
     throw error;
   } finally {
     client.release();

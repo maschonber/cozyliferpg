@@ -164,6 +164,29 @@ export type TimeSlot = 'morning' | 'afternoon' | 'evening' | 'night';
 export type ActivityCategory = 'work' | 'social' | 'self_improvement' | 'leisure' | 'self_care' | 'discovery';
 
 /**
+ * Activity outcome profile (Phase 2.5.3)
+ * Defines how activity outcomes vary by tier
+ */
+export interface ActivityOutcomeProfile {
+  // Main stat benefits (granted except on catastrophic)
+  mainStats: StatName[];
+  mainStatGain: number;  // Base value before outcome scaling
+
+  // Secondary benefits (granted on best/okay outcomes)
+  secondaryStats?: StatName[];  // Pool to randomly select from
+  secondaryStatGain?: number;
+
+  // Negative effects (applied on mixed/catastrophic outcomes)
+  negativeEffects?: {
+    stats?: StatName[];  // Pool of stats that can be penalized
+    statPenalty?: number;  // Base penalty per stat
+    energyCost?: number;  // Additional energy cost
+    moneyCost?: number;  // Additional money cost
+    timeCost?: number;  // Additional time cost (minutes)
+  };
+}
+
+/**
  * Activity that player can perform with an NPC or alone
  */
 export interface Activity {
@@ -199,8 +222,11 @@ export interface Activity {
   // Stat system (Phase 2.5)
   difficulty?: number;              // 1-100, determines challenge level
   relevantStats?: StatName[];       // Stats that modify the success roll
-  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers
+  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers (deprecated - use outcomeProfile)
   statRequirements?: Partial<Record<StatName, number>>;  // Minimum BASE stat required
+
+  // Outcome system (Phase 2.5.3)
+  outcomeProfile?: ActivityOutcomeProfile;  // Defines varied outcomes by tier
 }
 
 /**
@@ -429,6 +455,7 @@ export interface PlayerStats {
  */
 export interface StatTracking {
   minEnergyToday: number;       // Lowest energy reached today
+  endingEnergyToday: number;    // Energy at end of day (before sleep)
   workStreak: number;           // Consecutive days with work
   restStreak: number;           // Consecutive days without work
   burnoutStreak: number;        // Consecutive days hitting 0 energy
@@ -470,12 +497,22 @@ export interface ActivityOutcome {
 }
 
 /**
+ * Defensive stat changes (Phase 2.5.2)
+ */
+export interface DefensiveStatChanges {
+  vitality: number;
+  ambition: number;
+  empathy: number;
+}
+
+/**
  * Sleep result with stat changes (Phase 2.5 extension)
  */
 export interface SleepResultWithStats extends SleepResult {
   statChanges: StatChange[];     // All stat changes that occurred
   baseGrowth: StatChange[];      // Stats where base increased
   currentDecay: StatChange[];    // Stats where current decayed toward base
+  defensiveStatChanges?: DefensiveStatChanges;  // Defensive stat changes (Phase 2.5.2)
 }
 
 /**
@@ -499,4 +536,48 @@ export interface SoloActivityResult {
   outcome?: SoloActivityOutcome;
   statChanges?: StatChange[];
   statsTrainedThisActivity?: StatName[];
+}
+
+/**
+ * Player activity history record (Phase 2.5.1)
+ * Stores complete history of player activities for defensive stat calculations
+ */
+export interface PlayerActivity {
+  id: string;
+  playerId: string;
+  activityId: string;
+
+  // When it happened
+  performedAt: string;          // ISO timestamp
+  dayNumber: number;
+  timeOfDay: string;            // "HH:MM"
+
+  // Activity details (denormalized for historical accuracy)
+  activityName: string;
+  category: ActivityCategory;
+  difficulty?: number;
+  relevantStats: StatName[];
+
+  // Costs (actual costs paid)
+  timeCost: number;
+  energyCost: number;
+  moneyCost: number;
+
+  // Outcome (if activity had a roll)
+  outcomeTier?: OutcomeTier;
+  roll?: number;
+  adjustedRoll?: number;
+  statBonus?: number;
+  difficultyPenalty?: number;
+
+  // Effects (actual effects received)
+  statEffects?: Partial<Record<StatName, number>>;
+  energyDelta?: number;
+  moneyDelta?: number;
+
+  // For social activities (if NPC was involved)
+  npcId?: string;
+  interactionId?: string;
+
+  createdAt: string;
 }

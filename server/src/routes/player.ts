@@ -9,7 +9,8 @@ import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter, updatePlayerArchetype } from '../services/player';
 import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
-import { processDailyStatChanges } from '../services/stat';
+import { processDailyStatChanges, setBaseStat } from '../services/stat';
+import { calculateDefensiveStatChanges } from '../services/defensive-stats';
 import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype } from '../../../shared/types';
 
 const router = Router();
@@ -165,6 +166,18 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
     const statResult = processDailyStatChanges(player.stats, trainedStats);
 
+    // Phase 2.5.2: Calculate defensive stat changes (Vitality, Ambition, Empathy)
+    const defensiveChanges = await calculateDefensiveStatChanges(pool, player, bedtime);
+
+    // Apply defensive stat changes to BASE stats
+    let finalStats = { ...statResult.newStats };
+    finalStats = setBaseStat(finalStats, 'vitality',
+      Math.max(0, finalStats.baseVitality + defensiveChanges.vitality));
+    finalStats = setBaseStat(finalStats, 'ambition',
+      Math.max(0, finalStats.baseAmbition + defensiveChanges.ambition));
+    finalStats = setBaseStat(finalStats, 'empathy',
+      Math.max(0, finalStats.baseEmpathy + defensiveChanges.empathy));
+
     // Separate changes into growth vs decay for the response
     const baseGrowth = statResult.changes.filter(c => c.baseDelta > 0);
     const currentDecay = statResult.changes.filter(c => c.currentDelta < 0);
@@ -176,9 +189,10 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       currentEnergy: newEnergy,
       lastSleptAt: bedtime,
       currentLocation: 'home',
-      stats: statResult.newStats,
+      stats: finalStats,
       tracking: {
-        minEnergyToday: 100,  // Reset for new day
+        minEnergyToday: newEnergy,  // Reset for new day (starts at wake energy)
+        endingEnergyToday: newEnergy,  // Reset for new day
         workStreak: player.tracking.workedToday
           ? player.tracking.workStreak + 1
           : 0,
@@ -206,7 +220,8 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
         travelTime: travelTimeHome,
         statChanges: statResult.changes,
         baseGrowth,
-        currentDecay
+        currentDecay,
+        defensiveStatChanges: defensiveChanges
       }
     });
   } catch (error) {
