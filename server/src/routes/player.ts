@@ -178,7 +178,8 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       currentLocation: 'home',
       stats: statResult.newStats,
       tracking: {
-        minEnergyToday: 100,  // Reset for new day
+        minEnergyToday: newEnergy,  // Reset for new day (starts at wake energy)
+        endingEnergyToday: newEnergy,  // Reset for new day
         workStreak: player.tracking.workedToday
           ? player.tracking.workStreak + 1
           : 0,

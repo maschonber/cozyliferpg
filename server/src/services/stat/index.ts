@@ -124,6 +124,7 @@ export function getStartingStats(archetype: PlayerArchetype): PlayerStats {
 export function getDefaultTracking(): StatTracking {
   return {
     minEnergyToday: 100,
+    endingEnergyToday: 100,
     workStreak: 0,
     restStreak: 0,
     burnoutStreak: 0,

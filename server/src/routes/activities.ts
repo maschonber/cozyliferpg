@@ -11,6 +11,7 @@ import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/p
 import { canPerformActivity, addMinutes } from '../services/time';
 import { rollOutcome, scaleEffectByTier, meetsStatRequirements } from '../services/outcome';
 import { applyStatEffects, getBaseStat, getCurrentStat } from '../services/stat';
+import { recordPlayerActivity } from '../services/activity-history';
 import {
   ApiResponse,
   PerformActivityRequest,
@@ -252,6 +253,31 @@ router.post(
         ...statsTrainedThisActivity
       ]));
 
+      // Record activity in history (Phase 2.5.1)
+      await recordPlayerActivity(pool, {
+        playerId: player.id,
+        activityId: activity.id,
+        dayNumber: player.currentDay,
+        timeOfDay: player.currentTime,
+        activityName: activity.name,
+        category: activity.category,
+        difficulty: activity.difficulty,
+        relevantStats: activity.relevantStats || [],
+        timeCost: activity.timeCost,
+        energyCost: activity.energyCost,
+        moneyCost: activity.moneyCost,
+        outcomeTier: outcome?.tier,
+        roll: outcome?.roll,
+        adjustedRoll: outcome?.adjustedRoll,
+        statBonus: outcome?.statBonus,
+        difficultyPenalty: outcome?.difficultyPenalty,
+        statEffects: statChanges.length > 0 ? Object.fromEntries(
+          statChanges.map(c => [c.stat, c.currentDelta])
+        ) : undefined,
+        energyDelta: newEnergy - player.currentEnergy,
+        moneyDelta: newMoney - player.money
+      });
+
       // Update player with new stats and tracking
       const updatedPlayer = await updatePlayerCharacter(pool, player.id, {
         currentEnergy: newEnergy,
@@ -261,6 +287,7 @@ router.post(
         tracking: {
           ...player.tracking,
           minEnergyToday: minEnergy,
+          endingEnergyToday: newEnergy,  // Track ending energy after this activity
           workedToday,
           statsTrainedToday: allStatsTrainedToday as StatName[]
         }

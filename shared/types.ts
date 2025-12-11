@@ -429,6 +429,7 @@ export interface PlayerStats {
  */
 export interface StatTracking {
   minEnergyToday: number;       // Lowest energy reached today
+  endingEnergyToday: number;    // Energy at end of day (before sleep)
   workStreak: number;           // Consecutive days with work
   restStreak: number;           // Consecutive days without work
   burnoutStreak: number;        // Consecutive days hitting 0 energy
@@ -499,4 +500,48 @@ export interface SoloActivityResult {
   outcome?: SoloActivityOutcome;
   statChanges?: StatChange[];
   statsTrainedThisActivity?: StatName[];
+}
+
+/**
+ * Player activity history record (Phase 2.5.1)
+ * Stores complete history of player activities for defensive stat calculations
+ */
+export interface PlayerActivity {
+  id: string;
+  playerId: string;
+  activityId: string;
+
+  // When it happened
+  performedAt: string;          // ISO timestamp
+  dayNumber: number;
+  timeOfDay: string;            // "HH:MM"
+
+  // Activity details (denormalized for historical accuracy)
+  activityName: string;
+  category: ActivityCategory;
+  difficulty?: number;
+  relevantStats: StatName[];
+
+  // Costs (actual costs paid)
+  timeCost: number;
+  energyCost: number;
+  moneyCost: number;
+
+  // Outcome (if activity had a roll)
+  outcomeTier?: OutcomeTier;
+  roll?: number;
+  adjustedRoll?: number;
+  statBonus?: number;
+  difficultyPenalty?: number;
+
+  // Effects (actual effects received)
+  statEffects?: Partial<Record<StatName, number>>;
+  energyDelta?: number;
+  moneyDelta?: number;
+
+  // For social activities (if NPC was involved)
+  npcId?: string;
+  interactionId?: string;
+
+  createdAt: string;
 }

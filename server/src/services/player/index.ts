@@ -52,6 +52,7 @@ function mapRowToPlayerCharacter(row: any): PlayerCharacter {
     },
     tracking: {
       minEnergyToday: row.min_energy_today ?? 100,
+      endingEnergyToday: row.ending_energy_today ?? 100,
       workStreak: row.work_streak ?? 0,
       restStreak: row.rest_streak ?? 0,
       burnoutStreak: row.burnout_streak ?? 0,
@@ -105,7 +106,7 @@ export async function getOrCreatePlayerCharacter(
         current_fitness, current_vitality, current_poise,
         current_knowledge, current_creativity, current_ambition,
         current_confidence, current_wit, current_empathy,
-        min_energy_today, work_streak, rest_streak,
+        min_energy_today, ending_energy_today, work_streak, rest_streak,
         burnout_streak, late_night_streak,
         worked_today, had_catastrophic_failure_today,
         stats_trained_today,
@@ -115,7 +116,7 @@ export async function getOrCreatePlayerCharacter(
         $10, $11, $12, $13, $14, $15, $16, $17, $18,
         $19, $20, $21, $22, $23, $24, $25, $26, $27,
         $28, $29, $30, $31, $32, $33, $34, $35, $36,
-        $37, $38
+        $37, $38, $39
       )
       RETURNING *
       `,
@@ -128,7 +129,7 @@ export async function getOrCreatePlayerCharacter(
         stats.currentFitness, stats.currentVitality, stats.currentPoise,
         stats.currentKnowledge, stats.currentCreativity, stats.currentAmbition,
         stats.currentConfidence, stats.currentWit, stats.currentEmpathy,
-        tracking.minEnergyToday, tracking.workStreak, tracking.restStreak,
+        tracking.minEnergyToday, tracking.endingEnergyToday, tracking.workStreak, tracking.restStreak,
         tracking.burnoutStreak, tracking.lateNightStreak,
         tracking.workedToday, tracking.hadCatastrophicFailureToday,
         tracking.statsTrainedToday,
@@ -220,6 +221,7 @@ export async function updatePlayerCharacter(
     if (updates.tracking) {
       const t = updates.tracking;
       if (t.minEnergyToday !== undefined) { updateFields.push(`min_energy_today = $${paramCount++}`); values.push(t.minEnergyToday); }
+      if (t.endingEnergyToday !== undefined) { updateFields.push(`ending_energy_today = $${paramCount++}`); values.push(t.endingEnergyToday); }
       if (t.workStreak !== undefined) { updateFields.push(`work_streak = $${paramCount++}`); values.push(t.workStreak); }
       if (t.restStreak !== undefined) { updateFields.push(`rest_streak = $${paramCount++}`); values.push(t.restStreak); }
       if (t.burnoutStreak !== undefined) { updateFields.push(`burnout_streak = $${paramCount++}`); values.push(t.burnoutStreak); }
@@ -290,6 +292,9 @@ export async function resetPlayerCharacter(
     // Delete all NPCs
     await client.query('DELETE FROM npcs');
 
+    // Delete all player activities (Phase 2.5.1)
+    await client.query('DELETE FROM player_activities WHERE player_id = $1', [playerId]);
+
     // Get starting stats for archetype
     const stats = getStartingStats(archetype);
     const tracking = getDefaultTracking();
@@ -312,12 +317,12 @@ export async function resetPlayerCharacter(
           current_fitness = $10, current_vitality = $11, current_poise = $12,
           current_knowledge = $13, current_creativity = $14, current_ambition = $15,
           current_confidence = $16, current_wit = $17, current_empathy = $18,
-          min_energy_today = $19, work_streak = $20, rest_streak = $21,
-          burnout_streak = $22, late_night_streak = $23,
-          worked_today = $24, had_catastrophic_failure_today = $25,
-          stats_trained_today = $26,
-          updated_at = $27
-      WHERE id = $28
+          min_energy_today = $19, ending_energy_today = $20, work_streak = $21, rest_streak = $22,
+          burnout_streak = $23, late_night_streak = $24,
+          worked_today = $25, had_catastrophic_failure_today = $26,
+          stats_trained_today = $27,
+          updated_at = $28
+      WHERE id = $29
       RETURNING *
       `,
       [
@@ -327,7 +332,7 @@ export async function resetPlayerCharacter(
         stats.currentFitness, stats.currentVitality, stats.currentPoise,
         stats.currentKnowledge, stats.currentCreativity, stats.currentAmbition,
         stats.currentConfidence, stats.currentWit, stats.currentEmpathy,
-        tracking.minEnergyToday, tracking.workStreak, tracking.restStreak,
+        tracking.minEnergyToday, tracking.endingEnergyToday, tracking.workStreak, tracking.restStreak,
         tracking.burnoutStreak, tracking.lateNightStreak,
         tracking.workedToday, tracking.hadCatastrophicFailureToday,
         tracking.statsTrainedToday,
