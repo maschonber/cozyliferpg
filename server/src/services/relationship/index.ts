@@ -24,26 +24,13 @@ export const ACTIVITIES = [
     location: 'shopping_district' as const,
     timeCost: 240,
     energyCost: -30,
-    moneyCost: 80,
+    moneyCost: 80,  // Main benefit is money (Ambition grows defensively)
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {},
     // Phase 2.5: Stats
     difficulty: 30,
     relevantStats: ['ambition'] as StatName[],
-    statEffects: { ambition: 2 },  // Deprecated - use outcomeProfile
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['ambition'],
-      mainStatGain: 2,
-      secondaryStats: ['vitality', 'confidence', 'poise'],
-      secondaryStatGain: 1,
-      negativeEffects: {
-        stats: ['vitality', 'confidence'],
-        statPenalty: 1,
-        energyCost: 10,  // Extra exhaustion
-        timeCost: 30  // Manager kept you late
-      }
-    }
+    statEffects: { ambition: 2 }  // Legacy - no outcome profile (work is for money, not stats)
   },
   {
     id: 'work_full_day',
@@ -54,27 +41,14 @@ export const ACTIVITIES = [
     location: 'shopping_district' as const,
     timeCost: 480,
     energyCost: -50,
-    moneyCost: 150,
+    moneyCost: 150,  // Main benefit is money (Ambition grows defensively)
     allowedTimeSlots: ['morning' as const],
     effects: {},
     // Phase 2.5: Stats - Requires commitment
     difficulty: 40,
     relevantStats: ['ambition', 'vitality'] as StatName[],
-    statEffects: { ambition: 4 },  // Deprecated - use outcomeProfile
-    statRequirements: { ambition: 20 },
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['ambition'],
-      mainStatGain: 4,
-      secondaryStats: ['vitality', 'confidence', 'knowledge'],
-      secondaryStatGain: 1.5,
-      negativeEffects: {
-        stats: ['vitality', 'confidence'],
-        statPenalty: 1.5,
-        energyCost: 15,  // Exhaustion from mistakes
-        timeCost: 60  // Had to stay late to fix errors
-      }
-    }
+    statEffects: { ambition: 4 },  // Legacy - no outcome profile
+    statRequirements: { ambition: 20 }
   },
 
   // Social Activities (with NPCs) - Train: Confidence, Wit, Empathy
@@ -88,19 +62,18 @@ export const ACTIVITIES = [
     timeCost: 60,
     energyCost: -8,
     moneyCost: -5,
-    effects: { friendship: 10 },
+    effects: { friendship: 10 },  // Main benefit (auto-scales by outcome)
     // Phase 2.5: Stats
     difficulty: 20,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 1, empathy: 1 },  // Deprecated - use outcomeProfile
-    // Phase 2.5.3: Outcome Profile
+    // Phase 2.5.3: Outcome Profile - minimal stat training, relationship is main benefit
     outcomeProfile: {
       mainStats: ['confidence'],
-      mainStatGain: 1,
-      secondaryStats: ['empathy', 'wit', 'poise'],
-      secondaryStatGain: 1,
+      mainStatGain: 0.5,  // Small stat gain
+      secondaryStats: ['wit', 'poise'],
+      secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence', 'empathy'],
+        stats: ['confidence'],
         statPenalty: 0.5,
         moneyCost: 5  // Had to pay for them too
       }
@@ -116,11 +89,21 @@ export const ACTIVITIES = [
     timeCost: 30,
     energyCost: -5,
     moneyCost: 0,
-    effects: { friendship: 5 },
+    effects: { friendship: 5 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 15,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 1 }
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['confidence'],
+      mainStatGain: 0.3,  // Very small
+      secondaryStats: ['wit'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 0.3
+      }
+    }
   },
   {
     id: 'casual_date',
@@ -133,11 +116,22 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: -30,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { romance: 15 },
+    effects: { romance: 15 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 40,
     relevantStats: ['confidence', 'wit'] as StatName[],
-    statEffects: { confidence: 2, poise: 1 }
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['confidence'],
+      mainStatGain: 1,
+      secondaryStats: ['wit', 'poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 1,
+        moneyCost: 15  // They didn't offer to split
+      }
+    }
   },
   {
     id: 'deep_conversation',
@@ -150,21 +144,20 @@ export const ACTIVITIES = [
     energyCost: -12,
     moneyCost: 0,
     minRelationship: 'friend',
-    effects: { friendship: 20 },
+    effects: { friendship: 20 },  // Main benefit
     // Phase 2.5: Stats - Requires emotional depth
     difficulty: 50,
-    relevantStats: ['empathy', 'wit'] as StatName[],
-    statEffects: { empathy: 3, knowledge: 1 },  // Deprecated - use outcomeProfile
-    statRequirements: { empathy: 25 },
+    relevantStats: ['wit', 'knowledge'] as StatName[],  // Changed from empathy (defensive)
+    statRequirements: { empathy: 25 },  // Still requires empathy as gate
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['empathy'],
-      mainStatGain: 3,
-      secondaryStats: ['wit', 'knowledge', 'poise'],
+      mainStats: ['wit'],  // Mixed stat as main (deep conversations train wit)
+      mainStatGain: 2,
+      secondaryStats: ['knowledge', 'poise'],
       secondaryStatGain: 1,
       negativeEffects: {
-        stats: ['empathy', 'confidence'],
-        statPenalty: 1.5,
+        stats: ['confidence'],
+        statPenalty: 1,
         energyCost: 10  // Emotionally draining
       }
     }
@@ -180,11 +173,19 @@ export const ACTIVITIES = [
     energyCost: -8,
     moneyCost: -20,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 10, romance: 5 },
+    effects: { friendship: 10, romance: 5 },  // Main benefit
     // Phase 2.5: Stats - Low difficulty passive activity
     difficulty: 15,
     relevantStats: [] as StatName[],
-    statEffects: { empathy: 1 }
+    // Phase 2.5.3: Outcome Profile - passive activity, minimal gains
+    outcomeProfile: {
+      mainStats: ['poise'],  // Mixed stat, relaxing together
+      mainStatGain: 0.5,
+      secondaryStats: [],
+      negativeEffects: {
+        moneyCost: 10  // Bought extra snacks
+      }
+    }
   },
   {
     id: 'exercise_together',
@@ -197,11 +198,22 @@ export const ACTIVITIES = [
     energyCost: -15,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: { friendship: 10 },
+    effects: { friendship: 10 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 35,
     relevantStats: ['fitness'] as StatName[],
-    statEffects: { fitness: 2, vitality: 1 }
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['fitness'],
+      mainStatGain: 1.5,  // Social fitness is less effective than solo
+      secondaryStats: ['poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 0.5,
+        energyCost: 10  // Injured or embarrassed
+      }
+    }
   },
   {
     id: 'cook_dinner',
@@ -214,11 +226,23 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: -15,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 12, romance: 8 },
+    effects: { friendship: 12, romance: 8 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 40,
     relevantStats: ['creativity'] as StatName[],
-    statEffects: { creativity: 2, empathy: 1 }
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['creativity'],  // Mixed stat as main
+      mainStatGain: 1.5,
+      secondaryStats: ['poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 1,
+        moneyCost: 10,  // Burned the food, ordered pizza
+        timeCost: 30
+      }
+    }
   },
   {
     id: 'flirt_playfully',
@@ -230,11 +254,22 @@ export const ACTIVITIES = [
     timeCost: 45,
     energyCost: -8,
     moneyCost: 0,
-    effects: { romance: 12 },
+    effects: { romance: 12 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 45,
     relevantStats: ['confidence', 'wit'] as StatName[],
-    statEffects: { confidence: 2, wit: 1 }
+    // Phase 2.5.3: Outcome Profile
+    outcomeProfile: {
+      mainStats: ['wit'],  // Mixed stat as main
+      mainStatGain: 1.5,
+      secondaryStats: ['confidence', 'poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 1.5,  // They didn't find it funny
+        energyCost: 8
+      }
+    }
   },
 
   // Self-Improvement Activities (solo) - Primary stat training
@@ -257,13 +292,13 @@ export const ACTIVITIES = [
     statRequirements: { knowledge: 10 },
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['knowledge'],
-      mainStatGain: 5,
-      secondaryStats: ['creativity', 'ambition', 'poise'],
-      secondaryStatGain: 1,
+      mainStats: ['knowledge'],  // Active stat
+      mainStatGain: 2.5,  // Reduced from 5
+      secondaryStats: ['creativity', 'poise'],  // Removed defensive stat (ambition)
+      secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['confidence', 'vitality'],
-        statPenalty: 1,
+        stats: ['confidence'],
+        statPenalty: 0.5,
         energyCost: 8  // Mental exhaustion/frustration
       }
     }
@@ -280,18 +315,17 @@ export const ACTIVITIES = [
     moneyCost: -10,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
-    // Phase 2.5: Stats - Train Fitness & Vitality
+    // Phase 2.5: Stats - Train Fitness
     difficulty: 40,
     relevantStats: ['fitness'] as StatName[],
-    statEffects: { fitness: 5, vitality: 2 },  // Deprecated - use outcomeProfile
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
-      mainStats: ['fitness'],
-      mainStatGain: 5,
-      secondaryStats: ['vitality', 'poise', 'confidence'],
-      secondaryStatGain: 1.5,
+      mainStats: ['fitness'],  // Active stat
+      mainStatGain: 3,  // Reduced from 5
+      secondaryStats: ['poise', 'confidence'],  // Removed defensive stat (vitality)
+      secondaryStatGain: 0.5,
       negativeEffects: {
-        stats: ['vitality', 'confidence'],
+        stats: ['confidence'],
         statPenalty: 1,
         energyCost: 10,  // Injury or strain
         timeCost: 15  // Waited for equipment
@@ -309,10 +343,20 @@ export const ACTIVITIES = [
     energyCost: -5,
     moneyCost: 0,
     effects: {},
-    // Phase 2.5: Stats - Train Knowledge (lighter)
+    // Phase 2.5.3: Outcome profile
     difficulty: 25,
     relevantStats: ['knowledge'] as StatName[],
-    statEffects: { knowledge: 2, creativity: 1 }
+    outcomeProfile: {
+      mainStats: ['knowledge'],
+      mainStatGain: 2,
+      secondaryStats: ['creativity'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['fitness'],
+        statPenalty: 0.5,
+        timeCost: 15
+      }
+    }
   },
   {
     id: 'creative_hobby',
@@ -325,13 +369,24 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: 0,
     effects: {},
-    // Phase 2.5: Stats - Train Creativity
+    // Phase 2.5.3: Outcome profile (Creativity is mixed stat, can be primary)
     difficulty: 45,
     relevantStats: ['creativity'] as StatName[],
-    statEffects: { creativity: 4 }
+    outcomeProfile: {
+      mainStats: ['creativity'],
+      mainStatGain: 2.5,
+      secondaryStats: ['knowledge', 'poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['fitness', 'confidence'],
+        statPenalty: 0.5,
+        moneyCost: 5,  // Materials used up
+        timeCost: 20  // Lost in flow state
+      }
+    }
   },
 
-  // Leisure/Relaxation Activities (solo) - No rolls, minor defensive stat gains
+  // Leisure/Relaxation Activities (solo) - No rolls, minor stat gains
   {
     id: 'stroll_park',
     name: 'Stroll in the Park',
@@ -344,8 +399,9 @@ export const ACTIVITIES = [
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
-    // Phase 2.5: No roll (auto-success), minor defensive gain
-    statEffects: { poise: 1, vitality: 1 }
+    // Phase 2.5: No roll (auto-success), minor poise gain
+    // Note: Vitality grows from healthy patterns (defensive stat), not direct training
+    statEffects: { poise: 1 }
   },
   {
     id: 'play_video_games',
@@ -384,11 +440,21 @@ export const ACTIVITIES = [
     energyCost: 0,
     moneyCost: 0,
     effects: {},
-    // Phase 2.5: Minor poise gain from relaxation
-    statEffects: { poise: 1 }
+    // Phase 2.5.3: Light leisure activity with minor poise training
+    difficulty: 10,
+    relevantStats: ['poise'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'],
+      mainStatGain: 1,
+      secondaryStats: ['creativity'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        timeCost: 10  // Time flies when enjoying music
+      }
+    }
   },
 
-  // Self-Care Activities (solo) - No rolls, defensive stat support
+  // Self-Care Activities (solo) - Support defensive stats through healthy patterns
   {
     id: 'take_nap',
     name: 'Take a Nap',
@@ -399,9 +465,9 @@ export const ACTIVITIES = [
     timeCost: 60,
     energyCost: 5,
     moneyCost: 0,
-    effects: {},
-    // Phase 2.5: Supports Vitality (defensive stat)
-    statEffects: { vitality: 1 }
+    effects: {}
+    // Phase 2.5: Supports Vitality through energy management (defensive stat calc)
+    // No direct stat training - Vitality grows from sustainable patterns
   },
   {
     id: 'go_to_sleep',
@@ -430,10 +496,21 @@ export const ACTIVITIES = [
     energyCost: -20,
     moneyCost: 0,
     effects: {},
-    // Phase 2.5: Stats - Train Confidence
+    // Phase 2.5.3: Outcome profile - challenging social discovery
     difficulty: 50,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 3 }
+    outcomeProfile: {
+      mainStats: ['confidence'],
+      mainStatGain: 2.5,
+      secondaryStats: ['wit', 'poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence', 'poise'],
+        statPenalty: 1,
+        energyCost: 10,  // Social anxiety
+        timeCost: 20  // Awkward conversation
+      }
+    }
   },
 
   // ===== PHASE 3 NEW ACTIVITIES =====
@@ -450,8 +527,9 @@ export const ACTIVITIES = [
     energyCost: -3,
     moneyCost: 0,
     effects: {},
-    // Phase 2.5: No roll, defensive stat gains
-    statEffects: { vitality: 1, poise: 1 }
+    // Phase 2.5: No roll, minor poise gain
+    // Note: Vitality grows from healthy patterns (defensive stat), not direct training
+    statEffects: { poise: 1 }
   },
   {
     id: 'window_shopping',
@@ -478,10 +556,21 @@ export const ACTIVITIES = [
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {},
-    // Phase 2.5: Stats - Train Fitness & Vitality
+    // Phase 2.5.3: Outcome profile - outdoor fitness training
     difficulty: 30,
-    relevantStats: ['fitness', 'vitality'] as StatName[],
-    statEffects: { fitness: 3, vitality: 2 }
+    relevantStats: ['fitness'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['fitness'],
+      mainStatGain: 3,
+      secondaryStats: ['poise'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['fitness'],
+        statPenalty: 0.5,
+        energyCost: 5,  // Overexertion
+        timeCost: 10  // Got lost/distracted
+      }
+    }
   },
   {
     id: 'swim_beach',
@@ -495,10 +584,21 @@ export const ACTIVITIES = [
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
-    // Phase 2.5: Stats - Train Fitness & Vitality
+    // Phase 2.5.3: Outcome profile - swimming fitness training
     difficulty: 40,
-    relevantStats: ['fitness', 'vitality'] as StatName[],
-    statEffects: { fitness: 3, vitality: 2 }
+    relevantStats: ['fitness'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['fitness'],
+      mainStatGain: 3,
+      secondaryStats: ['poise', 'confidence'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['fitness'],
+        statPenalty: 0.5,
+        energyCost: 8,  // Water too cold/rough
+        timeCost: 15  // Had to rest
+      }
+    }
   },
   {
     id: 'play_arcade',
@@ -511,10 +611,19 @@ export const ACTIVITIES = [
     energyCost: -8,
     moneyCost: -10,
     effects: {},
-    // Phase 2.5: Minor wit gain from gaming
+    // Phase 2.5.3: Light leisure with minor wit training (mixed stat)
     difficulty: 15,
-    relevantStats: [] as StatName[],
-    statEffects: { wit: 1 }
+    relevantStats: ['wit'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['wit'],
+      mainStatGain: 1.5,
+      secondaryStats: ['poise'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        moneyCost: 5,  // Spent more tokens
+        timeCost: 20  // Got too into it
+      }
+    }
   },
 
   // New Social Activities
@@ -530,10 +639,21 @@ export const ACTIVITIES = [
     moneyCost: -15,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: { friendship: 15, romance: 8 },
-    // Phase 2.5: Stats
+    // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
     difficulty: 25,
-    relevantStats: ['empathy'] as StatName[],
-    statEffects: { empathy: 2, poise: 1 }
+    relevantStats: ['poise', 'confidence'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'],
+      mainStatGain: 0.8,
+      secondaryStats: ['confidence', 'wit'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['confidence', 'poise'],
+        statPenalty: 0.5,
+        moneyCost: 5,  // Food cost more
+        timeCost: 15  // Awkward silences
+      }
+    }
   },
   {
     id: 'play_pool_darts',
@@ -547,10 +667,21 @@ export const ACTIVITIES = [
     moneyCost: -10,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 10 },
-    // Phase 2.5: Stats
+    // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
     difficulty: 30,
-    relevantStats: ['poise'] as StatName[],
-    statEffects: { poise: 2, confidence: 1 }
+    relevantStats: ['poise', 'confidence'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'],
+      mainStatGain: 1,
+      secondaryStats: ['confidence', 'wit'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence', 'poise'],
+        statPenalty: 0.5,
+        moneyCost: 5,  // Bought extra drinks
+        energyCost: 5  // Stayed too late
+      }
+    }
   },
   {
     id: 'boardwalk_stroll',
@@ -564,10 +695,21 @@ export const ACTIVITIES = [
     moneyCost: -5,
     allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: { friendship: 8, romance: 10 },
-    // Phase 2.5: Stats - Easy romantic activity
+    // Phase 2.5.3: Social activity - easy romantic, minimal stat gains
     difficulty: 15,
-    relevantStats: [] as StatName[],
-    statEffects: { poise: 1 }
+    relevantStats: ['poise', 'confidence'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'],
+      mainStatGain: 0.5,
+      secondaryStats: ['confidence'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 0.3,
+        moneyCost: 3,  // Bought snacks
+        timeCost: 10  // Lost track of time
+      }
+    }
   },
 
   // New Work Activity
@@ -583,10 +725,11 @@ export const ACTIVITIES = [
     moneyCost: 70,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {},
-    // Phase 2.5: Stats - Train Ambition & Confidence
+    // Phase 2.5: Work activity - money is main benefit
+    // Ambition grows from work patterns (defensive stat), Confidence trains organically
     difficulty: 35,
-    relevantStats: ['ambition', 'confidence'] as StatName[],
-    statEffects: { ambition: 2, confidence: 1 }
+    relevantStats: ['confidence'] as StatName[],
+    statEffects: { confidence: 1 }
   }
 ];
 

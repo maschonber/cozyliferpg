@@ -167,7 +167,7 @@ function generateOkayOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
  * Generate Mixed outcome:
  * - Main stat × 0.5
  * - 1 random negative effect (stat penalty OR resource cost)
- * - Relationship effects × 0.5
+ * - Relationship effects × 0.3 (reduced but still positive)
  */
 function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome {
   const outcome: GeneratedOutcome = {
@@ -175,8 +175,8 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
     additionalEnergyCost: 0,
     additionalMoneyCost: 0,
     additionalTimeCost: 0,
-    friendshipMultiplier: 0.5,
-    romanceMultiplier: 0.5
+    friendshipMultiplier: 0.3,  // Reduced but positive
+    romanceMultiplier: 0.3
   };
 
   // Apply reduced main stat gains
@@ -221,7 +221,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
  * Generate Catastrophic outcome:
  * - Main stat × 0 (no gain)
  * - 2 random negative effects (stat penalties AND/OR resource costs)
- * - Relationship effects × 0 or negative
+ * - Relationship effects × -0.5 (damages relationship!)
  */
 function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome {
   const outcome: GeneratedOutcome = {
@@ -229,8 +229,8 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
     additionalEnergyCost: 0,
     additionalMoneyCost: 0,
     additionalTimeCost: 0,
-    friendshipMultiplier: 0,  // No relationship gains
-    romanceMultiplier: 0
+    friendshipMultiplier: -0.5,  // Negative! Damages relationship
+    romanceMultiplier: -0.5
   };
 
   // NO main stat gains on catastrophic
