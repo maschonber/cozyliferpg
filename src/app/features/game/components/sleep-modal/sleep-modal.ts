@@ -4,7 +4,8 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
-import { SleepResultWithStats, StatChange } from '../../../../../../shared/types';
+import { MatExpansionModule } from '@angular/material/expansion';
+import { SleepResultWithStats, StatChange, StatChangeBreakdown, StatChangeComponent } from '../../../../../../shared/types';
 
 export interface SleepModalData {
   sleepResult: SleepResultWithStats;
@@ -18,7 +19,8 @@ export interface SleepModalData {
     MatDialogModule,
     MatButtonModule,
     MatIconModule,
-    MatDividerModule
+    MatDividerModule,
+    MatExpansionModule
   ],
   templateUrl: './sleep-modal.html',
   styleUrl: './sleep-modal.css',
@@ -31,8 +33,14 @@ export class SleepModal {
    * Check if there are any stat changes
    */
   get hasStatChanges(): boolean {
-    return (this.data.sleepResult.baseGrowth?.length || 0) > 0 ||
-           (this.data.sleepResult.currentDecay?.length || 0) > 0;
+    return (this.data.sleepResult.statChangeBreakdowns?.length || 0) > 0;
+  }
+
+  /**
+   * Get stat change breakdowns, creating all stats even if no changes
+   */
+  get statBreakdowns(): StatChangeBreakdown[] {
+    return this.data.sleepResult.statChangeBreakdowns || [];
   }
 
   /**
@@ -58,6 +66,40 @@ export class SleepModal {
    */
   formatStatName(stat: string): string {
     return stat.charAt(0).toUpperCase() + stat.slice(1);
+  }
+
+  /**
+   * Get summary text for a stat change
+   */
+  getStatSummary(breakdown: StatChangeBreakdown): string {
+    const parts: string[] = [];
+
+    if (breakdown.baseChange !== 0) {
+      const sign = breakdown.baseChange > 0 ? '+' : '';
+      parts.push(`Base ${sign}${breakdown.baseChange.toFixed(1)}`);
+    }
+
+    if (breakdown.currentChange !== 0) {
+      const sign = breakdown.currentChange > 0 ? '+' : '';
+      parts.push(`Current ${sign}${breakdown.currentChange.toFixed(1)}`);
+    }
+
+    return parts.join(', ');
+  }
+
+  /**
+   * Get total change for display
+   */
+  getTotalChange(breakdown: StatChangeBreakdown): number {
+    // Show base change if any, otherwise current change
+    return breakdown.baseChange !== 0 ? breakdown.baseChange : breakdown.currentChange;
+  }
+
+  /**
+   * Check if change is positive
+   */
+  isPositiveChange(value: number): boolean {
+    return value > 0;
   }
 
   onContinue(): void {

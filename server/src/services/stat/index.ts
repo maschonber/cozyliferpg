@@ -8,7 +8,8 @@ import {
   PlayerArchetype,
   PlayerStats,
   StatTracking,
-  StatChange
+  StatChange,
+  StatChangeComponent
 } from '../../../../shared/types';
 
 // ===== Constants =====
@@ -20,6 +21,24 @@ export const ALL_STATS: StatName[] = [
   'fitness', 'vitality', 'poise',
   'knowledge', 'creativity', 'ambition',
   'confidence', 'wit', 'empathy'
+];
+
+/**
+ * Offensive stats (can be trained actively during the day)
+ * Subject to current decay if not trained
+ */
+export const OFFENSIVE_STATS: StatName[] = [
+  'fitness', 'poise',
+  'knowledge', 'creativity',
+  'confidence', 'wit'
+];
+
+/**
+ * Defensive stats (cannot be trained actively, only through lifestyle patterns)
+ * NOT subject to current decay
+ */
+export const DEFENSIVE_STATS: StatName[] = [
+  'vitality', 'ambition', 'empathy'
 ];
 
 /**
@@ -235,26 +254,59 @@ export function setCurrentStat(stats: PlayerStats, statName: StatName, value: nu
 
 /**
  * Process daily stat changes during sleep
- * Returns updated stats and change records
+ * Returns updated stats, change records, and detailed breakdowns
  */
 export function processDailyStatChanges(
   stats: PlayerStats,
   trainedStats: Set<StatName>
-): { newStats: PlayerStats; changes: StatChange[] } {
+): {
+  newStats: PlayerStats;
+  changes: StatChange[];
+  components: Map<StatName, StatChangeComponent[]>;
+} {
   let newStats = { ...stats };
   const changes: StatChange[] = [];
+  const components = new Map<StatName, StatChangeComponent[]>();
 
   for (const statName of ALL_STATS) {
     const baseStat = getBaseStat(stats, statName);
     const currentStat = getCurrentStat(stats, statName);
     const wasTrained = trainedStats.has(statName);
+    const isDefensiveStat = DEFENSIVE_STATS.includes(statName);
+    const statComponents: StatChangeComponent[] = [];
 
-    // Calculate base growth
+    // Calculate base growth (applies to ALL stats)
     const baseGrowth = calculateBaseGrowth(baseStat, currentStat);
     const newBase = Math.min(baseStat + baseGrowth, BASE_STAT_CAP);
 
-    // Calculate current decay
-    const decay = calculateCurrentDecay(newBase, currentStat, wasTrained);
+    if (baseGrowth > 0) {
+      const gap = currentStat - baseStat;
+      statComponents.push({
+        source: 'base_growth_gap',
+        category: 'Base Growth',
+        description: `Trained during the day${wasTrained ? '' : ' (passive growth)'}`,
+        value: baseGrowth,
+        details: `Current stat ${gap.toFixed(1)} points above base`
+      });
+    }
+
+    // Calculate current decay (ONLY for offensive stats)
+    let decay = 0;
+    if (!isDefensiveStat) {
+      decay = calculateCurrentDecay(newBase, currentStat, wasTrained);
+
+      if (decay > 0) {
+        const gap = currentStat - newBase;
+        statComponents.push({
+          source: 'current_decay',
+          category: 'Current Decay',
+          description: wasTrained ? 'No decay (trained today)' : 'Decay toward base (not trained)',
+          value: -decay,
+          details: `Gap to base: ${gap.toFixed(1)}`
+        });
+      }
+    }
+
     let newCurrent = currentStat - decay;
 
     // Ensure current doesn't go below base
@@ -276,12 +328,17 @@ export function processDailyStatChanges(
       });
     }
 
+    // Store components if any exist
+    if (statComponents.length > 0) {
+      components.set(statName, statComponents);
+    }
+
     // Update stats
     newStats = setBaseStat(newStats, statName, newBase);
     newStats = setCurrentStat(newStats, statName, newCurrent);
   }
 
-  return { newStats, changes };
+  return { newStats, changes, components };
 }
 
 /**

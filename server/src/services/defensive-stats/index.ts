@@ -4,7 +4,7 @@
  */
 
 import { Pool } from 'pg';
-import { PlayerCharacter, PlayerActivity, StatTracking, StatName } from '../../../../shared/types';
+import { PlayerCharacter, PlayerActivity, StatTracking, StatName, StatChangeComponent } from '../../../../shared/types';
 import { getActivitiesForDay } from '../activity-history';
 import { getCurrentStat } from '../stat';
 
@@ -73,62 +73,142 @@ function getHighestRelevantStat(
 export async function calculateVitalityChange(
   player: PlayerCharacter,
   bedtime: string
-): Promise<number> {
+): Promise<{ change: number; components: StatChangeComponent[] }> {
   let change = 0;
   const tracking = player.tracking;
+  const components: StatChangeComponent[] = [];
 
   // Positive factors
   if (tracking.minEnergyToday >= 30) {
-    change += 0.5; // Never bottomed out
+    const value = 0.5;
+    change += value;
+    components.push({
+      source: 'vitality_min_energy',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Maintained energy above 30',
+      value,
+      details: `Min energy: ${tracking.minEnergyToday}`
+    });
   }
 
   if (sleptBeforeMidnight(bedtime)) {
-    change += 0.3; // Healthy sleep schedule
+    const value = 0.3;
+    change += value;
+    components.push({
+      source: 'vitality_sleep_schedule',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Slept before midnight',
+      value,
+      details: `Bedtime: ${bedtime}`
+    });
   }
 
   if (tracking.endingEnergyToday >= 20 && tracking.endingEnergyToday <= 50) {
-    change += 0.3; // Used energy well, kept reserve
+    const value = 0.3;
+    change += value;
+    components.push({
+      source: 'vitality_energy_balance',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Balanced energy usage',
+      value,
+      details: `Ending energy: ${tracking.endingEnergyToday} (optimal: 20-50)`
+    });
   }
 
   if (!tracking.hadCatastrophicFailureToday) {
-    change += 0.2; // No disasters
+    const value = 0.2;
+    change += value;
+    components.push({
+      source: 'vitality_no_catastrophe',
+      category: 'Defensive Stats (Vitality)',
+      description: 'No catastrophic failures',
+      value
+    });
   }
 
   // Rest day after work bonus
   const workedYesterday = tracking.workStreak >= 1;
   const restingToday = !tracking.workedToday;
   if (workedYesterday && restingToday) {
-    change += 0.4; // Good recovery
+    const value = 0.4;
+    change += value;
+    components.push({
+      source: 'vitality_rest_recovery',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Rest day after work',
+      value,
+      details: 'Good recovery pattern'
+    });
   }
 
   // Negative factors (with progressive penalties)
   if (tracking.minEnergyToday <= 0) {
     const penalty = -0.5 * (1 + tracking.burnoutStreak * 0.2);
-    change += penalty; // Gets worse if repeated
+    change += penalty;
+    components.push({
+      source: 'vitality_burnout',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Hit zero energy',
+      value: penalty,
+      details: tracking.burnoutStreak > 0
+        ? `Burnout streak: ${tracking.burnoutStreak + 1} days`
+        : undefined
+    });
   }
 
   if (sleptAfter2AM(bedtime)) {
     const penalty = -0.5 * (1 + tracking.lateNightStreak * 0.2);
-    change += penalty; // Gets worse if repeated
+    change += penalty;
+    components.push({
+      source: 'vitality_late_night',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Slept after 2 AM',
+      value: penalty,
+      details: tracking.lateNightStreak > 0
+        ? `Late night streak: ${tracking.lateNightStreak + 1} days`
+        : `Bedtime: ${bedtime}`
+    });
   }
 
   if (tracking.endingEnergyToday > 50) {
-    change -= 0.3; // Wasted potential
+    const value = -0.3;
+    change += value;
+    components.push({
+      source: 'vitality_wasted_energy',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Ended day with excess energy',
+      value,
+      details: `Energy: ${tracking.endingEnergyToday} (optimal: 20-50)`
+    });
   }
 
   // Consecutive work days without rest
   if (tracking.workStreak >= 3) {
     const penalty = -0.3 * (tracking.workStreak - 2);
-    change += penalty; // Escalates: -0.3, -0.6, -0.9...
+    change += penalty;
+    components.push({
+      source: 'vitality_overwork',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Too many consecutive work days',
+      value: penalty,
+      details: `Work streak: ${tracking.workStreak} days`
+    });
   }
 
   // Consecutive rest days (slacking)
   if (tracking.restStreak >= 3) {
     const penalty = -0.3 * (tracking.restStreak - 2);
-    change += penalty; // Penalize pure laziness
+    change += penalty;
+    components.push({
+      source: 'vitality_slacking',
+      category: 'Defensive Stats (Vitality)',
+      description: 'Too many consecutive rest days',
+      value: penalty,
+      details: `Rest streak: ${tracking.restStreak} days`
+    });
   }
 
-  return change;
+  return { change, components };
 }
 
 // ===== Ambition Calculations =====
@@ -140,53 +220,117 @@ export async function calculateVitalityChange(
 export async function calculateAmbitionChange(
   pool: Pool,
   player: PlayerCharacter
-): Promise<number> {
+): Promise<{ change: number; components: StatChangeComponent[] }> {
   let change = 0;
   const tracking = player.tracking;
+  const components: StatChangeComponent[] = [];
 
   // Get today's activities
   const activities = await getActivitiesForDay(pool, player.id, player.currentDay);
 
   // Positive factors - Work consistency
   if (tracking.workedToday) {
-    change += 0.4; // Completed work today
+    const value = 0.4;
+    change += value;
+    components.push({
+      source: 'ambition_worked_today',
+      category: 'Defensive Stats (Ambition)',
+      description: 'Completed work activity',
+      value
+    });
   }
 
   if (tracking.workStreak >= 2) {
-    change += 0.3; // Work streak bonus
+    const value = 0.3;
+    change += value;
+    components.push({
+      source: 'ambition_work_streak',
+      category: 'Defensive Stats (Ambition)',
+      description: 'Work streak bonus',
+      value,
+      details: `${tracking.workStreak} consecutive work days`
+    });
   }
 
   if (tracking.workStreak >= 5) {
-    change += 0.5; // Additional bonus for long streak
+    const value = 0.5;
+    change += value;
+    components.push({
+      source: 'ambition_long_work_streak',
+      category: 'Defensive Stats (Ambition)',
+      description: 'Long work streak bonus',
+      value,
+      details: `${tracking.workStreak} consecutive work days`
+    });
   }
 
   // Training above comfort level
   const highestStat = getHighestRelevantStat(activities, player.stats);
   if (highestStat) {
     const relevantStatValue = highestStat.value;
+    let pushedSelfCount = 0;
+    let hardActivityCount = 0;
 
     for (const activity of activities) {
       // Check if activity was above comfort level
       if (activity.difficulty && activity.difficulty > relevantStatValue) {
-        change += 0.4; // Pushed yourself
+        pushedSelfCount++;
       }
 
       // Attempted hard activity
       if (activity.difficulty && activity.difficulty >= 50) {
-        change += 0.2; // Took on challenge
+        hardActivityCount++;
       }
+    }
+
+    if (pushedSelfCount > 0) {
+      const value = 0.4 * pushedSelfCount;
+      change += value;
+      components.push({
+        source: 'ambition_pushed_limits',
+        category: 'Defensive Stats (Ambition)',
+        description: 'Pushed beyond comfort level',
+        value,
+        details: `${pushedSelfCount} challenging ${pushedSelfCount === 1 ? 'activity' : 'activities'}`
+      });
+    }
+
+    if (hardActivityCount > 0) {
+      const value = 0.2 * hardActivityCount;
+      change += value;
+      components.push({
+        source: 'ambition_hard_activities',
+        category: 'Defensive Stats (Ambition)',
+        description: 'Attempted hard activities',
+        value,
+        details: `${hardActivityCount} ${hardActivityCount === 1 ? 'activity' : 'activities'} with difficulty ≥50`
+      });
     }
   }
 
   // Negative factors (aggressive scaling)
   if (!tracking.workedToday) {
-    change -= 0.2; // Single day without work
+    const value = -0.2;
+    change += value;
+    components.push({
+      source: 'ambition_no_work',
+      category: 'Defensive Stats (Ambition)',
+      description: 'No work activity today',
+      value
+    });
   }
 
   const noWorkStreak = tracking.restStreak;
   if (noWorkStreak >= 2) {
     const penalty = -0.3 * noWorkStreak;
-    change += penalty; // Escalates: -0.6, -0.9, -1.2...
+    change += penalty;
+    components.push({
+      source: 'ambition_rest_streak',
+      category: 'Defensive Stats (Ambition)',
+      description: 'Extended rest period',
+      value: penalty,
+      details: `${noWorkStreak} consecutive rest days`
+    });
   }
 
   // Check if all activities were easy
@@ -197,11 +341,19 @@ export async function calculateAmbitionChange(
     );
 
     if (allEasy) {
-      change -= 0.3; // Coasting on existing skills
+      const value = -0.3;
+      change += value;
+      components.push({
+        source: 'ambition_coasting',
+        category: 'Defensive Stats (Ambition)',
+        description: 'All activities were too easy',
+        value,
+        details: `Threshold: ${easyThreshold}`
+      });
     }
   }
 
-  return change;
+  return { change, components };
 }
 
 // ===== Empathy Calculations =====
@@ -213,8 +365,9 @@ export async function calculateAmbitionChange(
 export async function calculateEmpathyChange(
   pool: Pool,
   player: PlayerCharacter
-): Promise<number> {
+): Promise<{ change: number; components: StatChangeComponent[] }> {
   let change = 0;
+  const components: StatChangeComponent[] = [];
   const client = await pool.connect();
 
   try {
@@ -226,7 +379,15 @@ export async function calculateEmpathyChange(
       a.category === 'social' && a.timeCost >= 60
     );
     if (hadMeaningfulConversation) {
-      change += 0.3;
+      const value = 0.3;
+      change += value;
+      components.push({
+        source: 'empathy_meaningful_conversation',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Had meaningful conversation',
+        value,
+        details: 'Social activity ≥60 minutes'
+      });
     }
 
     // Get all relationships for pattern analysis
@@ -252,15 +413,38 @@ export async function calculateEmpathyChange(
       r => npcsInteractedToday.has(r.npc_id)
     );
     if (interactedWithPlatonicFriend) {
-      change += 0.5;
+      const value = 0.5;
+      change += value;
+      components.push({
+        source: 'empathy_platonic_friend',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Spent time with platonic friend',
+        value
+      });
     }
 
     // Pattern bonuses
     if (platonicFriends.length >= 2) {
-      change += 0.2;
+      const value = 0.2;
+      change += value;
+      components.push({
+        source: 'empathy_friend_circle',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Have multiple platonic friends',
+        value,
+        details: `${platonicFriends.length} platonic friends`
+      });
     }
     if (platonicFriends.length >= 4) {
-      change += 0.3; // Additional bonus
+      const value = 0.3;
+      change += value;
+      components.push({
+        source: 'empathy_large_friend_circle',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Have large friend circle',
+        value,
+        details: `${platonicFriends.length} platonic friends`
+      });
     }
 
     // Get interactions from last 7 days
@@ -279,7 +463,15 @@ export async function calculateEmpathyChange(
 
     const uniqueNpcsThisWeek = recentInteractionsResult.rows.length;
     if (uniqueNpcsThisWeek >= 5) {
-      change += 0.2; // Diversity bonus
+      const value = 0.2;
+      change += value;
+      components.push({
+        source: 'empathy_diversity',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Diverse social interactions',
+        value,
+        details: `Interacted with ${uniqueNpcsThisWeek} different NPCs this week`
+      });
     }
 
     // Check if all friends were contacted this week
@@ -294,7 +486,15 @@ export async function calculateEmpathyChange(
       const allFriendsContacted = friends.every(f => recentNpcIds.has(f.npc_id));
 
       if (allFriendsContacted) {
-        change += 0.2; // Maintained all friendships
+        const value = 0.2;
+        change += value;
+        components.push({
+          source: 'empathy_maintained_friendships',
+          category: 'Defensive Stats (Empathy)',
+          description: 'Maintained all friendships',
+          value,
+          details: `Contacted all ${friends.length} close friends this week`
+        });
       }
     }
 
@@ -305,7 +505,15 @@ export async function calculateEmpathyChange(
         romanticInterests.some(r => r.npc_id === npcId)
       );
       if (onlyRomanticToday && romanticInterests.length > 0) {
-        change -= 0.4;
+        const value = -0.4;
+        change += value;
+        components.push({
+          source: 'empathy_only_romantic',
+          category: 'Defensive Stats (Empathy)',
+          description: 'Only interacted with romantic interests',
+          value,
+          details: 'No platonic interactions today'
+        });
       }
     }
 
@@ -334,7 +542,15 @@ export async function calculateEmpathyChange(
     }
 
     if (romanticInteractionsCount > 2 * platonicInteractions && platonicInteractions > 0) {
-      change -= 0.3; // Imbalanced toward romance
+      const value = -0.3;
+      change += value;
+      components.push({
+        source: 'empathy_romance_imbalance',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Too focused on romance',
+        value,
+        details: `${romanticInteractionsCount} romantic vs ${platonicInteractions} platonic interactions this week`
+      });
     }
 
     // Check for neglected friends (friendship > 40, not contacted in 7+ days)
@@ -363,7 +579,15 @@ export async function calculateEmpathyChange(
     }
 
     if (neglectedCount > 0) {
-      change -= 0.3 * neglectedCount; // Penalty per neglected friend
+      const value = -0.3 * neglectedCount;
+      change += value;
+      components.push({
+        source: 'empathy_neglected_friends',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Neglected friends',
+        value,
+        details: `${neglectedCount} ${neglectedCount === 1 ? 'friend' : 'friends'} not contacted in 7+ days`
+      });
     }
 
     // Was dismissive or rude today (negative friendship delta)
@@ -377,10 +601,18 @@ export async function calculateEmpathyChange(
     });
 
     if (hadNegativeInteraction) {
-      change -= 0.5;
+      const value = -0.5;
+      change += value;
+      components.push({
+        source: 'empathy_negative_interaction',
+        category: 'Defensive Stats (Empathy)',
+        description: 'Was dismissive or rude',
+        value,
+        details: 'Had negative social interaction'
+      });
     }
 
-    return change;
+    return { change, components };
   } finally {
     client.release();
   }
@@ -390,7 +622,7 @@ export async function calculateEmpathyChange(
 
 /**
  * Calculate all defensive stat changes during sleep
- * Returns changes for Vitality, Ambition, and Empathy
+ * Returns changes for Vitality, Ambition, and Empathy with breakdown components
  */
 export async function calculateDefensiveStatChanges(
   pool: Pool,
@@ -400,12 +632,29 @@ export async function calculateDefensiveStatChanges(
   vitality: number;
   ambition: number;
   empathy: number;
+  components: Map<StatName, StatChangeComponent[]>;
 }> {
-  const [vitality, ambition, empathy] = await Promise.all([
+  const [vitalityResult, ambitionResult, empathyResult] = await Promise.all([
     calculateVitalityChange(player, bedtime),
     calculateAmbitionChange(pool, player),
     calculateEmpathyChange(pool, player)
   ]);
 
-  return { vitality, ambition, empathy };
+  const components = new Map<StatName, StatChangeComponent[]>();
+  if (vitalityResult.components.length > 0) {
+    components.set('vitality', vitalityResult.components);
+  }
+  if (ambitionResult.components.length > 0) {
+    components.set('ambition', ambitionResult.components);
+  }
+  if (empathyResult.components.length > 0) {
+    components.set('empathy', empathyResult.components);
+  }
+
+  return {
+    vitality: vitalityResult.change,
+    ambition: ambitionResult.change,
+    empathy: empathyResult.change,
+    components
+  };
 }

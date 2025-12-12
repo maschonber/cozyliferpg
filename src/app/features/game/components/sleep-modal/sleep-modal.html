@@ -47,48 +47,73 @@
         </div>
       </div>
 
-      <!-- Stat Changes (Phase 2.5) -->
+      <!-- Stat Changes (Phase 2.5 + Detailed Breakdown) -->
       @if (hasStatChanges) {
         <mat-divider></mat-divider>
 
         <div class="stat-changes-section">
           <h3>Overnight Stat Changes</h3>
 
-          <!-- Base Growth -->
-          @if (data.sleepResult.baseGrowth && data.sleepResult.baseGrowth.length > 0) {
-            <div class="stat-changes growth">
-              <span class="changes-label">
-                <mat-icon>trending_up</mat-icon>
-                Permanent Growth
-              </span>
-              @for (change of data.sleepResult.baseGrowth; track change.stat) {
-                <div class="stat-change-item">
-                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
-                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
-                  <span class="stat-delta positive">+{{ change.baseDelta | number:'1.1-1' }}</span>
-                  <span class="stat-new-value">({{ change.newBase | number:'1.0-0' }})</span>
-                </div>
-              }
-            </div>
-          }
+          <mat-accordion class="stat-breakdown-accordion">
+            @for (breakdown of statBreakdowns; track breakdown.stat) {
+              <mat-expansion-panel>
+                <mat-expansion-panel-header>
+                  <mat-panel-title class="stat-panel-title">
+                    <mat-icon class="stat-icon">{{ getStatIcon(breakdown.stat) }}</mat-icon>
+                    <span class="stat-name">{{ formatStatName(breakdown.stat) }}</span>
+                    <span class="stat-summary" [class.positive]="getTotalChange(breakdown) > 0" [class.negative]="getTotalChange(breakdown) < 0">
+                      {{ getStatSummary(breakdown) }}
+                    </span>
+                  </mat-panel-title>
+                </mat-expansion-panel-header>
 
-          <!-- Current Decay -->
-          @if (data.sleepResult.currentDecay && data.sleepResult.currentDecay.length > 0) {
-            <div class="stat-changes decay">
-              <span class="changes-label">
-                <mat-icon>trending_down</mat-icon>
-                Temporary Decay
-              </span>
-              @for (change of data.sleepResult.currentDecay; track change.stat) {
-                <div class="stat-change-item">
-                  <mat-icon class="stat-icon">{{ getStatIcon(change.stat) }}</mat-icon>
-                  <span class="stat-name">{{ formatStatName(change.stat) }}</span>
-                  <span class="stat-delta negative">{{ change.currentDelta | number:'1.1-1' }}</span>
-                  <span class="stat-new-value">({{ change.newCurrent | number:'1.0-0' }})</span>
+                <div class="stat-breakdown-details">
+                  <!-- Summary -->
+                  <div class="stat-values">
+                    @if (breakdown.baseChange !== 0) {
+                      <div class="value-row">
+                        <span class="value-label">Base:</span>
+                        <span class="value-change">{{ breakdown.previousBase | number:'1.0-0' }} → {{ breakdown.newBase | number:'1.0-0' }}</span>
+                        <span class="value-delta" [class.positive]="breakdown.baseChange > 0" [class.negative]="breakdown.baseChange < 0">
+                          {{ breakdown.baseChange > 0 ? '+' : '' }}{{ breakdown.baseChange | number:'1.1-1' }}
+                        </span>
+                      </div>
+                    }
+                    @if (breakdown.currentChange !== 0) {
+                      <div class="value-row">
+                        <span class="value-label">Current:</span>
+                        <span class="value-change">{{ breakdown.previousCurrent | number:'1.0-0' }} → {{ breakdown.newCurrent | number:'1.0-0' }}</span>
+                        <span class="value-delta" [class.positive]="breakdown.currentChange > 0" [class.negative]="breakdown.currentChange < 0">
+                          {{ breakdown.currentChange > 0 ? '+' : '' }}{{ breakdown.currentChange | number:'1.1-1' }}
+                        </span>
+                      </div>
+                    }
+                  </div>
+
+                  <mat-divider></mat-divider>
+
+                  <!-- Component Breakdown -->
+                  <div class="component-breakdown">
+                    <h4>Details</h4>
+                    @for (component of breakdown.components; track component.source) {
+                      <div class="component-item" [class.positive]="component.value > 0" [class.negative]="component.value < 0">
+                        <div class="component-main">
+                          <span class="component-icon">{{ component.value > 0 ? '✓' : '✗' }}</span>
+                          <span class="component-description">{{ component.description }}</span>
+                          <span class="component-value" [class.positive]="component.value > 0" [class.negative]="component.value < 0">
+                            {{ component.value > 0 ? '+' : '' }}{{ component.value | number:'1.1-1' }}
+                          </span>
+                        </div>
+                        @if (component.details) {
+                          <div class="component-details">{{ component.details }}</div>
+                        }
+                      </div>
+                    }
+                  </div>
                 </div>
-              }
-            </div>
-          }
+              </mat-expansion-panel>
+            }
+          </mat-accordion>
         </div>
       }
 
