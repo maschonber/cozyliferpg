@@ -23,25 +23,30 @@
                   <mat-icon class="stat-icon">{{ stat.icon }}</mat-icon>
                   <span class="stat-label">{{ stat.label }}</span>
                   <span class="stat-values">
-                    <span class="current-value" [class.has-bonus]="getCurrentBonus(stat) > 0">
+                    <span class="base-value">{{ stat.base | number:'1.0-0' }}</span>
+                    <span class="separator">/</span>
+                    <span class="current-value" [class.has-bonus]="getCurrentBonus(stat) > 0" [class.has-overflow]="hasOverflow(stat)">
                       {{ stat.current | number:'1.0-0' }}
                     </span>
                     @if (getCurrentBonus(stat) > 0) {
                       <span class="bonus-indicator">(+{{ getCurrentBonus(stat) | number:'1.0-0' }})</span>
                     }
-                    <span class="base-value">/ {{ stat.base | number:'1.0-0' }}</span>
                   </span>
                 </div>
 
                 <div class="stat-bar-container">
-                  <!-- Base stat bar (background) -->
+                  <!-- Base stat bar (0-100 scale) -->
                   <div class="base-bar" [style.width.%]="getBasePercent(stat)"></div>
-                  <!-- Current stat bar (overlay) - can extend past base -->
+                  <!-- Current stat bar (0-100 scale) -->
                   <div
                     class="current-bar"
                     [style.width.%]="getCurrentPercent(stat)"
                     [class.above-base]="stat.current > stat.base">
                   </div>
+                  <!-- Overflow bar (>100, boss-battle style) -->
+                  @if (hasOverflow(stat)) {
+                    <div class="overflow-bar" [style.width.%]="getOverflowPercent(stat)"></div>
+                  }
                 </div>
               </div>
             }

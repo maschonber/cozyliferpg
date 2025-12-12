@@ -168,15 +168,33 @@ export class StatsPanelComponent {
    * Calculate progress bar percentage for base stat (out of 100 max)
    */
   getBasePercent(stat: StatDisplay): number {
-    return (stat.base / 100) * 100;
+    return Math.min((stat.base / 100) * 100, 100);
   }
 
   /**
-   * Calculate progress bar percentage for current stat
-   * Current can exceed base by up to 30, so we show it relative to maxCurrent
+   * Calculate progress bar percentage for current stat (0-100 range)
+   * Values above 100 will be shown separately as overflow
    */
   getCurrentPercent(stat: StatDisplay): number {
-    return (stat.current / stat.maxCurrent) * 100;
+    return Math.min((stat.current / 100) * 100, 100);
+  }
+
+  /**
+   * Calculate overflow percentage (current above 100)
+   * Shown as a special "boss HP bar" style overlay
+   */
+  getOverflowPercent(stat: StatDisplay): number {
+    if (stat.current <= 100) return 0;
+    // Show overflow relative to the 30-point overflow cap
+    const overflow = stat.current - 100;
+    return Math.min((overflow / 30) * 100, 100);
+  }
+
+  /**
+   * Check if stat has overflow (current > 100)
+   */
+  hasOverflow(stat: StatDisplay): boolean {
+    return stat.current > 100;
   }
 
   /**

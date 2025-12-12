@@ -13,8 +13,9 @@
 
 /* Category Card */
 .stat-category-card {
-  background: var(--surface-color, #1e1e1e);
+  background: var(--surface-color, #ffffff);
   border-left: 4px solid var(--category-color, #6200ea);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .stat-category-card mat-card-header {
@@ -22,7 +23,7 @@
 }
 
 .category-icon {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(98, 0, 234, 0.1);
   border-radius: 50%;
   padding: 8px;
   font-size: 24px;
@@ -33,11 +34,13 @@
 .stat-category-card mat-card-title {
   font-size: 1.1rem;
   font-weight: 600;
+  color: var(--text-primary, #333);
 }
 
 .stat-category-card mat-card-subtitle {
   font-size: 0.8rem;
-  opacity: 0.7;
+  opacity: 0.6;
+  color: var(--text-secondary, #666);
 }
 
 /* Stats List */
@@ -63,49 +66,65 @@
   font-size: 18px;
   width: 18px;
   height: 18px;
-  opacity: 0.8;
+  opacity: 0.7;
+  color: var(--text-secondary, #666);
 }
 
 .stat-label {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 500;
   flex: 1;
+  color: var(--text-primary, #333);
 }
 
 .stat-values {
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   display: flex;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: 0.3rem;
+  font-weight: 600;
+}
+
+.base-value {
+  color: var(--text-secondary, #666);
+  font-weight: 500;
+}
+
+.separator {
+  color: var(--text-secondary, #666);
+  opacity: 0.5;
+  font-weight: 400;
+  margin: 0 0.1rem;
 }
 
 .current-value {
-  font-weight: 600;
-  color: var(--text-primary, #ffffff);
+  font-weight: 700;
+  color: var(--text-primary, #333);
 }
 
 .current-value.has-bonus {
-  color: #81c784; /* Green for bonus */
+  color: #4caf50; /* Green for bonus */
+}
+
+.current-value.has-overflow {
+  color: #ff9800; /* Orange for overflow (>100) */
+  text-shadow: 0 0 2px rgba(255, 152, 0, 0.3);
 }
 
 .bonus-indicator {
   font-size: 0.75rem;
-  color: #81c784;
-  font-weight: 500;
-}
-
-.base-value {
-  font-size: 0.75rem;
-  opacity: 0.6;
+  color: #4caf50;
+  font-weight: 600;
 }
 
 /* Stat Bar */
 .stat-bar-container {
   position: relative;
-  height: 6px;
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 3px;
-  overflow: visible; /* Allow current bar to extend past container */
+  height: 8px;
+  background: rgba(0, 0, 0, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
 .base-bar {
@@ -113,8 +132,11 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 3px;
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.15) 0%,
+    rgba(0, 0, 0, 0.2) 100%);
+  border-radius: 4px;
+  transition: width 0.3s ease;
 }
 
 .current-bar {
@@ -122,14 +144,46 @@
   top: 0;
   left: 0;
   height: 100%;
-  background: var(--category-color, #6200ea);
-  border-radius: 3px;
+  background: linear-gradient(90deg,
+    var(--category-color, #6200ea),
+    color-mix(in srgb, var(--category-color, #6200ea) 85%, white));
+  border-radius: 4px;
   transition: width 0.3s ease;
+  z-index: 2;
 }
 
 .current-bar.above-base {
   /* Glow effect when current exceeds base */
-  box-shadow: 0 0 4px var(--category-color, #6200ea);
+  box-shadow: 0 0 6px var(--category-color, #6200ea);
+}
+
+/* Overflow bar (>100, boss-battle style) */
+.overflow-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg,
+    #ff9800 0%,
+    #ffb74d 50%,
+    #ff9800 100%);
+  background-size: 200% 100%;
+  animation: overflow-shimmer 2s ease-in-out infinite;
+  border-radius: 4px;
+  box-shadow:
+    0 0 8px rgba(255, 152, 0, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.3);
+  z-index: 3;
+  transition: width 0.3s ease;
+}
+
+@keyframes overflow-shimmer {
+  0%, 100% {
+    background-position: 0% 0%;
+  }
+  50% {
+    background-position: 100% 0%;
+  }
 }
 
 /* Responsive Design */
