@@ -193,6 +193,7 @@ describe('Time Service', () => {
     const mockPlayer: PlayerCharacter = {
       id: 'player1',
       userId: 'user1',
+      archetype: 'balanced',
       currentEnergy: 50,
       maxEnergy: 100,
       money: 100,
@@ -201,7 +202,26 @@ describe('Time Service', () => {
       lastSleptAt: '06:00',
       currentLocation: 'home',
       createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z'
+      updatedAt: '2024-01-01T00:00:00Z',
+      stats: {
+        baseFitness: 15, baseVitality: 15, basePoise: 15,
+        baseKnowledge: 15, baseCreativity: 15, baseAmbition: 15,
+        baseConfidence: 15, baseWit: 15, baseEmpathy: 15,
+        currentFitness: 15, currentVitality: 15, currentPoise: 15,
+        currentKnowledge: 15, currentCreativity: 15, currentAmbition: 15,
+        currentConfidence: 15, currentWit: 15, currentEmpathy: 15
+      },
+      tracking: {
+        minEnergyToday: 50,
+        endingEnergyToday: 50,
+        workStreak: 0,
+        restStreak: 0,
+        burnoutStreak: 0,
+        lateNightStreak: 0,
+        workedToday: false,
+        hadCatastrophicFailureToday: false,
+        statsTrainedToday: []
+      }
     };
 
     const mockActivity: Activity = {

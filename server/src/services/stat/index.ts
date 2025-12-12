@@ -172,38 +172,37 @@ export function capCurrentStat(baseStat: number, currentStat: number): number {
 }
 
 /**
- * Calculate base stat growth based on current-base gap
- * Called during sleep
+ * Calculate surplus conversion and decay (unified for all stats)
+ * Called during sleep - converts 25% of surplus to base, decays 50% from current
+ *
+ * Formula:
+ *   surplus = current - base
+ *   newBase = base + (surplus × 0.25)
+ *   newCurrent = current - (surplus × 0.5)
+ *
+ * Example: 30/46 → surplus=16 → base+4, current-8 → 34/38
  */
-export function calculateBaseGrowth(baseStat: number, currentStat: number): number {
-  if (baseStat >= BASE_STAT_CAP) return 0;  // Already at cap
-
-  const gap = currentStat - baseStat;
-
-  if (gap >= 30) return 0.8;
-  if (gap >= 20) return 0.5;
-  if (gap >= 10) return 0.3;
-  return 0;
-}
-
-/**
- * Calculate current stat decay toward base
- * Called during sleep for stats not trained today
- */
-export function calculateCurrentDecay(
+export function calculateSurplusConversion(
   baseStat: number,
-  currentStat: number,
-  wasTrainedToday: boolean
-): number {
-  if (wasTrainedToday) return 0;  // No decay if trained
+  currentStat: number
+): { baseGrowth: number; currentDecay: number } {
+  const surplus = currentStat - baseStat;
 
-  const gap = currentStat - baseStat;
-  if (gap <= 0) return 0;  // Already at or below base
+  if (surplus <= 0) {
+    // No surplus - no growth or decay
+    return { baseGrowth: 0, currentDecay: 0 };
+  }
 
-  // Higher gap = faster decay
-  if (gap <= 10) return 0.5;
-  if (gap <= 20) return 1.0;
-  return 1.5;
+  const baseGrowth = surplus * 0.25;
+  const currentDecay = surplus * 0.5;
+
+  // Respect base stat cap
+  const cappedBaseGrowth = Math.min(baseGrowth, BASE_STAT_CAP - baseStat);
+
+  return {
+    baseGrowth: cappedBaseGrowth,
+    currentDecay
+  };
 }
 
 /**
@@ -255,6 +254,9 @@ export function setCurrentStat(stats: PlayerStats, statName: StatName, value: nu
 /**
  * Process daily stat changes during sleep
  * Returns updated stats, change records, and detailed breakdowns
+ *
+ * Unified system: For all stats, converts 25% of surplus to base growth,
+ * decays 50% of surplus from current (applies after defensive stat changes)
  */
 export function processDailyStatChanges(
   stats: PlayerStats,
@@ -271,43 +273,38 @@ export function processDailyStatChanges(
   for (const statName of ALL_STATS) {
     const baseStat = getBaseStat(stats, statName);
     const currentStat = getCurrentStat(stats, statName);
-    const wasTrained = trainedStats.has(statName);
-    const isDefensiveStat = DEFENSIVE_STATS.includes(statName);
     const statComponents: StatChangeComponent[] = [];
 
-    // Calculate base growth (applies to ALL stats)
-    const baseGrowth = calculateBaseGrowth(baseStat, currentStat);
+    // Calculate surplus conversion (applies to ALL stats uniformly)
+    const { baseGrowth, currentDecay } = calculateSurplusConversion(baseStat, currentStat);
+
+    // Apply base growth
     const newBase = Math.min(baseStat + baseGrowth, BASE_STAT_CAP);
 
     if (baseGrowth > 0) {
-      const gap = currentStat - baseStat;
+      const surplus = currentStat - baseStat;
       statComponents.push({
-        source: 'base_growth_gap',
-        category: 'Base Growth',
-        description: `Trained during the day${wasTrained ? '' : ' (passive growth)'}`,
+        source: 'surplus_to_base',
+        category: 'Surplus Conversion',
+        description: '25% of surplus converted to base',
         value: baseGrowth,
-        details: `Current stat ${gap.toFixed(1)} points above base`
+        details: `Surplus: ${surplus.toFixed(1)} → Base +${baseGrowth.toFixed(2)}`
       });
     }
 
-    // Calculate current decay (ONLY for offensive stats)
-    let decay = 0;
-    if (!isDefensiveStat) {
-      decay = calculateCurrentDecay(newBase, currentStat, wasTrained);
+    // Apply current decay
+    let newCurrent = currentStat - currentDecay;
 
-      if (decay > 0) {
-        const gap = currentStat - newBase;
-        statComponents.push({
-          source: 'current_decay',
-          category: 'Current Decay',
-          description: wasTrained ? 'No decay (trained today)' : 'Decay toward base (not trained)',
-          value: -decay,
-          details: `Gap to base: ${gap.toFixed(1)}`
-        });
-      }
+    if (currentDecay > 0) {
+      const surplus = currentStat - baseStat;
+      statComponents.push({
+        source: 'surplus_decay',
+        category: 'Surplus Decay',
+        description: '50% of surplus decayed from current',
+        value: -currentDecay,
+        details: `Surplus: ${surplus.toFixed(1)} → Current -${currentDecay.toFixed(2)}`
+      });
     }
-
-    let newCurrent = currentStat - decay;
 
     // Ensure current doesn't go below base
     newCurrent = Math.max(newCurrent, newBase);
@@ -316,7 +313,7 @@ export function processDailyStatChanges(
     newCurrent = capCurrentStat(newBase, newCurrent);
 
     // Record change if anything changed
-    if (baseGrowth !== 0 || decay !== 0) {
+    if (baseGrowth !== 0 || currentDecay !== 0) {
       changes.push({
         stat: statName,
         previousBase: baseStat,

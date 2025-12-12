@@ -9,8 +9,7 @@ import {
   getDefaultTracking,
   applyDiminishingReturns,
   capCurrentStat,
-  calculateBaseGrowth,
-  calculateCurrentDecay,
+  calculateSurplusConversion,
   getBaseStat,
   getCurrentStat,
   setBaseStat,
@@ -141,57 +140,58 @@ describe('Stat Service', () => {
     });
   });
 
-  describe('calculateBaseGrowth', () => {
-    it('should return 0 growth at base cap', () => {
-      const result = calculateBaseGrowth(BASE_STAT_CAP, 120);
-      expect(result).toBe(0);
+  describe('calculateSurplusConversion', () => {
+    it('should return 0 for no surplus (current = base)', () => {
+      const result = calculateSurplusConversion(50, 50);
+      expect(result.baseGrowth).toBe(0);
+      expect(result.currentDecay).toBe(0);
     });
 
-    it('should return 0 growth when gap < 10', () => {
-      const result = calculateBaseGrowth(50, 55);
-      expect(result).toBe(0);
+    it('should return 0 for negative surplus (current < base)', () => {
+      const result = calculateSurplusConversion(50, 45);
+      expect(result.baseGrowth).toBe(0);
+      expect(result.currentDecay).toBe(0);
     });
 
-    it('should return 0.3 growth for gap 10-19', () => {
-      const result = calculateBaseGrowth(50, 60);
-      expect(result).toBe(0.3);
+    it('should convert 25% to base and 50% to decay (30/46 → 34/38)', () => {
+      const result = calculateSurplusConversion(30, 46);
+      // surplus = 16
+      // baseGrowth = 16 * 0.25 = 4
+      // currentDecay = 16 * 0.5 = 8
+      expect(result.baseGrowth).toBe(4);
+      expect(result.currentDecay).toBe(8);
     });
 
-    it('should return 0.5 growth for gap 20-29', () => {
-      const result = calculateBaseGrowth(50, 70);
-      expect(result).toBe(0.5);
+    it('should convert 25% to base and 50% to decay (20/28 → 22/24)', () => {
+      const result = calculateSurplusConversion(20, 28);
+      // surplus = 8
+      // baseGrowth = 8 * 0.25 = 2
+      // currentDecay = 8 * 0.5 = 4
+      expect(result.baseGrowth).toBe(2);
+      expect(result.currentDecay).toBe(4);
     });
 
-    it('should return 0.8 growth for gap >= 30', () => {
-      const result = calculateBaseGrowth(50, 80);
-      expect(result).toBe(0.8);
-    });
-  });
-
-  describe('calculateCurrentDecay', () => {
-    it('should return 0 decay if trained today', () => {
-      const result = calculateCurrentDecay(50, 70, true);
-      expect(result).toBe(0);
+    it('should convert 25% to base and 50% to decay (4/5 → 4.25/4.5)', () => {
+      const result = calculateSurplusConversion(4, 5);
+      // surplus = 1
+      // baseGrowth = 1 * 0.25 = 0.25
+      // currentDecay = 1 * 0.5 = 0.5
+      expect(result.baseGrowth).toBe(0.25);
+      expect(result.currentDecay).toBe(0.5);
     });
 
-    it('should return 0 decay if current <= base', () => {
-      const result = calculateCurrentDecay(50, 50, false);
-      expect(result).toBe(0);
+    it('should respect base stat cap', () => {
+      const result = calculateSurplusConversion(98, 118);
+      // surplus = 20
+      // baseGrowth would be 5, but capped at (100 - 98) = 2
+      expect(result.baseGrowth).toBe(2);
+      expect(result.currentDecay).toBe(10); // Decay still applies full 50%
     });
 
-    it('should return 0.5 decay for small gaps', () => {
-      const result = calculateCurrentDecay(50, 55, false);
-      expect(result).toBe(0.5);
-    });
-
-    it('should return 1.0 decay for medium gaps', () => {
-      const result = calculateCurrentDecay(50, 65, false);
-      expect(result).toBe(1.0);
-    });
-
-    it('should return 1.5 decay for large gaps', () => {
-      const result = calculateCurrentDecay(50, 75, false);
-      expect(result).toBe(1.5);
+    it('should return 0 growth when base is at cap', () => {
+      const result = calculateSurplusConversion(BASE_STAT_CAP, 120);
+      expect(result.baseGrowth).toBe(0);
+      expect(result.currentDecay).toBe(10); // 20 * 0.5, decay still happens
     });
   });
 
@@ -282,62 +282,143 @@ describe('Stat Service', () => {
   });
 
   describe('processDailyStatChanges', () => {
-    it('should grow base stat when current exceeds base by >= 10', () => {
+    it('should apply surplus conversion (30/46 → 34/38)', () => {
       const stats: PlayerStats = {
-        baseFitness: 50, baseVitality: 50, basePoise: 50,
+        baseFitness: 30, baseVitality: 50, basePoise: 50,
         baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
         baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
-        currentFitness: 65, currentVitality: 50, currentPoise: 50,
+        currentFitness: 46, currentVitality: 50, currentPoise: 50,
         currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
         currentConfidence: 50, currentWit: 50, currentEmpathy: 50
       };
 
       const result = processDailyStatChanges(stats, new Set());
 
-      // Fitness should grow (gap = 15)
-      expect(result.newStats.baseFitness).toBeGreaterThan(50);
+      // Fitness: 30/46 → 34/38
+      expect(result.newStats.baseFitness).toBe(34);
+      expect(result.newStats.currentFitness).toBe(38);
 
       // Should have recorded the change
       const fitnessChange = result.changes.find(c => c.stat === 'fitness');
       expect(fitnessChange).toBeDefined();
-      expect(fitnessChange?.baseDelta).toBe(0.3);
+      expect(fitnessChange?.baseDelta).toBe(4);
+      expect(fitnessChange?.currentDelta).toBe(-8);
     });
 
-    it('should decay untrained stats toward base', () => {
+    it('should apply surplus conversion (20/28 → 22/24)', () => {
       const stats: PlayerStats = {
-        baseFitness: 50, baseVitality: 50, basePoise: 50,
+        baseFitness: 20, baseVitality: 50, basePoise: 50,
         baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
         baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
-        currentFitness: 55, currentVitality: 50, currentPoise: 50,
+        currentFitness: 28, currentVitality: 50, currentPoise: 50,
         currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
         currentConfidence: 50, currentWit: 50, currentEmpathy: 50
       };
 
       const result = processDailyStatChanges(stats, new Set());
 
-      // Fitness should decay (gap = 5, not trained)
-      expect(result.newStats.currentFitness).toBeLessThan(55);
+      // Fitness: 20/28 → 22/24
+      expect(result.newStats.baseFitness).toBe(22);
+      expect(result.newStats.currentFitness).toBe(24);
     });
 
-    it('should not decay trained stats', () => {
+    it('should apply surplus conversion (4/5 → 4.25/4.5)', () => {
       const stats: PlayerStats = {
-        baseFitness: 50, baseVitality: 50, basePoise: 50,
+        baseFitness: 4, baseVitality: 50, basePoise: 50,
         baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
         baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
-        currentFitness: 55, currentVitality: 50, currentPoise: 50,
+        currentFitness: 5, currentVitality: 50, currentPoise: 50,
         currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
         currentConfidence: 50, currentWit: 50, currentEmpathy: 50
       };
 
-      const trainedStats = new Set<StatName>(['fitness']);
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Fitness: 4/5 → 4.25/4.5
+      expect(result.newStats.baseFitness).toBe(4.25);
+      expect(result.newStats.currentFitness).toBe(4.5);
+    });
+
+    it('should do nothing when current = base', () => {
+      const stats: PlayerStats = {
+        baseFitness: 50, baseVitality: 50, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 50, currentVitality: 50, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // No changes should occur
+      expect(result.changes).toHaveLength(0);
+      expect(result.newStats.baseFitness).toBe(50);
+      expect(result.newStats.currentFitness).toBe(50);
+    });
+
+    it('should apply to all stats with surplus equally', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 20, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 46, currentVitality: 28, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Both fitness and vitality should convert
+      expect(result.newStats.baseFitness).toBe(34);
+      expect(result.newStats.currentFitness).toBe(38);
+      expect(result.newStats.baseVitality).toBe(22);
+      expect(result.newStats.currentVitality).toBe(24);
+      expect(result.changes).toHaveLength(2);
+    });
+
+    it('should work with defensive stats (trained flag is ignored)', () => {
+      const stats: PlayerStats = {
+        baseFitness: 50, baseVitality: 30, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 20,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 4,
+        currentFitness: 50, currentVitality: 46, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 28,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 5
+      };
+
+      // Even though we mark them as "trained", surplus conversion happens
+      const trainedStats = new Set<StatName>(['vitality', 'ambition', 'empathy']);
       const result = processDailyStatChanges(stats, trainedStats);
 
-      // Fitness should not decay since it was trained
-      // But it may still have base growth if gap >= 10
-      const fitnessChange = result.changes.find(c => c.stat === 'fitness');
-      // Gap is only 5, so no base growth
-      expect(fitnessChange).toBeUndefined();
-      expect(result.newStats.currentFitness).toBe(55);
+      // All defensive stats should convert
+      expect(result.newStats.baseVitality).toBe(34);
+      expect(result.newStats.currentVitality).toBe(38);
+      expect(result.newStats.baseAmbition).toBe(22);
+      expect(result.newStats.currentAmbition).toBe(24);
+      expect(result.newStats.baseEmpathy).toBe(4.25);
+      expect(result.newStats.currentEmpathy).toBe(4.5);
+      expect(result.changes).toHaveLength(3);
+    });
+
+    it('should include stat change components', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 50, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 46, currentVitality: 50, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Should have components for fitness
+      const fitnessComponents = result.components.get('fitness');
+      expect(fitnessComponents).toBeDefined();
+      expect(fitnessComponents).toHaveLength(2);
+      expect(fitnessComponents![0].source).toBe('surplus_to_base');
+      expect(fitnessComponents![1].source).toBe('surplus_decay');
     });
   });
 });
