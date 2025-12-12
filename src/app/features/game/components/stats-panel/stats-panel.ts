@@ -165,6 +165,61 @@ export class StatsPanelComponent {
   }
 
   /**
+   * Get segments for the composite stat bar
+   * Returns array of segments with widths and types
+   */
+  getBarSegments(stat: StatDisplay): Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> {
+    const segments: Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> = [];
+
+    const base = stat.base;
+    const current = stat.current;
+
+    if (current >= base) {
+      // Case 1: Current >= Base (normal or bonus)
+      // Base portion (solid color)
+      segments.push({
+        width: Math.min(base, 100),
+        type: 'base'
+      });
+
+      // Bonus portion (pale color) from base to min(current, 100)
+      if (current > base) {
+        const bonusWidth = Math.min(current, 100) - base;
+        if (bonusWidth > 0) {
+          segments.push({
+            width: bonusWidth,
+            type: 'bonus'
+          });
+        }
+      }
+
+      // Overflow portion (gold) if current > 100
+      if (current > 100) {
+        const overflowWidth = Math.min((current - 100) / 30 * 100, 100); // Scale to 30-point cap
+        segments.push({
+          width: overflowWidth,
+          type: 'overflow'
+        });
+      }
+    } else {
+      // Case 2: Current < Base (deficit/decay)
+      // Current portion (solid color, what remains)
+      segments.push({
+        width: current,
+        type: 'base'
+      });
+
+      // Deficit portion (red, what was lost)
+      segments.push({
+        width: base - current,
+        type: 'deficit'
+      });
+    }
+
+    return segments;
+  }
+
+  /**
    * Calculate progress bar percentage for base stat (out of 100 max)
    */
   getBasePercent(stat: StatDisplay): number {
@@ -195,6 +250,13 @@ export class StatsPanelComponent {
    */
   hasOverflow(stat: StatDisplay): boolean {
     return stat.current > 100;
+  }
+
+  /**
+   * Check if stat has deficit (current < base)
+   */
+  hasDeficit(stat: StatDisplay): boolean {
+    return stat.current < stat.base;
   }
 
   /**

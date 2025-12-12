@@ -117,9 +117,9 @@
   font-weight: 600;
 }
 
-/* Stat Bar */
+/* Stat Bar - Single composite bar */
 .stat-bar-container {
-  position: relative;
+  display: flex;
   height: 8px;
   background: rgba(0, 0, 0, 0.08);
   border-radius: 4px;
@@ -127,54 +127,47 @@
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.base-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
+/* Bar segments */
+.stat-segment {
   height: 100%;
-  background: linear-gradient(90deg,
-    rgba(0, 0, 0, 0.15) 0%,
-    rgba(0, 0, 0, 0.2) 100%);
-  border-radius: 4px;
   transition: width 0.3s ease;
 }
 
-.current-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
-  background: linear-gradient(90deg,
-    var(--category-color, #6200ea),
-    color-mix(in srgb, var(--category-color, #6200ea) 85%, white));
-  border-radius: 4px;
-  transition: width 0.3s ease;
-  z-index: 2;
+/* Base segment - solid bold category color */
+.stat-segment.segment-base {
+  background: var(--category-color, #6200ea);
 }
 
-.current-bar.above-base {
-  /* Glow effect when current exceeds base */
-  box-shadow: 0 0 6px var(--category-color, #6200ea);
+/* Bonus segment - pale/light version of category color (current > base) */
+.stat-segment.segment-bonus {
+  background: color-mix(in srgb, var(--category-color, #6200ea) 30%, white);
+  border-left: 1px solid color-mix(in srgb, var(--category-color, #6200ea) 50%, white);
 }
 
-/* Overflow bar (>100, boss-battle style) */
-.overflow-bar {
-  position: absolute;
-  top: 0;
-  left: 0;
-  height: 100%;
+/* Deficit segment - red showing lost/decayed portion (current < base) */
+.stat-segment.segment-deficit {
+  background: repeating-linear-gradient(
+    45deg,
+    #ef5350,
+    #ef5350 4px,
+    #e53935 4px,
+    #e53935 8px
+  );
+  opacity: 0.7;
+}
+
+/* Overflow segment - gold shimmer for values >100 (boss-battle style) */
+.stat-segment.segment-overflow {
   background: linear-gradient(90deg,
-    #ff9800 0%,
-    #ffb74d 50%,
-    #ff9800 100%);
+    #ffd700 0%,
+    #ffed4e 50%,
+    #ffd700 100%);
   background-size: 200% 100%;
   animation: overflow-shimmer 2s ease-in-out infinite;
-  border-radius: 4px;
   box-shadow:
-    0 0 8px rgba(255, 152, 0, 0.6),
-    inset 0 1px 2px rgba(255, 255, 255, 0.3);
-  z-index: 3;
-  transition: width 0.3s ease;
+    0 0 8px rgba(255, 215, 0, 0.6),
+    inset 0 1px 2px rgba(255, 255, 255, 0.4);
+  border-left: 1px solid rgba(255, 215, 0, 0.8);
 }
 
 @keyframes overflow-shimmer {

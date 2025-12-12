@@ -35,17 +35,16 @@
                 </div>
 
                 <div class="stat-bar-container">
-                  <!-- Base stat bar (0-100 scale) -->
-                  <div class="base-bar" [style.width.%]="getBasePercent(stat)"></div>
-                  <!-- Current stat bar (0-100 scale) -->
-                  <div
-                    class="current-bar"
-                    [style.width.%]="getCurrentPercent(stat)"
-                    [class.above-base]="stat.current > stat.base">
-                  </div>
-                  <!-- Overflow bar (>100, boss-battle style) -->
-                  @if (hasOverflow(stat)) {
-                    <div class="overflow-bar" [style.width.%]="getOverflowPercent(stat)"></div>
+                  <!-- Composite bar showing base, bonus/deficit, and overflow -->
+                  @for (segment of getBarSegments(stat); track $index) {
+                    <div
+                      class="stat-segment"
+                      [class.segment-base]="segment.type === 'base'"
+                      [class.segment-bonus]="segment.type === 'bonus'"
+                      [class.segment-deficit]="segment.type === 'deficit'"
+                      [class.segment-overflow]="segment.type === 'overflow'"
+                      [style.width.%]="segment.width">
+                    </div>
                   }
                 </div>
               </div>
