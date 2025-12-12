@@ -167,6 +167,7 @@ export class StatsPanelComponent {
   /**
    * Get segments for the composite stat bar
    * Returns array of segments with widths and types
+   * Bar is always 100% wide (0-100 scale), overflow replaces leftmost portion
    */
   getBarSegments(stat: StatDisplay): Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> {
     const segments: Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> = [];
@@ -176,30 +177,49 @@ export class StatsPanelComponent {
 
     if (current >= base) {
       // Case 1: Current >= Base (normal or bonus)
-      // Base portion (solid color)
-      segments.push({
-        width: Math.min(base, 100),
-        type: 'base'
-      });
 
-      // Bonus portion (pale color) from base to min(current, 100)
-      if (current > base) {
-        const bonusWidth = Math.min(current, 100) - base;
+      if (current > 100) {
+        // Overflow case: current > 100
+        // Overflow takes the leftmost portion
+        const overflowWidth = current - 100;
+        segments.push({
+          width: overflowWidth,
+          type: 'overflow'
+        });
+
+        // Base portion (what remains after overflow takes its space)
+        const baseWidth = Math.max(0, base - overflowWidth);
+        if (baseWidth > 0) {
+          segments.push({
+            width: baseWidth,
+            type: 'base'
+          });
+        }
+
+        // Bonus portion (from base to 100)
+        const bonusWidth = 100 - base;
         if (bonusWidth > 0) {
           segments.push({
             width: bonusWidth,
             type: 'bonus'
           });
         }
-      }
-
-      // Overflow portion (gold) if current > 100
-      if (current > 100) {
-        const overflowWidth = Math.min((current - 100) / 30 * 100, 100); // Scale to 30-point cap
+      } else {
+        // Normal case: base <= current <= 100
+        // Base portion (solid color)
         segments.push({
-          width: overflowWidth,
-          type: 'overflow'
+          width: base,
+          type: 'base'
         });
+
+        // Bonus portion (pale color) from base to current
+        if (current > base) {
+          segments.push({
+            width: current - base,
+            type: 'bonus'
+          });
+        }
+        // Remaining space is just empty (transparent background shows through)
       }
     } else {
       // Case 2: Current < Base (deficit/decay)
@@ -214,6 +234,7 @@ export class StatsPanelComponent {
         width: base - current,
         type: 'deficit'
       });
+      // Remaining space is just empty
     }
 
     return segments;
