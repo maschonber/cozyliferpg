@@ -9,9 +9,9 @@ import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter, updatePlayerArchetype } from '../services/player';
 import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
-import { processDailyStatChanges, setBaseStat } from '../services/stat';
+import { processDailyStatChanges, setBaseStat, setCurrentStat, getBaseStat, getCurrentStat } from '../services/stat';
 import { calculateDefensiveStatChanges } from '../services/defensive-stats';
-import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype } from '../../../shared/types';
+import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype, StatChangeBreakdown, StatChangeComponent } from '../../../shared/types';
 
 const router = Router();
 
@@ -162,25 +162,67 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     const newDay = player.currentDay + 1;
     const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
 
-    // Phase 2.5: Process daily stat changes (base growth, current decay)
-    const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
-    const statResult = processDailyStatChanges(player.stats, trainedStats);
-
-    // Phase 2.5.2: Calculate defensive stat changes (Vitality, Ambition, Empathy)
+    // PHASE 1: Apply defensive stat changes to CURRENT stats (not base)
+    // These represent lifestyle patterns and cannot be trained directly
     const defensiveChanges = await calculateDefensiveStatChanges(pool, player, bedtime);
 
-    // Apply defensive stat changes to BASE stats
-    let finalStats = { ...statResult.newStats };
-    finalStats = setBaseStat(finalStats, 'vitality',
-      Math.max(0, finalStats.baseVitality + defensiveChanges.vitality));
-    finalStats = setBaseStat(finalStats, 'ambition',
-      Math.max(0, finalStats.baseAmbition + defensiveChanges.ambition));
-    finalStats = setBaseStat(finalStats, 'empathy',
-      Math.max(0, finalStats.baseEmpathy + defensiveChanges.empathy));
+    let statsAfterDefensive = { ...player.stats };
+    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'vitality',
+      getCurrentStat(statsAfterDefensive, 'vitality') + defensiveChanges.vitality);
+    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'ambition',
+      getCurrentStat(statsAfterDefensive, 'ambition') + defensiveChanges.ambition);
+    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'empathy',
+      getCurrentStat(statsAfterDefensive, 'empathy') + defensiveChanges.empathy);
 
-    // Separate changes into growth vs decay for the response
+    // PHASE 2: Process daily stat changes (base growth for ALL, current decay for OFFENSIVE only)
+    const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
+    const statResult = processDailyStatChanges(statsAfterDefensive, trainedStats);
+
+    const finalStats = statResult.newStats;
+
+    // Separate changes into growth vs decay for legacy response
     const baseGrowth = statResult.changes.filter(c => c.baseDelta > 0);
     const currentDecay = statResult.changes.filter(c => c.currentDelta < 0);
+
+    // Build comprehensive stat change breakdowns
+    const statChangeBreakdowns: StatChangeBreakdown[] = [];
+    const allStats: StatName[] = [
+      'fitness', 'vitality', 'poise',
+      'knowledge', 'creativity', 'ambition',
+      'confidence', 'wit', 'empathy'
+    ];
+
+    for (const stat of allStats) {
+      const previousBase = getBaseStat(player.stats, stat);
+      const previousCurrent = getCurrentStat(player.stats, stat);
+      const newBase = getBaseStat(finalStats, stat);
+      const newCurrent = getCurrentStat(finalStats, stat);
+      const components: StatChangeComponent[] = [];
+
+      // Add defensive stat components (if any)
+      if (defensiveChanges.components.has(stat)) {
+        components.push(...defensiveChanges.components.get(stat)!);
+      }
+
+      // Add base growth and decay components (if any)
+      if (statResult.components.has(stat)) {
+        components.push(...statResult.components.get(stat)!);
+      }
+
+      // Only include stats that have components (changes that triggered)
+      if (components.length > 0) {
+        statChangeBreakdowns.push({
+          stat,
+          baseChange: newBase - previousBase,
+          currentChange: newCurrent - previousCurrent,
+          previousBase,
+          newBase,
+          previousCurrent,
+          newCurrent,
+          components
+        });
+      }
+    }
 
     // Update player character with new stats and reset tracking
     await updatePlayerCharacter(pool, player.id, {
@@ -218,10 +260,15 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
         newDay,
         traveledHome: travelTimeHome > 0,
         travelTime: travelTimeHome,
-        statChanges: statResult.changes,
-        baseGrowth,
-        currentDecay,
-        defensiveStatChanges: defensiveChanges
+        statChanges: statResult.changes,  // Legacy
+        baseGrowth,  // Legacy
+        currentDecay,  // Legacy
+        defensiveStatChanges: {  // Legacy
+          vitality: defensiveChanges.vitality,
+          ambition: defensiveChanges.ambition,
+          empathy: defensiveChanges.empathy
+        },
+        statChangeBreakdowns  // New comprehensive breakdown
       }
     });
   } catch (error) {

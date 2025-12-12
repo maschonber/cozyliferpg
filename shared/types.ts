@@ -497,6 +497,31 @@ export interface ActivityOutcome {
 }
 
 /**
+ * Individual component contributing to a stat change
+ */
+export interface StatChangeComponent {
+  source: string;        // Unique identifier (e.g., "base_growth_gap", "vitality_min_energy")
+  category: string;      // Human-readable category (e.g., "Base Growth", "Defensive Stats")
+  description: string;   // Human-readable reason
+  value: number;         // The contribution to the stat change
+  details?: string;      // Additional context (optional)
+}
+
+/**
+ * Detailed breakdown of stat changes for a single stat
+ */
+export interface StatChangeBreakdown {
+  stat: StatName;
+  baseChange: number;      // Total change to base stat
+  currentChange: number;   // Total change to current stat
+  previousBase: number;
+  newBase: number;
+  previousCurrent: number;
+  newCurrent: number;
+  components: StatChangeComponent[];
+}
+
+/**
  * Defensive stat changes (Phase 2.5.2)
  */
 export interface DefensiveStatChanges {
@@ -509,10 +534,11 @@ export interface DefensiveStatChanges {
  * Sleep result with stat changes (Phase 2.5 extension)
  */
 export interface SleepResultWithStats extends SleepResult {
-  statChanges: StatChange[];     // All stat changes that occurred
-  baseGrowth: StatChange[];      // Stats where base increased
-  currentDecay: StatChange[];    // Stats where current decayed toward base
-  defensiveStatChanges?: DefensiveStatChanges;  // Defensive stat changes (Phase 2.5.2)
+  statChanges: StatChange[];     // All stat changes that occurred (legacy)
+  baseGrowth: StatChange[];      // Stats where base increased (legacy)
+  currentDecay: StatChange[];    // Stats where current decayed toward base (legacy)
+  defensiveStatChanges?: DefensiveStatChanges;  // Defensive stat changes (Phase 2.5.2, legacy)
+  statChangeBreakdowns: StatChangeBreakdown[];  // Detailed breakdown for all stats
 }
 
 /**

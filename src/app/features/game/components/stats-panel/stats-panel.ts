@@ -165,18 +165,119 @@ export class StatsPanelComponent {
   }
 
   /**
-   * Calculate progress bar percentage for base stat (out of 100 max)
+   * Get segments for the composite stat bar
+   * Returns array of segments with widths and types
+   * Bar is always 100% wide (0-100 scale), overflow replaces leftmost portion
    */
-  getBasePercent(stat: StatDisplay): number {
-    return (stat.base / 100) * 100;
+  getBarSegments(stat: StatDisplay): Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> {
+    const segments: Array<{ width: number; type: 'base' | 'bonus' | 'deficit' | 'overflow' }> = [];
+
+    const base = stat.base;
+    const current = stat.current;
+
+    if (current >= base) {
+      // Case 1: Current >= Base (normal or bonus)
+
+      if (current > 100) {
+        // Overflow case: current > 100
+        // Overflow takes the leftmost portion
+        const overflowWidth = current - 100;
+        segments.push({
+          width: overflowWidth,
+          type: 'overflow'
+        });
+
+        // Base portion (what remains after overflow takes its space)
+        const baseWidth = Math.max(0, base - overflowWidth);
+        if (baseWidth > 0) {
+          segments.push({
+            width: baseWidth,
+            type: 'base'
+          });
+        }
+
+        // Bonus portion (from base to 100)
+        const bonusWidth = 100 - base;
+        if (bonusWidth > 0) {
+          segments.push({
+            width: bonusWidth,
+            type: 'bonus'
+          });
+        }
+      } else {
+        // Normal case: base <= current <= 100
+        // Base portion (solid color)
+        segments.push({
+          width: base,
+          type: 'base'
+        });
+
+        // Bonus portion (pale color) from base to current
+        if (current > base) {
+          segments.push({
+            width: current - base,
+            type: 'bonus'
+          });
+        }
+        // Remaining space is just empty (transparent background shows through)
+      }
+    } else {
+      // Case 2: Current < Base (deficit/decay)
+      // Current portion (solid color, what remains)
+      segments.push({
+        width: current,
+        type: 'base'
+      });
+
+      // Deficit portion (red, what was lost)
+      segments.push({
+        width: base - current,
+        type: 'deficit'
+      });
+      // Remaining space is just empty
+    }
+
+    return segments;
   }
 
   /**
-   * Calculate progress bar percentage for current stat
-   * Current can exceed base by up to 30, so we show it relative to maxCurrent
+   * Calculate progress bar percentage for base stat (out of 100 max)
+   */
+  getBasePercent(stat: StatDisplay): number {
+    return Math.min((stat.base / 100) * 100, 100);
+  }
+
+  /**
+   * Calculate progress bar percentage for current stat (0-100 range)
+   * Values above 100 will be shown separately as overflow
    */
   getCurrentPercent(stat: StatDisplay): number {
-    return (stat.current / stat.maxCurrent) * 100;
+    return Math.min((stat.current / 100) * 100, 100);
+  }
+
+  /**
+   * Calculate overflow percentage (current above 100)
+   * Shown as a special "boss HP bar" style overlay
+   */
+  getOverflowPercent(stat: StatDisplay): number {
+    if (stat.current <= 100) return 0;
+    // Show overflow relative to the 30-point overflow cap
+    const overflow = stat.current - 100;
+    return Math.min((overflow / 30) * 100, 100);
+  }
+
+  /**
+   * Check if stat has overflow (current > 100)
+   */
+  hasOverflow(stat: StatDisplay): boolean {
+    return stat.current > 100;
+  }
+
+  /**
+   * Check if stat has deficit (current < base)
+   */
+  hasDeficit(stat: StatDisplay): boolean {
+    return stat.current < stat.base;
   }
 
   /**
