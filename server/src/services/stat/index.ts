@@ -207,6 +207,25 @@ export function calculateCurrentDecay(
 }
 
 /**
+ * Calculate defensive stat pull toward base
+ * Called during sleep for defensive stats (after defensive growth is applied)
+ * Always pulls toward base regardless of training
+ */
+export function calculateDefensiveStatPull(
+  baseStat: number,
+  currentStat: number
+): number {
+  const gap = currentStat - baseStat;
+  if (gap <= 0) return 0;  // Already at or below base
+
+  // Same pull rate as offensive stat decay
+  // Higher gap = faster pull
+  if (gap <= 10) return 0.5;
+  if (gap <= 20) return 1.0;
+  return 1.5;
+}
+
+/**
  * Apply stat change and return capped result
  */
 export function applyStatChange(
@@ -290,9 +309,10 @@ export function processDailyStatChanges(
       });
     }
 
-    // Calculate current decay (ONLY for offensive stats)
+    // Calculate current decay (for offensive stats) or pull (for defensive stats)
     let decay = 0;
     if (!isDefensiveStat) {
+      // Offensive stats: decay only if not trained
       decay = calculateCurrentDecay(newBase, currentStat, wasTrained);
 
       if (decay > 0) {
@@ -302,6 +322,21 @@ export function processDailyStatChanges(
           category: 'Current Decay',
           description: wasTrained ? 'No decay (trained today)' : 'Decay toward base (not trained)',
           value: -decay,
+          details: `Gap to base: ${gap.toFixed(1)}`
+        });
+      }
+    } else {
+      // Defensive stats: always pull toward base (after defensive growth is applied)
+      const pull = calculateDefensiveStatPull(newBase, currentStat);
+      decay = pull;
+
+      if (pull > 0) {
+        const gap = currentStat - newBase;
+        statComponents.push({
+          source: 'defensive_pull',
+          category: 'Current Pull to Base',
+          description: 'Pull toward base (defensive stat)',
+          value: -pull,
           details: `Gap to base: ${gap.toFixed(1)}`
         });
       }
