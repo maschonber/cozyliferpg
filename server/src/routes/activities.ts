@@ -181,9 +181,11 @@ router.post(
         };
 
         // Phase 2.5.3: Use outcome profile if available, otherwise fallback to old system
-        if (activity.outcomeProfile) {
+        const activityWithProfile = activity as typeof activity & { outcomeProfile?: typeof activity.outcomeProfile; statEffects?: typeof activity.statEffects };
+
+        if (activityWithProfile.outcomeProfile) {
           // NEW: Generate outcome from profile
-          const generatedOutcome = generateOutcome(rollResult.tier, activity.outcomeProfile);
+          const generatedOutcome = generateOutcome(rollResult.tier, activityWithProfile.outcomeProfile);
 
           // Apply stat effects from generated outcome
           if (Object.keys(generatedOutcome.statEffects).length > 0) {
@@ -219,12 +221,13 @@ router.post(
           additionalMoneyCost = generatedOutcome.additionalMoneyCost;
           additionalTimeCost = generatedOutcome.additionalTimeCost;
 
-        } else if (activity.statEffects) {
+        } else if (activityWithProfile.statEffects) {
           // OLD: Use legacy scaling system (deprecated)
           const scaledEffects: Partial<Record<StatName, number>> = {};
+          const legacyStatEffects: Partial<Record<StatName, number>> = activityWithProfile.statEffects;
 
-          for (const [stat, baseValue] of Object.entries(activity.statEffects)) {
-            const scaledValue = scaleEffectByTier(baseValue, rollResult.tier, baseValue > 0);
+          for (const [stat, baseValue] of Object.entries(legacyStatEffects)) {
+            const scaledValue = scaleEffectByTier(baseValue as number, rollResult.tier, (baseValue as number) > 0);
             if (scaledValue !== 0) {
               scaledEffects[stat as StatName] = scaledValue;
               if (scaledValue > 0) {
@@ -257,7 +260,8 @@ router.post(
       } else {
         // No roll required - apply stat effects directly (for passive/leisure activities)
         if (activity.statEffects) {
-          const statResult = applyStatEffects(player.stats, activity.statEffects);
+          const legacyStatEffects = activity.statEffects;
+          const statResult = applyStatEffects(player.stats, legacyStatEffects);
           newStats = statResult.newStats;
 
           // Convert actualChanges to StatChange format
@@ -278,9 +282,9 @@ router.post(
             };
           });
 
-          statsTrainedThisActivity = Object.keys(activity.statEffects).filter(
-            stat => (activity.statEffects as any)[stat] > 0
-          ) as StatName[];
+          statsTrainedThisActivity = (Object.entries(legacyStatEffects)
+            .filter(([_, value]) => value !== undefined && value > 0)
+            .map(([stat, _]) => stat) as StatName[]);
         }
       }
 
