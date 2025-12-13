@@ -260,7 +260,7 @@ export async function updatePlayerCharacter(
 
 /**
  * Reset player character to initial state and delete all NPCs
- * Keeps the same archetype but resets stats to starting values
+ * Resets archetype to 'balanced' so player can choose a new archetype
  */
 export async function resetPlayerCharacter(
   pool: Pool,
@@ -271,9 +271,9 @@ export async function resetPlayerCharacter(
   try {
     await client.query('BEGIN');
 
-    // Get player character ID and archetype
+    // Get player character ID
     const playerResult = await client.query(
-      'SELECT id, archetype FROM player_characters WHERE user_id = $1',
+      'SELECT id FROM player_characters WHERE user_id = $1',
       [userId]
     );
 
@@ -284,7 +284,8 @@ export async function resetPlayerCharacter(
     }
 
     const playerId = playerResult.rows[0].id;
-    const archetype = playerResult.rows[0].archetype || 'balanced';
+    // Always reset to balanced archetype so player can choose again
+    const archetype: PlayerArchetype = 'balanced';
 
     // Delete all relationships (will cascade to interactions)
     await client.query('DELETE FROM relationships WHERE player_id = $1', [userId]);
@@ -299,7 +300,7 @@ export async function resetPlayerCharacter(
     const stats = getStartingStats(archetype);
     const tracking = getDefaultTracking();
 
-    // Reset player character to initial values with archetype stats
+    // Reset player character to initial values with balanced archetype
     const now = new Date();
     const result = await client.query(
       `
@@ -311,21 +312,23 @@ export async function resetPlayerCharacter(
           time_of_day = '06:00',
           last_slept_at = '06:00',
           current_location = 'home',
-          base_fitness = $1, base_vitality = $2, base_poise = $3,
-          base_knowledge = $4, base_creativity = $5, base_ambition = $6,
-          base_confidence = $7, base_wit = $8, base_empathy = $9,
-          current_fitness = $10, current_vitality = $11, current_poise = $12,
-          current_knowledge = $13, current_creativity = $14, current_ambition = $15,
-          current_confidence = $16, current_wit = $17, current_empathy = $18,
-          min_energy_today = $19, ending_energy_today = $20, work_streak = $21, rest_streak = $22,
-          burnout_streak = $23, late_night_streak = $24,
-          worked_today = $25, had_catastrophic_failure_today = $26,
-          stats_trained_today = $27,
-          updated_at = $28
-      WHERE id = $29
+          archetype = $1,
+          base_fitness = $2, base_vitality = $3, base_poise = $4,
+          base_knowledge = $5, base_creativity = $6, base_ambition = $7,
+          base_confidence = $8, base_wit = $9, base_empathy = $10,
+          current_fitness = $11, current_vitality = $12, current_poise = $13,
+          current_knowledge = $14, current_creativity = $15, current_ambition = $16,
+          current_confidence = $17, current_wit = $18, current_empathy = $19,
+          min_energy_today = $20, ending_energy_today = $21, work_streak = $22, rest_streak = $23,
+          burnout_streak = $24, late_night_streak = $25,
+          worked_today = $26, had_catastrophic_failure_today = $27,
+          stats_trained_today = $28,
+          updated_at = $29
+      WHERE id = $30
       RETURNING *
       `,
       [
+        archetype,
         stats.baseFitness, stats.baseVitality, stats.basePoise,
         stats.baseKnowledge, stats.baseCreativity, stats.baseAmbition,
         stats.baseConfidence, stats.baseWit, stats.baseEmpathy,
