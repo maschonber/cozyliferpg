@@ -354,6 +354,59 @@ describe('Defensive Stats - Bug Fixes', () => {
     });
   });
 
+  describe('Vitality - Sleep Schedule Bonus', () => {
+    it('should give bonus for sleeping at 8pm-11:59pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '22:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should give bonus for sleeping at exactly 8pm (20:00)', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '20:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should give bonus for sleeping just before midnight (23:59)', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '23:30');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should NOT give bonus for sleeping before 8pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '19:30');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
+
+    it('should NOT give bonus for sleeping at 7pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '19:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
+
+    it('should NOT give bonus for sleeping after midnight', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '01:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
+  });
+
   describe('Bug #3: Catastrophic Failure Detection', () => {
     it('should give bonus when hadCatastrophicFailureToday is false', async () => {
       const player = createTestPlayer({

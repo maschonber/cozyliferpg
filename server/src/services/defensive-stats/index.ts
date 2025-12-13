@@ -19,13 +19,12 @@ function parseTimeToHours(time: string): number {
 }
 
 /**
- * Check if player slept before midnight
+ * Check if player slept before midnight (and at or after 8pm)
  */
 function sleptBeforeMidnight(bedtime: string): boolean {
   const hours = parseTimeToHours(bedtime);
-  // Hours 0-1 are considered "after midnight" (2 AM)
-  // Hours 2-23 where hours < 24 means before midnight
-  return hours >= 6 && hours < 24;
+  // Must be at or after 8pm (20:00) and before midnight (24:00)
+  return hours >= 20 && hours < 24;
 }
 
 /**
