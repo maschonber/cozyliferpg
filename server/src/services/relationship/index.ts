@@ -14,7 +14,7 @@ import { RelationshipState, EmotionalState, StatName } from '../../../../shared/
  * Phase 2+3 Activities
  */
 export const ACTIVITIES = [
-  // Work Activities (solo) - Train: Ambition
+  // Work Activities (solo) - Money is the main reward (scales by outcome)
   {
     id: 'work_part_time',
     name: 'Work Part-Time Job',
@@ -24,13 +24,25 @@ export const ACTIVITIES = [
     location: 'shopping_district' as const,
     timeCost: 240,
     energyCost: -30,
-    moneyCost: 80,  // Main benefit is money (Ambition grows defensively)
+    moneyCost: 0,  // Money comes from outcome scaling
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {},
-    // Phase 2.5: Stats
+    // Phase 2.5.3: Work activity with money as main reward
     difficulty: 30,
     relevantStats: ['ambition'] as StatName[],
-    statEffects: { ambition: 2 },  // Legacy - no outcome profile (work is for money, not stats)
+    outcomeProfile: {
+      mainStats: [] as StatName[],  // No main stat - money is the main reward
+      mainStatGain: 0,
+      mainMoneyGain: 80,  // Scales: best=$140, okay=$80, mixed=$40, catastrophic=$0
+      secondaryStats: ['confidence', 'poise', 'wit'] as StatName[],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence', 'ambition'] as StatName[],
+        statPenalty: 1,
+        energyCost: 10,
+        timeCost: 30
+      }
+    },
     tags: ['work']
   },
   {
@@ -42,14 +54,26 @@ export const ACTIVITIES = [
     location: 'shopping_district' as const,
     timeCost: 480,
     energyCost: -50,
-    moneyCost: 150,  // Main benefit is money (Ambition grows defensively)
+    moneyCost: 0,  // Money comes from outcome scaling
     allowedTimeSlots: ['morning' as const],
     effects: {},
-    // Phase 2.5: Stats - Requires commitment
+    // Phase 2.5.3: Work activity with money as main reward
     difficulty: 40,
     relevantStats: ['ambition', 'vitality'] as StatName[],
-    statEffects: { ambition: 4 },  // Legacy - no outcome profile
     statRequirements: { ambition: 20 },
+    outcomeProfile: {
+      mainStats: [] as StatName[],  // No main stat - money is the main reward
+      mainStatGain: 0,
+      mainMoneyGain: 150,  // Scales: best=$262, okay=$150, mixed=$75, catastrophic=$0
+      secondaryStats: ['ambition', 'vitality', 'confidence'] as StatName[],
+      secondaryStatGain: 1,
+      negativeEffects: {
+        stats: ['confidence', 'ambition'] as StatName[],
+        statPenalty: 1.5,
+        energyCost: 15,
+        timeCost: 60
+      }
+    },
     tags: ['work']
   },
 
@@ -914,14 +938,26 @@ export const ACTIVITIES = [
     location: 'coffee_shop' as const,
     timeCost: 240,
     energyCost: -35,
-    moneyCost: 70,
+    moneyCost: 0,  // Money comes from outcome scaling
     allowedTimeSlots: ['morning' as const, 'afternoon' as const],
     effects: {},
-    // Phase 2.5: Work activity - money is main benefit
-    // Ambition grows from work patterns (defensive stat), Confidence trains organically
+    // Phase 2.5.3: Work activity with money as main reward
     difficulty: 35,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 1 },
+    outcomeProfile: {
+      mainStats: [] as StatName[],  // No main stat - money is the main reward
+      mainStatGain: 0,
+      mainMoneyGain: 70,  // Scales: best=$122, okay=$70, mixed=$35, catastrophic=$0
+      secondaryStats: ['confidence', 'wit', 'poise'] as StatName[],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence', 'poise'] as StatName[],
+        statPenalty: 1,
+        energyCost: 10,
+        moneyCost: 5,  // Broke something
+        timeCost: 30
+      }
+    },
     tags: ['work']
   }
 ];
