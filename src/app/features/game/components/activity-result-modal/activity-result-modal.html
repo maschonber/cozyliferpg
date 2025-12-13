@@ -92,19 +92,28 @@
 
       <!-- Resource Summary -->
       <div class="resource-summary">
-        <div class="resource-item">
+        <div class="resource-item" [class.negative-outcome]="hasAdditionalEnergyCost">
           <mat-icon>bolt</mat-icon>
-          <span>{{ data.activity.energyCost > 0 ? '+' : '' }}{{ data.activity.energyCost }} Energy</span>
+          <span>{{ actualEnergyCost > 0 ? '+' : '' }}{{ actualEnergyCost }} Energy</span>
+          @if (hasAdditionalEnergyCost) {
+            <span class="additional-cost">({{ actualEnergyCost - data.activity.energyCost }} extra)</span>
+          }
         </div>
-        @if (data.activity.moneyCost !== 0) {
-          <div class="resource-item">
+        @if (actualMoneyCost !== 0) {
+          <div class="resource-item" [class.negative-outcome]="hasAdditionalMoneyCost">
             <mat-icon>payments</mat-icon>
-            <span>{{ data.activity.moneyCost > 0 ? '+' : '' }}${{ data.activity.moneyCost }}</span>
+            <span>{{ actualMoneyCost > 0 ? '+' : '' }}${{ actualMoneyCost }}</span>
+            @if (hasAdditionalMoneyCost) {
+              <span class="additional-cost">(${{ actualMoneyCost - data.activity.moneyCost }} extra)</span>
+            }
           </div>
         }
-        <div class="resource-item">
+        <div class="resource-item" [class.negative-outcome]="hasAdditionalTimeCost">
           <mat-icon>schedule</mat-icon>
-          <span>{{ data.activity.timeCost }} min</span>
+          <span>{{ actualTimeCost }} min</span>
+          @if (hasAdditionalTimeCost) {
+            <span class="additional-cost">(+{{ actualTimeCost - data.activity.timeCost }} min)</span>
+          }
         </div>
       </div>
     </div>

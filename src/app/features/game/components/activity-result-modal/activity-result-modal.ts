@@ -129,6 +129,48 @@ export class ActivityResultModal {
     return (this.data.result.statChanges?.length || 0) > 0;
   }
 
+  /**
+   * Get actual energy cost (including outcome effects)
+   */
+  get actualEnergyCost(): number {
+    return this.data.result.actualEnergyCost ?? this.data.activity.energyCost;
+  }
+
+  /**
+   * Get actual money cost (including outcome effects)
+   */
+  get actualMoneyCost(): number {
+    return this.data.result.actualMoneyCost ?? this.data.activity.moneyCost;
+  }
+
+  /**
+   * Get actual time cost (including outcome effects)
+   */
+  get actualTimeCost(): number {
+    return this.data.result.actualTimeCost ?? this.data.activity.timeCost;
+  }
+
+  /**
+   * Check if energy cost was increased by outcome
+   */
+  get hasAdditionalEnergyCost(): boolean {
+    return this.actualEnergyCost < this.data.activity.energyCost;
+  }
+
+  /**
+   * Check if money cost was increased by outcome
+   */
+  get hasAdditionalMoneyCost(): boolean {
+    return this.actualMoneyCost < this.data.activity.moneyCost;
+  }
+
+  /**
+   * Check if time cost was increased by outcome
+   */
+  get hasAdditionalTimeCost(): boolean {
+    return this.actualTimeCost > this.data.activity.timeCost;
+  }
+
   onContinue(): void {
     this.dialogRef.close();
   }

@@ -346,7 +346,11 @@ router.post(
           player: updatedPlayer,
           outcome,
           statChanges: statChanges.length > 0 ? statChanges : undefined,
-          statsTrainedThisActivity: statsTrainedThisActivity.length > 0 ? statsTrainedThisActivity : undefined
+          statsTrainedThisActivity: statsTrainedThisActivity.length > 0 ? statsTrainedThisActivity : undefined,
+          // Include actual resource costs (base + additional from outcome)
+          actualEnergyCost: activity.energyCost + additionalEnergyCost,
+          actualMoneyCost: activity.moneyCost + additionalMoneyCost,
+          actualTimeCost: activity.timeCost + additionalTimeCost
         }
       });
     } catch (error) {
