@@ -420,5 +420,82 @@ describe('Stat Service', () => {
       expect(fitnessComponents![0].source).toBe('surplus_to_base');
       expect(fitnessComponents![1].source).toBe('surplus_decay');
     });
+
+    it('should allow current to stay below base (defensive stat penalties)', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 50, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 25, currentVitality: 50, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Current should stay at 25 (below base of 30)
+      expect(result.newStats.baseFitness).toBe(30);
+      expect(result.newStats.currentFitness).toBe(25);
+      expect(result.changes).toHaveLength(0); // No surplus, no changes
+    });
+
+    it('should allow current to stay below base with multiple stats', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 40, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 35, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 22, currentVitality: 33, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 28, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // All current stats should stay below their respective bases
+      expect(result.newStats.currentFitness).toBe(22);
+      expect(result.newStats.currentVitality).toBe(33);
+      expect(result.newStats.currentCreativity).toBe(28);
+    });
+
+    it('should not allow current to go below 0', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 50, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: -5, currentVitality: 50, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Current should be capped at 0, not negative
+      expect(result.newStats.currentFitness).toBe(0);
+    });
+
+    it('should allow current below base even when processing surplus on other stats', () => {
+      const stats: PlayerStats = {
+        baseFitness: 30, baseVitality: 20, basePoise: 50,
+        baseKnowledge: 50, baseCreativity: 50, baseAmbition: 50,
+        baseConfidence: 50, baseWit: 50, baseEmpathy: 50,
+        currentFitness: 25, currentVitality: 28, currentPoise: 50,
+        currentKnowledge: 50, currentCreativity: 50, currentAmbition: 50,
+        currentConfidence: 50, currentWit: 50, currentEmpathy: 50
+      };
+
+      const result = processDailyStatChanges(stats, new Set());
+
+      // Fitness should stay below base (no surplus)
+      expect(result.newStats.baseFitness).toBe(30);
+      expect(result.newStats.currentFitness).toBe(25);
+
+      // Vitality should process surplus conversion (20/28 → 22/24)
+      expect(result.newStats.baseVitality).toBe(22);
+      expect(result.newStats.currentVitality).toBe(24);
+
+      // Only vitality should have changes
+      expect(result.changes).toHaveLength(1);
+      expect(result.changes[0].stat).toBe('vitality');
+    });
   });
 });
