@@ -534,6 +534,15 @@ export interface DefensiveStatChanges {
 }
 
 /**
+ * Mixed stat changes (Phase 2.5.4)
+ */
+export interface MixedStatChanges {
+  poise: number;
+  creativity: number;
+  wit: number;
+}
+
+/**
  * Sleep result with stat changes (Phase 2.5 extension)
  */
 export interface SleepResultWithStats extends SleepResult {
@@ -541,6 +550,7 @@ export interface SleepResultWithStats extends SleepResult {
   baseGrowth: StatChange[];      // Stats where base increased (legacy)
   currentDecay: StatChange[];    // Stats where current decayed toward base (legacy)
   defensiveStatChanges?: DefensiveStatChanges;  // Defensive stat changes (Phase 2.5.2, legacy)
+  mixedStatChanges?: MixedStatChanges;  // Mixed stat changes (Phase 2.5.4)
   statChangeBreakdowns: StatChangeBreakdown[];  // Detailed breakdown for all stats
 }
 
