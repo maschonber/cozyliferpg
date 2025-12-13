@@ -14,84 +14,154 @@ import { getCurrentStat } from '../stat';
 // ===== Constants =====
 
 /**
- * Outcome tier thresholds (adjusted roll values)
+ * Base DC offset - all difficulties are 100 + activity difficulty
  */
-export const OUTCOME_THRESHOLDS = {
-  catastrophic: 20,   // Below 20 = catastrophic
-  mixed: 45,          // 20-44 = mixed
-  okay: 80,           // 45-79 = okay
-  best: 80            // 80+ = best
+export const BASE_DC = 100;
+
+/**
+ * Outcome tier offsets from DC
+ */
+export const OUTCOME_OFFSETS = {
+  catastrophic: -50,  // DC - 50 or below = catastrophic
+  best: 50            // DC + 50 or above = best
+};
+
+/**
+ * Critical roll ranges (on 2d100 sum, before adding stats)
+ * These improve/worsen the outcome tier by one step
+ */
+export const CRIT_RANGES = {
+  fail: { min: 2, max: 50 },      // ~10% chance to worsen tier
+  success: { min: 152, max: 200 }  // ~10% chance to improve tier
 };
 
 // ===== Roll Mechanics =====
 
 /**
+ * Roll 2d100 for bell curve distribution
+ * Returns a value between 2-200 with average around 101
+ */
+function roll2d100(): number {
+  const die1 = Math.floor(Math.random() * 100) + 1;
+  const die2 = Math.floor(Math.random() * 100) + 1;
+  return die1 + die2;
+}
+
+/**
  * Calculate stat bonus for roll
- * Formula: relevantStat / 3 (rounded)
+ * Uses FULL average of relevant stats (no division)
  */
 export function calculateStatBonus(stats: PlayerStats, relevantStats: StatName[]): number {
   if (relevantStats.length === 0) return 0;
 
-  // Average the relevant stats and divide by 3
+  // Average the relevant stats (full value, no division)
   const totalStat = relevantStats.reduce((sum, statName) => {
     return sum + getCurrentStat(stats, statName);
   }, 0);
 
-  const averageStat = totalStat / relevantStats.length;
-  return Math.round(averageStat / 3);
+  return Math.round(totalStat / relevantStats.length);
 }
 
 /**
- * Calculate difficulty penalty for roll
- * Formula: difficulty / 2 (rounded)
+ * Calculate DC from difficulty
+ * Formula: BASE_DC (100) + difficulty
  */
-export function calculateDifficultyPenalty(difficulty: number): number {
-  return Math.round(difficulty / 2);
+export function calculateDC(difficulty: number): number {
+  return BASE_DC + difficulty;
 }
 
 /**
- * Determine outcome tier from adjusted roll
+ * Determine outcome tier from total vs DC
+ * @param total - The total roll (2d100 + stat bonus)
+ * @param dc - The difficulty class to beat
  */
-export function determineOutcomeTier(adjustedRoll: number): OutcomeTier {
-  if (adjustedRoll < OUTCOME_THRESHOLDS.catastrophic) return 'catastrophic';
-  if (adjustedRoll < OUTCOME_THRESHOLDS.mixed) return 'mixed';
-  if (adjustedRoll < OUTCOME_THRESHOLDS.okay) return 'okay';
-  return 'best';
+export function determineOutcomeTier(total: number, dc: number): OutcomeTier {
+  if (total <= dc + OUTCOME_OFFSETS.catastrophic) return 'catastrophic';
+  if (total < dc) return 'mixed';
+  if (total >= dc + OUTCOME_OFFSETS.best) return 'best';
+  return 'okay';
+}
+
+/**
+ * Apply critical success/failure tier shifts
+ * @param tier - The base tier before crit
+ * @param isCritSuccess - Whether this is a critical success
+ * @param isCritFail - Whether this is a critical failure
+ */
+export function applyCritShift(tier: OutcomeTier, isCritSuccess: boolean, isCritFail: boolean): OutcomeTier {
+  if (isCritSuccess) {
+    // Improve by one tier
+    if (tier === 'catastrophic') return 'mixed';
+    if (tier === 'mixed') return 'okay';
+    if (tier === 'okay') return 'best';
+    return 'best'; // Already best
+  }
+
+  if (isCritFail) {
+    // Worsen by one tier
+    if (tier === 'best') return 'okay';
+    if (tier === 'okay') return 'mixed';
+    if (tier === 'mixed') return 'catastrophic';
+    return 'catastrophic'; // Already catastrophic
+  }
+
+  return tier;
 }
 
 /**
  * Roll for activity outcome
  * @param stats - Player's current stats
  * @param relevantStats - Stats that affect this roll
- * @param difficulty - Activity difficulty (1-100)
- * @param roll - Optional roll value (1-100), random if not provided
+ * @param difficulty - Activity difficulty (added to BASE_DC of 100)
+ * @param diceRoll - Optional dice roll value (2-200), random 2d100 if not provided
  * @returns Outcome tier and roll details
  */
 export function rollOutcome(
   stats: PlayerStats,
   relevantStats: StatName[],
   difficulty: number,
-  roll?: number
-): { tier: OutcomeTier; roll: number; adjustedRoll: number; statBonus: number; difficultyPenalty: number } {
-  // Generate roll if not provided (for testing, roll can be injected)
-  const actualRoll = roll ?? Math.floor(Math.random() * 100) + 1;
+  diceRoll?: number
+): {
+  tier: OutcomeTier;
+  roll: number;           // The 2d100 roll (2-200)
+  adjustedRoll: number;   // roll + statBonus
+  statBonus: number;      // Average of relevant stats
+  difficultyPenalty: number; // DC value (kept for compatibility, equals DC)
+  dc: number;             // The difficulty class
+  isCritSuccess: boolean; // Whether roll was in crit success range
+  isCritFail: boolean;    // Whether roll was in crit fail range
+} {
+  // Generate 2d100 roll if not provided (for testing, roll can be injected)
+  const actualRoll = diceRoll ?? roll2d100();
 
-  // Calculate modifiers
+  // Calculate stat bonus (full average of relevant stats)
   const statBonus = calculateStatBonus(stats, relevantStats);
-  const difficultyPenalty = calculateDifficultyPenalty(difficulty);
 
-  // Calculate adjusted roll
-  const adjustedRoll = actualRoll + statBonus - difficultyPenalty;
+  // Calculate DC
+  const dc = calculateDC(difficulty);
 
-  // Determine tier
-  const tier = determineOutcomeTier(adjustedRoll);
+  // Calculate total
+  const total = actualRoll + statBonus;
+
+  // Check for crits (based on raw 2d100 roll, before stat bonus)
+  const isCritFail = actualRoll >= CRIT_RANGES.fail.min && actualRoll <= CRIT_RANGES.fail.max;
+  const isCritSuccess = actualRoll >= CRIT_RANGES.success.min && actualRoll <= CRIT_RANGES.success.max;
+
+  // Determine base tier
+  const baseTier = determineOutcomeTier(total, dc);
+
+  // Apply crit shifts
+  const tier = applyCritShift(baseTier, isCritSuccess, isCritFail);
 
   return {
     tier,
     roll: actualRoll,
-    adjustedRoll,
+    adjustedRoll: total,
     statBonus,
-    difficultyPenalty
+    difficultyPenalty: dc, // For backwards compatibility with existing code
+    dc,
+    isCritSuccess,
+    isCritFail
   };
 }
 
@@ -161,18 +231,18 @@ export function getDefaultOutcomeDescription(
 // ===== Probability Calculations (for UI/debugging) =====
 
 /**
- * Calculate probability distribution for a given stat/difficulty combo
- * Returns approximate percentages for each tier
+ * Calculate probability distribution for 2d100 bell curve
+ * Simulates all possible 2d100 outcomes (10,000 combinations)
+ * Returns percentages for each tier
  */
 export function calculateOutcomeProbabilities(
   statValue: number,
   difficulty: number
 ): Record<OutcomeTier, number> {
-  const statBonus = Math.round(statValue / 3);
-  const difficultyPenalty = Math.round(difficulty / 2);
-  const modifier = statBonus - difficultyPenalty;
+  const dc = calculateDC(difficulty);
+  const statBonus = Math.round(statValue);
 
-  // For each roll 1-100, determine the tier and count
+  // Count outcomes for each tier
   const counts: Record<OutcomeTier, number> = {
     catastrophic: 0,
     mixed: 0,
@@ -180,18 +250,35 @@ export function calculateOutcomeProbabilities(
     best: 0
   };
 
-  for (let roll = 1; roll <= 100; roll++) {
-    const adjustedRoll = roll + modifier;
-    const tier = determineOutcomeTier(adjustedRoll);
-    counts[tier]++;
+  let totalCombinations = 0;
+
+  // Simulate all possible 2d100 rolls
+  for (let die1 = 1; die1 <= 100; die1++) {
+    for (let die2 = 1; die2 <= 100; die2++) {
+      const diceRoll = die1 + die2;
+      const total = diceRoll + statBonus;
+
+      // Check for crits
+      const isCritFail = diceRoll >= CRIT_RANGES.fail.min && diceRoll <= CRIT_RANGES.fail.max;
+      const isCritSuccess = diceRoll >= CRIT_RANGES.success.min && diceRoll <= CRIT_RANGES.success.max;
+
+      // Determine base tier
+      const baseTier = determineOutcomeTier(total, dc);
+
+      // Apply crit shifts
+      const finalTier = applyCritShift(baseTier, isCritSuccess, isCritFail);
+
+      counts[finalTier]++;
+      totalCombinations++;
+    }
   }
 
   // Convert to percentages
   return {
-    catastrophic: counts.catastrophic,
-    mixed: counts.mixed,
-    okay: counts.okay,
-    best: counts.best
+    catastrophic: Math.round((counts.catastrophic / totalCombinations) * 1000) / 10,
+    mixed: Math.round((counts.mixed / totalCombinations) * 1000) / 10,
+    okay: Math.round((counts.okay / totalCombinations) * 1000) / 10,
+    best: Math.round((counts.best / totalCombinations) * 1000) / 10
   };
 }
 
