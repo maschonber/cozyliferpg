@@ -154,7 +154,7 @@ export const ACTIVITIES = [
     // Phase 2.5.3: Outcome Profile
     outcomeProfile: {
       mainStats: ['wit'] as StatName[],  // Mixed stat as main (deep conversations train wit)
-      mainStatGain: 2,
+      mainStatGain: 1.5,  // Reduced from 2.0 (mixed stat should be weaker than active)
       secondaryStats: ['knowledge', 'poise'] as StatName[],
       secondaryStatGain: 1,
       negativeEffects: {
@@ -376,7 +376,7 @@ export const ACTIVITIES = [
     relevantStats: ['creativity'] as StatName[],
     outcomeProfile: {
       mainStats: ['creativity'] as StatName[],
-      mainStatGain: 2.5,
+      mainStatGain: 1.5,  // Reduced from 2.5 (mixed stat should be weaker than active)
       secondaryStats: ['knowledge', 'poise'] as StatName[],
       secondaryStatGain: 0.5,
       negativeEffects: {
@@ -452,6 +452,192 @@ export const ACTIVITIES = [
       secondaryStatGain: 0.3,
       negativeEffects: {
         timeCost: 10  // Time flies when enjoying music
+      }
+    }
+  },
+
+  // Mixed Stat Training Activities (solo) - Train poise, creativity, and wit
+  // Weaker gains than active stats (1.0-1.5 vs 2.0-3.0)
+  {
+    id: 'yoga_practice',
+    name: 'Practice Yoga',
+    description: 'Work on flexibility, balance, and mindful movement',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 60,
+    energyCost: -8,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - poise (physical grace)
+    difficulty: 35,
+    relevantStats: ['poise', 'fitness'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'] as StatName[],
+      mainStatGain: 1.5,  // Mixed stat gain (weaker than active stats)
+      secondaryStats: ['fitness', 'vitality'] as StatName[],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['poise'] as StatName[],
+        statPenalty: 0.5,
+        energyCost: 5,  // Overexerted
+        timeCost: 15  // Had to rest
+      }
+    }
+  },
+  {
+    id: 'meditation',
+    name: 'Meditate',
+    description: 'Practice mindfulness and mental composure',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 45,
+    energyCost: 0,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const, 'night' as const],
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - poise (composure, mental grace)
+    difficulty: 25,
+    relevantStats: ['poise'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'] as StatName[],
+      mainStatGain: 1.0,  // Mixed stat gain
+      secondaryStats: ['vitality'] as StatName[],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        timeCost: 15  // Mind wandered
+      }
+    }
+  },
+  {
+    id: 'stretching',
+    name: 'Stretching Routine',
+    description: 'Improve flexibility and body awareness',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 30,
+    energyCost: -3,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - poise (body awareness)
+    difficulty: 20,
+    relevantStats: ['poise', 'fitness'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['poise'] as StatName[],
+      mainStatGain: 1.0,  // Mixed stat gain
+      secondaryStats: ['fitness'] as StatName[],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['fitness'] as StatName[],
+        statPenalty: 0.3,
+        energyCost: 3  // Mild muscle strain
+      }
+    }
+  },
+  {
+    id: 'journaling',
+    name: 'Write in Journal',
+    description: 'Express thoughts and ideas through writing',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 60,
+    energyCost: -5,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const, 'night' as const],
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - creativity (self-expression)
+    difficulty: 30,
+    relevantStats: ['creativity'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['creativity'] as StatName[],
+      mainStatGain: 1.0,  // Mixed stat gain
+      secondaryStats: ['knowledge', 'wit'] as StatName[],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        energyCost: 5,  // Mental fatigue
+        timeCost: 20  // Lost in thought
+      }
+    }
+  },
+  {
+    id: 'sketching',
+    name: 'Sketch/Draw',
+    description: 'Practice visual art and creative observation',
+    category: 'self_improvement' as const,
+    requiresNPC: false,
+    location: 'park' as const,
+    timeCost: 75,
+    energyCost: -5,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - creativity (artistic expression)
+    difficulty: 35,
+    relevantStats: ['creativity'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['creativity'] as StatName[],
+      mainStatGain: 1.2,  // Mixed stat gain
+      secondaryStats: ['poise', 'knowledge'] as StatName[],
+      secondaryStatGain: 0.4,
+      negativeEffects: {
+        stats: ['creativity'] as StatName[],
+        statPenalty: 0.5,
+        energyCost: 5,  // Frustrated with results
+        timeCost: 15  // Kept redoing
+      }
+    }
+  },
+  {
+    id: 'word_games',
+    name: 'Play Word Games',
+    description: 'Challenge yourself with puzzles and wordplay',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 45,
+    energyCost: -3,
+    moneyCost: 0,
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - wit (quick thinking)
+    difficulty: 30,
+    relevantStats: ['wit', 'knowledge'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['wit'] as StatName[],
+      mainStatGain: 1.0,  // Mixed stat gain
+      secondaryStats: ['knowledge'] as StatName[],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        energyCost: 5,  // Mental fatigue
+        timeCost: 15  // Got stuck on puzzles
+      }
+    }
+  },
+  {
+    id: 'comedy_show',
+    name: 'Watch Comedy Show',
+    description: 'Enjoy standup comedy and sharpen your sense of humor',
+    category: 'leisure' as const,
+    requiresNPC: false,
+    location: 'home' as const,
+    timeCost: 60,
+    energyCost: 0,
+    moneyCost: 0,
+    effects: {},
+    // Phase 2.5.4: Mixed stat training - wit (humor appreciation)
+    difficulty: 15,
+    relevantStats: ['wit'] as StatName[],
+    outcomeProfile: {
+      mainStats: ['wit'] as StatName[],
+      mainStatGain: 0.8,  // Light mixed stat gain (passive activity)
+      secondaryStats: ['creativity'] as StatName[],
+      secondaryStatGain: 0.2,
+      negativeEffects: {
+        timeCost: 20  // Binge-watched
       }
     }
   },
