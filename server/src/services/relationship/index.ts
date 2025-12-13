@@ -460,14 +460,14 @@ export const ACTIVITIES = [
   // Weaker gains than active stats (1.0-1.5 vs 2.0-3.0)
   {
     id: 'yoga_practice',
-    name: 'Practice Yoga',
-    description: 'Work on flexibility, balance, and mindful movement',
+    name: 'Yoga Class',
+    description: 'Attend a yoga class to work on flexibility, balance, and mindful movement',
     category: 'self_improvement' as const,
     requiresNPC: false,
-    location: 'home' as const,
+    location: 'gym' as const,
     timeCost: 60,
-    energyCost: -8,
-    moneyCost: 0,
+    energyCost: -12,  // Increased from -8 to match gym activity intensity
+    moneyCost: -10,  // Class fee
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
     // Phase 2.5.4: Mixed stat training - poise (physical grace)
@@ -519,7 +519,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'home' as const,
     timeCost: 30,
-    energyCost: -3,
+    energyCost: -5,  // Increased from -3
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
@@ -546,7 +546,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'home' as const,
     timeCost: 60,
-    energyCost: -5,
+    energyCost: -8,  // Increased from -5 (mental effort)
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const, 'night' as const],
     effects: {},
@@ -572,7 +572,7 @@ export const ACTIVITIES = [
     requiresNPC: false,
     location: 'park' as const,
     timeCost: 75,
-    energyCost: -5,
+    energyCost: -8,  // Increased from -5 (focused mental/physical effort)
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
     effects: {},
@@ -594,14 +594,15 @@ export const ACTIVITIES = [
   },
   {
     id: 'word_games',
-    name: 'Play Word Games',
-    description: 'Challenge yourself with puzzles and wordplay',
+    name: 'Bar Trivia Night',
+    description: 'Test your knowledge and wit at the local trivia competition',
     category: 'leisure' as const,
     requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 45,
-    energyCost: -3,
-    moneyCost: 0,
+    location: 'bar' as const,
+    timeCost: 90,  // Increased from 45 (full trivia event)
+    energyCost: -10,  // Increased from -3 (social + mental effort)
+    moneyCost: -5,  // Drinks/cover charge
+    allowedTimeSlots: ['evening' as const, 'night' as const],
     effects: {},
     // Phase 2.5.4: Mixed stat training - wit (quick thinking)
     difficulty: 30,
@@ -613,7 +614,8 @@ export const ACTIVITIES = [
       secondaryStatGain: 0.3,
       negativeEffects: {
         energyCost: 5,  // Mental fatigue
-        timeCost: 15  // Got stuck on puzzles
+        moneyCost: 5,  // Bought extra drinks
+        timeCost: 20  // Lost track of time socializing
       }
     }
   },
