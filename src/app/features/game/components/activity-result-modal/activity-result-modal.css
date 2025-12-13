@@ -240,6 +240,135 @@ mat-dialog-actions {
   justify-content: center;
 }
 
+/* Critical Indicators */
+.crit-indicator {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  margin-left: 8px;
+  animation: pulse 1s ease-in-out;
+}
+
+.crit-success {
+  background: linear-gradient(135deg, #ffd700, #ffed4e);
+  color: #000;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.crit-fail {
+  background: linear-gradient(135deg, #f44336, #ff6659);
+  color: #fff;
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* Roll Details Panel */
+.roll-details-panel {
+  margin-top: 12px;
+  box-shadow: none !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.roll-details-panel mat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.9rem;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.roll-details-panel mat-panel-title mat-icon {
+  font-size: 20px;
+  width: 20px;
+  height: 20px;
+}
+
+/* Probability Section */
+.probability-section {
+  margin-top: 16px;
+  padding: 12px 0;
+}
+
+.probability-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: rgba(0, 0, 0, 0.7);
+  text-align: center;
+}
+
+.probability-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.probability-item {
+  display: grid;
+  grid-template-columns: 90px 1fr 50px;
+  align-items: center;
+  gap: 8px;
+}
+
+.prob-label {
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: right;
+  color: rgba(0, 0, 0, 0.7);
+}
+
+.prob-bar-container {
+  height: 20px;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.prob-bar {
+  height: 100%;
+  border-radius: 10px;
+  transition: width 0.3s ease;
+}
+
+.prob-bar.catastrophic {
+  background: linear-gradient(90deg, #f44336, #e57373);
+}
+
+.prob-bar.mixed {
+  background: linear-gradient(90deg, #ff9800, #ffb74d);
+}
+
+.prob-bar.okay {
+  background: linear-gradient(90deg, #4caf50, #81c784);
+}
+
+.prob-bar.best {
+  background: linear-gradient(90deg, #ffd700, #ffed4e);
+}
+
+.prob-value {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-align: right;
+  color: rgba(0, 0, 0, 0.8);
+}
+
+.probability-note {
+  margin: 12px 0 0 0;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.5);
+  text-align: center;
+  font-style: italic;
+}
+
 /* Responsive */
 @media (max-width: 400px) {
   .activity-result-modal {
@@ -256,5 +385,23 @@ mat-dialog-actions {
 
   .resource-summary {
     gap: 16px;
+  }
+
+  .probability-item {
+    grid-template-columns: 80px 1fr 45px;
+    gap: 6px;
+  }
+
+  .prob-label {
+    font-size: 0.75rem;
+  }
+
+  .prob-value {
+    font-size: 0.75rem;
+  }
+
+  .crit-indicator {
+    font-size: 0.65rem;
+    padding: 3px 8px;
   }
 }
