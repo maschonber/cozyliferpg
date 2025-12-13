@@ -108,7 +108,7 @@ export class ActivityButtonComponent {
 
     return Object.entries(this.activity.statRequirements).map(([stat, required]) => {
       const statName = stat as StatName;
-      const current = this.playerStats ? this.getBaseStat(statName) : 0;
+      const current = this.playerStats ? this.getCurrentStat(statName) : 0;
       return {
         stat: statName,
         label: statLabels[statName] || stat.toUpperCase().substring(0, 3),
@@ -120,11 +120,11 @@ export class ActivityButtonComponent {
   }
 
   /**
-   * Get base stat from player stats
+   * Get current stat from player stats
    */
-  private getBaseStat(stat: StatName): number {
+  private getCurrentStat(stat: StatName): number {
     if (!this.playerStats) return 0;
-    const key = `base${stat.charAt(0).toUpperCase()}${stat.slice(1)}` as keyof PlayerStats;
+    const key = `current${stat.charAt(0).toUpperCase()}${stat.slice(1)}` as keyof PlayerStats;
     return this.playerStats[key] as number;
   }
 

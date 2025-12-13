@@ -197,7 +197,7 @@ export function calculateOutcomeProbabilities(
 
 /**
  * Check if player meets stat requirements for an activity
- * Requirements use BASE stat, not current
+ * Requirements use CURRENT stat, not base
  */
 export function meetsStatRequirements(
   stats: PlayerStats,
@@ -209,9 +209,8 @@ export function meetsStatRequirements(
     if (required === undefined) continue;
 
     const stat = statName as StatName;
-    // Use base stat for requirements
-    const baseKey = `base${stat.charAt(0).toUpperCase() + stat.slice(1)}` as keyof PlayerStats;
-    const actual = stats[baseKey] as number;
+    // Use current stat for requirements
+    const actual = getCurrentStat(stats, stat);
 
     if (actual < required) {
       unmet.push({ stat, required, actual });
