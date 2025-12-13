@@ -272,38 +272,46 @@ export async function calculateAmbitionChange(
     let hardActivityCount = 0;
 
     for (const activity of activities) {
-      // Check if activity was above comfort level
-      if (activity.difficulty && activity.difficulty > relevantStatValue) {
+      // Check if activity was significantly above comfort level (20+ above stat)
+      if (activity.difficulty && activity.difficulty >= relevantStatValue + 20) {
         pushedSelfCount++;
       }
 
-      // Attempted hard activity
+      // Attempted hard activity (absolute threshold)
       if (activity.difficulty && activity.difficulty >= 50) {
         hardActivityCount++;
       }
     }
 
+    // Cap challenging activities to max 3 per day
     if (pushedSelfCount > 0) {
-      const value = 2.0 * pushedSelfCount;
+      const cappedCount = Math.min(pushedSelfCount, 3);
+      const value = 2.0 * cappedCount;
       change += value;
       components.push({
         source: 'ambition_pushed_limits',
         category: 'Defensive Stats (Ambition)',
         description: 'Pushed beyond comfort level',
         value,
-        details: `${pushedSelfCount} challenging ${pushedSelfCount === 1 ? 'activity' : 'activities'}`
+        details: pushedSelfCount > 3
+          ? `${cappedCount} challenging ${cappedCount === 1 ? 'activity' : 'activities'} (capped from ${pushedSelfCount})`
+          : `${cappedCount} challenging ${cappedCount === 1 ? 'activity' : 'activities'}`
       });
     }
 
+    // Cap hard activities to max 3 per day
     if (hardActivityCount > 0) {
-      const value = 1.0 * hardActivityCount;
+      const cappedCount = Math.min(hardActivityCount, 3);
+      const value = 1.0 * cappedCount;
       change += value;
       components.push({
         source: 'ambition_hard_activities',
         category: 'Defensive Stats (Ambition)',
         description: 'Attempted hard activities',
         value,
-        details: `${hardActivityCount} ${hardActivityCount === 1 ? 'activity' : 'activities'} with difficulty ≥50`
+        details: hardActivityCount > 3
+          ? `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥50 (capped from ${hardActivityCount})`
+          : `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥50`
       });
     }
   }
