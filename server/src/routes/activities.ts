@@ -299,6 +299,10 @@ router.post(
       // Track if this was a work activity
       const workedToday = player.tracking.workedToday || activity.category === 'work';
 
+      // Track if this was a catastrophic failure (for defensive stats)
+      const hadCatastrophicFailure = player.tracking.hadCatastrophicFailureToday ||
+        (outcome?.tier === 'catastrophic');
+
       // Track stats trained today (merge with existing)
       const allStatsTrainedToday = Array.from(new Set([
         ...player.tracking.statsTrainedToday,
@@ -342,6 +346,7 @@ router.post(
           minEnergyToday: minEnergy,
           endingEnergyToday: newEnergy,  // Track ending energy after this activity
           workedToday,
+          hadCatastrophicFailureToday: hadCatastrophicFailure,
           statsTrainedToday: allStatsTrainedToday as StatName[]
         }
       });
