@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, computed, signal, effect } from '@angular/core';
+import { Component, inject, computed, signal, effect } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
@@ -35,7 +35,7 @@ import { getLocationDisplayName } from '../../../../shared/utils/location.utils'
   templateUrl: './game-home.html',
   styleUrl: './game-home.css',
 })
-export class GameHome implements OnInit {
+export class GameHome {
   private facade = inject(GameFacade);
   private router = inject(Router);
   private dialog = inject(MatDialog);
@@ -99,11 +99,6 @@ export class GameHome implements OnInit {
     if (!player || locations.length === 0) return undefined;
     return locations.find(loc => loc.id === player.currentLocation);
   });
-
-  ngOnInit(): void {
-    // Initialize game data
-    this.facade.initialize();
-  }
 
   /**
    * Check if player needs archetype selection and show modal
