@@ -172,6 +172,9 @@ export interface ActivityOutcomeProfile {
   mainStats: StatName[];
   mainStatGain: number;  // Base value before outcome scaling
 
+  // Main money reward (for work activities - scales like main stats)
+  mainMoneyGain?: number;  // Base money value before outcome scaling
+
   // Secondary benefits (granted on best/okay outcomes)
   secondaryStats?: StatName[];  // Pool to randomly select from
   secondaryStatGain?: number;

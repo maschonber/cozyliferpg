@@ -104,6 +104,7 @@ export function generateOutcome(
 /**
  * Generate Best outcome:
  * - Main stat × 1.75
+ * - Main money × 1.75 (if specified)
  * - 2 random secondary stats
  * - Relationship effects × 1.5
  */
@@ -121,6 +122,11 @@ function generateBestOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
   const mainGain = profile.mainStatGain * OUTCOME_SCALING.best.mainMultiplier;
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
+  }
+
+  // Apply main money gain (for work activities)
+  if (profile.mainMoneyGain !== undefined) {
+    outcome.additionalMoneyCost = Math.round(profile.mainMoneyGain * OUTCOME_SCALING.best.mainMultiplier);
   }
 
   // Apply secondary stat gains
@@ -141,6 +147,7 @@ function generateBestOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
 /**
  * Generate Okay outcome:
  * - Main stat × 1.0
+ * - Main money × 1.0 (if specified)
  * - No secondary stats
  * - Relationship effects × 1.0
  */
@@ -160,12 +167,18 @@ function generateOkayOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
     outcome.statEffects[stat] = mainGain;
   }
 
+  // Apply main money gain (for work activities)
+  if (profile.mainMoneyGain !== undefined) {
+    outcome.additionalMoneyCost = Math.round(profile.mainMoneyGain * OUTCOME_SCALING.okay.mainMultiplier);
+  }
+
   return outcome;
 }
 
 /**
  * Generate Mixed outcome:
  * - Main stat × 0.5
+ * - Main money × 0.5 (if specified)
  * - 1 stat penalty + optionally 1 resource cost
  * - Relationship effects × 0.3 (reduced but still positive)
  */
@@ -183,6 +196,11 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
   const mainGain = profile.mainStatGain * OUTCOME_SCALING.mixed.mainMultiplier;
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
+  }
+
+  // Apply reduced main money gain (for work activities)
+  if (profile.mainMoneyGain !== undefined) {
+    outcome.additionalMoneyCost = Math.round(profile.mainMoneyGain * OUTCOME_SCALING.mixed.mainMultiplier);
   }
 
   // Apply negative effects
@@ -209,7 +227,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
         if (resourceType === 'energy') {
           outcome.additionalEnergyCost = -Math.round(effects.energyCost || 0);
         } else if (resourceType === 'money') {
-          outcome.additionalMoneyCost = -Math.round(effects.moneyCost || 0);
+          outcome.additionalMoneyCost += -Math.round(effects.moneyCost || 0);
         } else if (resourceType === 'time') {
           outcome.additionalTimeCost = Math.round(effects.timeCost || 0);
         }
@@ -223,6 +241,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
 /**
  * Generate Catastrophic outcome:
  * - Main stat × 0 (no gain)
+ * - Main money × 0 (if specified - no money earned)
  * - 2 stat penalties + all available resource costs (amplified)
  * - Relationship effects × -0.5 (damages relationship!)
  */
@@ -237,6 +256,7 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
   };
 
   // NO main stat gains on catastrophic
+  // NO main money gains on catastrophic (for work activities - you don't get paid!)
 
   // Apply multiple negative effects
   if (profile.negativeEffects) {
