@@ -57,9 +57,10 @@ describe('Phase 2 Activities', () => {
       expect(workActivities).toHaveLength(3);
     });
 
-    it('should have positive money rewards', () => {
+    it('should have outcome profiles with mainMoneyGain', () => {
       workActivities.forEach(activity => {
-        expect(activity.moneyCost).toBeGreaterThan(0);
+        expect(activity.outcomeProfile).toBeDefined();
+        expect(activity.outcomeProfile?.mainMoneyGain).toBeGreaterThan(0);
       });
     });
 
@@ -74,7 +75,8 @@ describe('Phase 2 Activities', () => {
       expect(partTime).toBeDefined();
       expect(partTime?.timeCost).toBe(240); // 4 hours
       expect(partTime?.energyCost).toBe(-30);
-      expect(partTime?.moneyCost).toBe(80);
+      expect(partTime?.moneyCost).toBe(0); // Money comes from outcome scaling
+      expect(partTime?.outcomeProfile?.mainMoneyGain).toBe(80); // Base money reward
       expect(partTime?.allowedTimeSlots).toEqual(['morning', 'afternoon']);
     });
 
@@ -83,7 +85,8 @@ describe('Phase 2 Activities', () => {
       expect(fullDay).toBeDefined();
       expect(fullDay?.timeCost).toBe(480); // 8 hours
       expect(fullDay?.energyCost).toBe(-50);
-      expect(fullDay?.moneyCost).toBe(150);
+      expect(fullDay?.moneyCost).toBe(0); // Money comes from outcome scaling
+      expect(fullDay?.outcomeProfile?.mainMoneyGain).toBe(150); // Base money reward
       expect(fullDay?.allowedTimeSlots).toEqual(['morning']);
     });
   });
