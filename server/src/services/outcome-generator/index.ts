@@ -118,7 +118,7 @@ function generateBestOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
   };
 
   // Apply main stat gains
-  const mainGain = profile.mainStatGain * OUTCOME_SCALING.best.mainMultiplier;
+  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.best.mainMultiplier);
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -155,7 +155,7 @@ function generateOkayOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
   };
 
   // Apply main stat gains
-  const mainGain = profile.mainStatGain * OUTCOME_SCALING.okay.mainMultiplier;
+  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.okay.mainMultiplier);
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -180,7 +180,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
   };
 
   // Apply reduced main stat gains
-  const mainGain = profile.mainStatGain * OUTCOME_SCALING.mixed.mainMultiplier;
+  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.mixed.mainMultiplier);
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -193,7 +193,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
     if (effects.stats && effects.stats.length > 0) {
       const selectedStats = selectRandom(effects.stats, 1);
       for (const stat of selectedStats) {
-        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1);
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - Math.round(effects.statPenalty || 1);
       }
     }
 
@@ -207,11 +207,11 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
       const selectedResource = selectRandom(availableResourceCosts, 1);
       for (const resourceType of selectedResource) {
         if (resourceType === 'energy') {
-          outcome.additionalEnergyCost = -(effects.energyCost || 0);
+          outcome.additionalEnergyCost = -Math.round(effects.energyCost || 0);
         } else if (resourceType === 'money') {
-          outcome.additionalMoneyCost = -(effects.moneyCost || 0);
+          outcome.additionalMoneyCost = -Math.round(effects.moneyCost || 0);
         } else if (resourceType === 'time') {
-          outcome.additionalTimeCost = effects.timeCost || 0;
+          outcome.additionalTimeCost = Math.round(effects.timeCost || 0);
         }
       }
     }
@@ -247,19 +247,19 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
       const penaltyCount = Math.min(2, effects.stats.length);
       const selectedStats = selectRandom(effects.stats, penaltyCount);
       for (const stat of selectedStats) {
-        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1) * 1.5;
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - Math.round((effects.statPenalty || 1) * 1.5);
       }
     }
 
     // ALWAYS apply ALL resource costs at 1.5x amplification
     if (effects.energyCost) {
-      outcome.additionalEnergyCost = -(effects.energyCost || 0) * 1.5;
+      outcome.additionalEnergyCost = -Math.round((effects.energyCost || 0) * 1.5);
     }
     if (effects.moneyCost) {
-      outcome.additionalMoneyCost = -(effects.moneyCost || 0) * 1.5;
+      outcome.additionalMoneyCost = -Math.round((effects.moneyCost || 0) * 1.5);
     }
     if (effects.timeCost) {
-      outcome.additionalTimeCost = (effects.timeCost || 0) * 1.5;
+      outcome.additionalTimeCost = Math.round((effects.timeCost || 0) * 1.5);
     }
   }
 
