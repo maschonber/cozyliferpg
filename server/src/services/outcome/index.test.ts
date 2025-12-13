@@ -216,17 +216,17 @@ describe('Outcome Service', () => {
       knowledge: 25  // Changed from 40 to match testStats base values
     };
 
-    it('should pass when base stats meet requirements', () => {
+    it('should pass when current stats meet requirements', () => {
       const result = meetsStatRequirements(testStats, requirements);
       expect(result.meets).toBe(true);
       expect(result.unmet).toHaveLength(0);
     });
 
-    it('should fail when base stats are too low', () => {
+    it('should fail when current stats are too low', () => {
       const lowStats: PlayerStats = {
         ...testStats,
-        baseFitness: 20,  // Below required 25
-        baseKnowledge: 20 // Below required 25
+        currentFitness: 20,  // Below required 25
+        currentKnowledge: 20 // Below required 25
       };
       const result = meetsStatRequirements(lowStats, requirements);
       expect(result.meets).toBe(false);
@@ -235,12 +235,24 @@ describe('Outcome Service', () => {
       expect(result.unmet).toContainEqual({ stat: 'knowledge', required: 25, actual: 20 });
     });
 
-    it('should check BASE stat not current stat', () => {
+    it('should check CURRENT stat not base stat', () => {
       // testStats has baseFitness=30 but currentFitness=45
-      // Requirement is 35, so base doesn't meet it even though current does
+      // Requirement is 35, so current meets it even though base doesn't
       const result = meetsStatRequirements(testStats, { fitness: 35 });
+      expect(result.meets).toBe(true);
+      expect(result.unmet).toHaveLength(0);
+    });
+
+    it('should fail when current stat is below requirement even with high base', () => {
+      // Test the opposite: high base but low current
+      const testStatsLowCurrent: PlayerStats = {
+        ...testStats,
+        baseFitness: 50,    // High base
+        currentFitness: 20  // Low current
+      };
+      const result = meetsStatRequirements(testStatsLowCurrent, { fitness: 35 });
       expect(result.meets).toBe(false);
-      expect(result.unmet[0].actual).toBe(30); // Uses base, not current
+      expect(result.unmet[0].actual).toBe(20); // Uses current, not base
     });
 
     it('should handle empty requirements', () => {
