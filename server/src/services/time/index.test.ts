@@ -378,5 +378,94 @@ describe('Time Service', () => {
       expect(result.available).toBe(false);
       expect(result.reason).toContain('Must be at'); // Location check fails first
     });
+
+    // ===== Venue Opening Hours Tests =====
+    describe('venue opening hours validation', () => {
+      it('should allow activity at venue with no operating hours (24/7)', () => {
+        const activity = { ...mockActivity, location: 'home' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'home' as const, currentTime: '03:00' };
+        const result = canPerformActivity(activity, player);
+        // Should only fail due to 4 AM rule, not venue hours
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Would end too late (after 4 AM)');
+      });
+
+      it('should allow activity when both start and end are within venue hours', () => {
+        // Coffee shop: 06:00-22:00
+        const activity = { ...mockActivity, location: 'coffee_shop' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const, currentTime: '10:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(true);
+      });
+
+      it('should block activity when venue is closed at start time', () => {
+        // Coffee shop: 06:00-22:00, trying to start at 05:00
+        const activity = { ...mockActivity, location: 'coffee_shop' as const, timeCost: 60 };
+        const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const, currentTime: '05:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Corner Coffee Shop is closed at this time');
+      });
+
+      it('should block activity when venue would close before activity ends', () => {
+        // Coffee shop: 06:00-22:00, start at 21:00, ends at 23:00 (after closing)
+        const activity = { ...mockActivity, location: 'coffee_shop' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const, currentTime: '21:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Corner Coffee Shop would close before activity ends');
+      });
+
+      it('should block activity ending exactly at closing time', () => {
+        // Coffee shop closes at 22:00, activity would end at 22:00 (not allowed)
+        const activity = { ...mockActivity, location: 'coffee_shop' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const, currentTime: '20:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Corner Coffee Shop would close before activity ends');
+      });
+
+      it('should allow activity ending just before closing time', () => {
+        // Coffee shop closes at 22:00, activity ends at 21:59
+        const activity = { ...mockActivity, location: 'coffee_shop' as const, timeCost: 119 };
+        const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const, currentTime: '20:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(true);
+      });
+
+      it('should handle venues that close after midnight', () => {
+        // Bar: 11:00-02:00, activity from 23:00 to 01:00 (next day)
+        const activity = { ...mockActivity, location: 'bar' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'bar' as const, currentTime: '23:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(true);
+      });
+
+      it('should block activity at venue closed after midnight when start is before opening', () => {
+        // Bar: 11:00-02:00, trying to start at 05:00 (before opening)
+        const activity = { ...mockActivity, location: 'bar' as const, timeCost: 60 };
+        const player = { ...mockPlayer, currentLocation: 'bar' as const, currentTime: '05:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Seaside Bar & Grill is closed at this time');
+      });
+
+      it('should block activity at venue closed after midnight when end is after closing', () => {
+        // Bar: 11:00-02:00, activity from 01:00 to 03:00 (after closing at 02:00)
+        const activity = { ...mockActivity, location: 'bar' as const, timeCost: 120 };
+        const player = { ...mockPlayer, currentLocation: 'bar' as const, currentTime: '01:00' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(false);
+        expect(result.reason).toBe('Seaside Bar & Grill would close before activity ends');
+      });
+
+      it('should allow activity in late-night window of venue that closes after midnight', () => {
+        // Bar: 11:00-02:00, activity from 00:30 to 01:30 (within late night hours)
+        const activity = { ...mockActivity, location: 'bar' as const, timeCost: 60 };
+        const player = { ...mockPlayer, currentLocation: 'bar' as const, currentTime: '00:30' };
+        const result = canPerformActivity(activity, player);
+        expect(result.available).toBe(true);
+      });
+    });
   });
 });
