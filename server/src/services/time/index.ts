@@ -4,6 +4,7 @@
  */
 
 import { TimeSlot, Activity, PlayerCharacter, ActivityAvailability, SleepResult } from '../../../../shared/types';
+import { isLocationOpen, LOCATIONS } from '../location';
 
 /**
  * Get time slot from time string (HH:MM)
@@ -165,6 +166,37 @@ export function canPerformActivity(
       available: false,
       reason: "Cannot meet new people at home"
     };
+  }
+
+  // Check venue opening hours (if activity has a location)
+  if (activity.location) {
+    const location = LOCATIONS[activity.location];
+
+    // Only check if location has operating hours defined
+    if (location.openTime && location.closeTime) {
+      const startTime = player.currentTime;
+      const endTime = addMinutes(startTime, activity.timeCost);
+
+      // Check if both start and end times are within operating hours
+      const openAtStart = isLocationOpen(activity.location, startTime);
+      const openAtEnd = isLocationOpen(activity.location, endTime);
+
+      if (!openAtStart) {
+        return {
+          activityId: activity.id,
+          available: false,
+          reason: `${location.name} is closed at this time`
+        };
+      }
+
+      if (!openAtEnd) {
+        return {
+          activityId: activity.id,
+          available: false,
+          reason: `${location.name} would close before activity ends`
+        };
+      }
+    }
   }
 
   // Check energy
