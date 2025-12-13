@@ -55,8 +55,11 @@
 ## Development Workflow
 
 1. All changes are committed with clear, descriptive messages
-2. Push to the designated Claude branch
-3. Deployments happen automatically:
+2. **Run tests before pushing** to ensure all tests pass:
+   - Backend: `cd server && npm test`
+   - Confirm all test suites pass before proceeding
+3. Push to the designated Claude branch
+4. Deployments happen automatically:
    - GitHub Actions builds and deploys frontend
    - Railway builds and deploys backend
 
