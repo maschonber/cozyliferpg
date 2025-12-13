@@ -22,6 +22,7 @@ function mapRowToPlayerActivity(row: any): PlayerActivity {
     category: row.category as ActivityCategory,
     difficulty: row.difficulty,
     relevantStats: row.relevant_stats || [],
+    tags: row.tags || undefined,
     timeCost: row.time_cost,
     energyCost: row.energy_cost,
     moneyCost: row.money_cost,
@@ -53,6 +54,7 @@ export async function recordPlayerActivity(
     category: ActivityCategory;
     difficulty?: number;
     relevantStats: StatName[];
+    tags?: string[];
     timeCost: number;
     energyCost: number;
     moneyCost: number;
@@ -79,16 +81,16 @@ export async function recordPlayerActivity(
       INSERT INTO player_activities (
         id, player_id, activity_id,
         performed_at, day_number, time_of_day,
-        activity_name, category, difficulty, relevant_stats,
+        activity_name, category, difficulty, relevant_stats, tags,
         time_cost, energy_cost, money_cost,
         outcome_tier, roll, adjusted_roll, stat_bonus, difficulty_penalty,
         stat_effects, energy_delta, money_delta,
         npc_id, interaction_id,
         created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10,
-        $11, $12, $13, $14, $15, $16, $17, $18,
-        $19, $20, $21, $22, $23, $24
+        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+        $12, $13, $14, $15, $16, $17, $18, $19,
+        $20, $21, $22, $23, $24, $25
       )
       RETURNING *
       `,
@@ -103,6 +105,7 @@ export async function recordPlayerActivity(
         data.category,
         data.difficulty || null,
         data.relevantStats,
+        data.tags || null,
         data.timeCost,
         data.energyCost,
         data.moneyCost,

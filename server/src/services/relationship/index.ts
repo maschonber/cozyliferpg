@@ -30,7 +30,8 @@ export const ACTIVITIES = [
     // Phase 2.5: Stats
     difficulty: 30,
     relevantStats: ['ambition'] as StatName[],
-    statEffects: { ambition: 2 }  // Legacy - no outcome profile (work is for money, not stats)
+    statEffects: { ambition: 2 },  // Legacy - no outcome profile (work is for money, not stats)
+    tags: ['work']
   },
   {
     id: 'work_full_day',
@@ -48,7 +49,8 @@ export const ACTIVITIES = [
     difficulty: 40,
     relevantStats: ['ambition', 'vitality'] as StatName[],
     statEffects: { ambition: 4 },  // Legacy - no outcome profile
-    statRequirements: { ambition: 20 }
+    statRequirements: { ambition: 20 },
+    tags: ['work']
   },
 
   // Social Activities (with NPCs) - Train: Confidence, Wit, Empathy
@@ -465,9 +467,10 @@ export const ACTIVITIES = [
     timeCost: 60,
     energyCost: 5,
     moneyCost: 0,
-    effects: {}
+    effects: {},
     // Phase 2.5: Supports Vitality through energy management (defensive stat calc)
     // No direct stat training - Vitality grows from sustainable patterns
+    tags: ['recovery']
   },
   {
     id: 'go_to_sleep',
@@ -480,8 +483,9 @@ export const ACTIVITIES = [
     energyCost: 0, // Special: calculated based on sleep duration
     moneyCost: 0,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: {}
+    effects: {},
     // Phase 2.5: Special handling - stat processing happens in sleep endpoint
+    tags: ['recovery']
   },
 
   // Discovery Activity (solo)
@@ -729,7 +733,8 @@ export const ACTIVITIES = [
     // Ambition grows from work patterns (defensive stat), Confidence trains organically
     difficulty: 35,
     relevantStats: ['confidence'] as StatName[],
-    statEffects: { confidence: 1 }
+    statEffects: { confidence: 1 },
+    tags: ['work']
   }
 ];
 

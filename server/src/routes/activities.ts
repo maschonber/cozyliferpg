@@ -307,6 +307,7 @@ router.post(
         category: activity.category,
         difficulty: activity.difficulty,
         relevantStats: activity.relevantStats || [],
+        tags: activity.tags,
         timeCost: activity.timeCost,
         energyCost: activity.energyCost,
         moneyCost: activity.moneyCost,
