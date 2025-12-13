@@ -207,11 +207,11 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
       const selectedResource = selectRandom(availableResourceCosts, 1);
       for (const resourceType of selectedResource) {
         if (resourceType === 'energy') {
-          outcome.additionalEnergyCost = -(effects.energyCost || 0);
+          outcome.additionalEnergyCost = -Math.round(effects.energyCost || 0);
         } else if (resourceType === 'money') {
-          outcome.additionalMoneyCost = -(effects.moneyCost || 0);
+          outcome.additionalMoneyCost = -Math.round(effects.moneyCost || 0);
         } else if (resourceType === 'time') {
-          outcome.additionalTimeCost = effects.timeCost || 0;
+          outcome.additionalTimeCost = Math.round(effects.timeCost || 0);
         }
       }
     }
@@ -253,13 +253,13 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
 
     // ALWAYS apply ALL resource costs at 1.5x amplification
     if (effects.energyCost) {
-      outcome.additionalEnergyCost = -(effects.energyCost || 0) * 1.5;
+      outcome.additionalEnergyCost = -Math.round((effects.energyCost || 0) * 1.5);
     }
     if (effects.moneyCost) {
-      outcome.additionalMoneyCost = -(effects.moneyCost || 0) * 1.5;
+      outcome.additionalMoneyCost = -Math.round((effects.moneyCost || 0) * 1.5);
     }
     if (effects.timeCost) {
-      outcome.additionalTimeCost = (effects.timeCost || 0) * 1.5;
+      outcome.additionalTimeCost = Math.round((effects.timeCost || 0) * 1.5);
     }
   }
 
