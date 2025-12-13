@@ -166,7 +166,7 @@ function generateOkayOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
 /**
  * Generate Mixed outcome:
  * - Main stat × 0.5
- * - 1 random negative effect (stat penalty OR resource cost)
+ * - 1 stat penalty + optionally 1 resource cost
  * - Relationship effects × 0.3 (reduced but still positive)
  */
 function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome {
@@ -188,28 +188,31 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
   // Apply negative effects
   if (profile.negativeEffects) {
     const effects = profile.negativeEffects;
-    const availableNegatives: Array<'stat' | 'energy' | 'money' | 'time'> = [];
 
-    if (effects.stats && effects.stats.length > 0) availableNegatives.push('stat');
-    if (effects.energyCost) availableNegatives.push('energy');
-    if (effects.moneyCost) availableNegatives.push('money');
-    if (effects.timeCost) availableNegatives.push('time');
+    // ALWAYS apply 1 stat penalty if stats are defined
+    if (effects.stats && effects.stats.length > 0) {
+      const selectedStats = selectRandom(effects.stats, 1);
+      for (const stat of selectedStats) {
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1);
+      }
+    }
 
-    // Select 1 random negative effect
-    const selectedNegatives = selectRandom(availableNegatives, OUTCOME_SCALING.mixed.negativeCount);
+    // OPTIONALLY add 1 resource cost
+    const availableResourceCosts: Array<'energy' | 'money' | 'time'> = [];
+    if (effects.energyCost) availableResourceCosts.push('energy');
+    if (effects.moneyCost) availableResourceCosts.push('money');
+    if (effects.timeCost) availableResourceCosts.push('time');
 
-    for (const negType of selectedNegatives) {
-      if (negType === 'stat' && effects.stats) {
-        const selectedStats = selectRandom(effects.stats, 1);
-        for (const stat of selectedStats) {
-          outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1);
+    if (availableResourceCosts.length > 0) {
+      const selectedResource = selectRandom(availableResourceCosts, 1);
+      for (const resourceType of selectedResource) {
+        if (resourceType === 'energy') {
+          outcome.additionalEnergyCost = -(effects.energyCost || 0);
+        } else if (resourceType === 'money') {
+          outcome.additionalMoneyCost = -(effects.moneyCost || 0);
+        } else if (resourceType === 'time') {
+          outcome.additionalTimeCost = effects.timeCost || 0;
         }
-      } else if (negType === 'energy') {
-        outcome.additionalEnergyCost = -(effects.energyCost || 0);
-      } else if (negType === 'money') {
-        outcome.additionalMoneyCost = -(effects.moneyCost || 0);
-      } else if (negType === 'time') {
-        outcome.additionalTimeCost = effects.timeCost || 0;
       }
     }
   }
@@ -220,7 +223,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
 /**
  * Generate Catastrophic outcome:
  * - Main stat × 0 (no gain)
- * - 2 random negative effects (stat penalties AND/OR resource costs)
+ * - 2 stat penalties + all available resource costs (amplified)
  * - Relationship effects × -0.5 (damages relationship!)
  */
 function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome {
@@ -238,33 +241,25 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
   // Apply multiple negative effects
   if (profile.negativeEffects) {
     const effects = profile.negativeEffects;
-    const availableNegatives: Array<'stat' | 'energy' | 'money' | 'time'> = [];
 
-    if (effects.stats && effects.stats.length > 0) availableNegatives.push('stat');
-    if (effects.energyCost) availableNegatives.push('energy');
-    if (effects.moneyCost) availableNegatives.push('money');
-    if (effects.timeCost) availableNegatives.push('time');
-
-    // Select 2 random negative effects
-    const selectedNegatives = selectRandom(
-      availableNegatives,
-      OUTCOME_SCALING.catastrophic.negativeCount
-    );
-
-    for (const negType of selectedNegatives) {
-      if (negType === 'stat' && effects.stats) {
-        // For catastrophic, apply larger penalty and potentially multiple stats
-        const selectedStats = selectRandom(effects.stats, 2);
-        for (const stat of selectedStats) {
-          outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1) * 1.5;
-        }
-      } else if (negType === 'energy') {
-        outcome.additionalEnergyCost = -(effects.energyCost || 0) * 1.5;
-      } else if (negType === 'money') {
-        outcome.additionalMoneyCost = -(effects.moneyCost || 0) * 1.5;
-      } else if (negType === 'time') {
-        outcome.additionalTimeCost = (effects.timeCost || 0) * 1.5;
+    // ALWAYS apply 2 stat penalties if stats are defined (or all if pool is small)
+    if (effects.stats && effects.stats.length > 0) {
+      const penaltyCount = Math.min(2, effects.stats.length);
+      const selectedStats = selectRandom(effects.stats, penaltyCount);
+      for (const stat of selectedStats) {
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1) * 1.5;
       }
+    }
+
+    // ALWAYS apply ALL resource costs at 1.5x amplification
+    if (effects.energyCost) {
+      outcome.additionalEnergyCost = -(effects.energyCost || 0) * 1.5;
+    }
+    if (effects.moneyCost) {
+      outcome.additionalMoneyCost = -(effects.moneyCost || 0) * 1.5;
+    }
+    if (effects.timeCost) {
+      outcome.additionalTimeCost = (effects.timeCost || 0) * 1.5;
     }
   }
 

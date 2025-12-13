@@ -575,6 +575,10 @@ export interface SoloActivityResult {
   outcome?: SoloActivityOutcome;
   statChanges?: StatChange[];
   statsTrainedThisActivity?: StatName[];
+  // Actual resource costs paid (including outcome effects)
+  actualEnergyCost?: number;
+  actualMoneyCost?: number;
+  actualTimeCost?: number;
 }
 
 /**
