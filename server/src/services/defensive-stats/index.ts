@@ -127,9 +127,9 @@ export async function calculateVitalityChange(
   }
 
   // Rest day after work bonus
-  const workedYesterday = tracking.workStreak >= 1;
-  const restingToday = !tracking.workedToday;
-  if (workedYesterday && restingToday) {
+  // Give bonus on first rest day after working (restStreak = 1 and workStreak = 0)
+  const isFirstRestDayAfterWork = tracking.restStreak === 1 && tracking.workStreak === 0;
+  if (isFirstRestDayAfterWork) {
     const value = 2.0;
     change += value;
     components.push({
@@ -590,12 +590,16 @@ export async function calculateEmpathyChange(
       });
     }
 
-    // Was dismissive or rude today (negative friendship delta)
+    // Was dismissive or rude today (negative social interaction)
+    // Only check social activities for negative empathy/confidence effects
     const hadNegativeInteraction = activities.some(a => {
+      // Only check social activities
+      if (a.category !== 'social') return false;
+
       if (a.statEffects) {
-        // Check if any stat effect in the recorded effects is negative
-        // This would indicate a rude/dismissive activity
-        return Object.values(a.statEffects).some(v => v < 0);
+        // Check if empathy or confidence decreased (indicates rude/dismissive behavior)
+        return (a.statEffects.empathy !== undefined && a.statEffects.empathy < 0) ||
+               (a.statEffects.confidence !== undefined && a.statEffects.confidence < 0);
       }
       return false;
     });

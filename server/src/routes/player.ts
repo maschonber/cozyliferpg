@@ -163,9 +163,38 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     const newDay = player.currentDay + 1;
     const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
 
+    // Calculate NEW streak values for defensive stat calculations
+    // Include today's activity in the streaks so bonuses/penalties apply correctly
+    const newWorkStreak = player.tracking.workedToday
+      ? player.tracking.workStreak + 1
+      : 0;
+    const newRestStreak = player.tracking.workedToday
+      ? 0
+      : player.tracking.restStreak + 1;
+    const newBurnoutStreak = player.tracking.minEnergyToday <= 0
+      ? player.tracking.burnoutStreak + 1
+      : 0;
+    const newLateNightStreak = parseInt(bedtime.split(':')[0]) >= 2 && parseInt(bedtime.split(':')[0]) < 6
+      ? player.tracking.lateNightStreak + 1
+      : 0;
+
+    // Create updated player object for defensive stat calculations
+    // Keep workedToday/hadCatastrophicFailureToday as-is (reflects current day)
+    // Update streaks to include today (so bonuses/penalties apply on correct days)
+    const playerWithUpdatedTracking = {
+      ...player,
+      tracking: {
+        ...player.tracking,
+        workStreak: newWorkStreak,
+        restStreak: newRestStreak,
+        burnoutStreak: newBurnoutStreak,
+        lateNightStreak: newLateNightStreak
+      }
+    };
+
     // PHASE 1: Apply defensive stat changes to CURRENT stats (not base)
     // These represent lifestyle patterns and cannot be trained directly
-    const defensiveChanges = await calculateDefensiveStatChanges(pool, player, bedtime);
+    const defensiveChanges = await calculateDefensiveStatChanges(pool, playerWithUpdatedTracking, bedtime);
 
     let statsAfterDefensive = { ...player.stats };
     statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'vitality',
@@ -177,7 +206,7 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
 
     // PHASE 1.5: Apply mixed stat changes to CURRENT stats (not base)
     // These represent activity variety patterns (weaker than defensive stats: 3x vs 5x)
-    const mixedChanges = await calculateMixedStatChanges(pool, player);
+    const mixedChanges = await calculateMixedStatChanges(pool, playerWithUpdatedTracking);
 
     let statsAfterMixed = { ...statsAfterDefensive };
     statsAfterMixed = setCurrentStat(statsAfterMixed, 'poise',
@@ -251,22 +280,14 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       currentLocation: 'home',
       stats: finalStats,
       tracking: {
-        minEnergyToday: newEnergy,  // Reset for new day (starts at wake energy)
-        endingEnergyToday: newEnergy,  // Reset for new day
-        workStreak: player.tracking.workedToday
-          ? player.tracking.workStreak + 1
-          : 0,
-        restStreak: player.tracking.workedToday
-          ? 0
-          : player.tracking.restStreak + 1,
-        burnoutStreak: player.tracking.minEnergyToday <= 0
-          ? player.tracking.burnoutStreak + 1
-          : 0,
-        lateNightStreak: parseInt(bedtime.split(':')[0]) >= 2
-          ? player.tracking.lateNightStreak + 1
-          : 0,
-        workedToday: false,
-        hadCatastrophicFailureToday: false,
+        minEnergyToday: newEnergy,
+        endingEnergyToday: newEnergy,
+        workStreak: newWorkStreak,
+        restStreak: newRestStreak,
+        burnoutStreak: newBurnoutStreak,
+        lateNightStreak: newLateNightStreak,
+        workedToday: false,  // Reset for new day
+        hadCatastrophicFailureToday: false,  // Reset for new day
         statsTrainedToday: []  // Reset for new day
       }
     });
