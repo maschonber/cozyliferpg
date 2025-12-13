@@ -306,10 +306,8 @@ export function processDailyStatChanges(
       });
     }
 
-    // Ensure current doesn't go below base
-    newCurrent = Math.max(newCurrent, newBase);
-
-    // Cap current
+    // Cap current (can go below base due to defensive/mixed stat penalties)
+    // Only enforce minimum of 0 and maximum of base + MAX_CURRENT_GAP
     newCurrent = capCurrentStat(newBase, newCurrent);
 
     // Record change if anything changed

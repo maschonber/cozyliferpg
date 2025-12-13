@@ -225,6 +225,186 @@ describe('Defensive Stats - Bug Fixes', () => {
         expect(penalty).toBeUndefined();
       });
     });
+
+    describe('Ambition - Challenging Activity Threshold & Cap', () => {
+      beforeEach(() => {
+        const mockClient = {
+          query: jest.fn().mockResolvedValue({ rows: [] }),
+          release: jest.fn()
+        };
+        mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+      });
+
+      it('should NOT give bonus for activities just above stat (< 20 above)', async () => {
+        // Mock activities with difficulty just above stat (not enough to trigger)
+        const mockClient = {
+          query: jest.fn().mockResolvedValue({
+            rows: [{
+              player_id: 'test-player-id',
+              activity_id: 'test-activity',
+              performed_at: new Date(),
+              day_number: 1,
+              time_of_day: '12:00',
+              activity_name: 'Code',
+              category: 'work',
+              difficulty: 30,  // Stat is 15 (balanced start), +15 is not enough
+              relevant_stats: ['knowledge'],
+              created_at: new Date()
+            }]
+          }),
+          release: jest.fn()
+        };
+        mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+
+        const player = createTestPlayer({ workedToday: true });
+        const result = await calculateAmbitionChange(mockPool, player);
+
+        const bonus = result.components.find(c => c.source === 'ambition_pushed_limits');
+        expect(bonus).toBeUndefined();
+      });
+
+      it('should give bonus for activities 20+ above stat', async () => {
+        // Mock activities with difficulty 20+ above stat
+        const mockClient = {
+          query: jest.fn().mockResolvedValue({
+            rows: [{
+              player_id: 'test-player-id',
+              activity_id: 'test-activity',
+              performed_at: new Date(),
+              day_number: 1,
+              time_of_day: '12:00',
+              activity_name: 'Code',
+              category: 'work',
+              difficulty: 35,  // Stat is 15, +20 triggers
+              relevant_stats: ['knowledge'],
+              created_at: new Date()
+            }]
+          }),
+          release: jest.fn()
+        };
+        mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+
+        const player = createTestPlayer({ workedToday: true });
+        const result = await calculateAmbitionChange(mockPool, player);
+
+        const bonus = result.components.find(c => c.source === 'ambition_pushed_limits');
+        expect(bonus).toBeDefined();
+        expect(bonus?.value).toBe(2.0);
+      });
+
+      it('should cap challenging activities bonus to max 3 activities', async () => {
+        // Mock 5 challenging activities (should cap to 3)
+        const mockClient = {
+          query: jest.fn().mockResolvedValue({
+            rows: Array(5).fill(null).map((_, i) => ({
+              player_id: 'test-player-id',
+              activity_id: `test-activity-${i}`,
+              performed_at: new Date(),
+              day_number: 1,
+              time_of_day: '12:00',
+              activity_name: 'Code',
+              category: 'work',
+              difficulty: 35,  // 20+ above stat
+              relevant_stats: ['knowledge'],
+              created_at: new Date()
+            }))
+          }),
+          release: jest.fn()
+        };
+        mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+
+        const player = createTestPlayer({ workedToday: true });
+        const result = await calculateAmbitionChange(mockPool, player);
+
+        const bonus = result.components.find(c => c.source === 'ambition_pushed_limits');
+        expect(bonus).toBeDefined();
+        expect(bonus?.value).toBe(6.0); // 2.0 * 3 (capped)
+        expect(bonus?.details).toContain('capped from 5');
+      });
+
+      it('should cap hard activities bonus to max 3 activities', async () => {
+        // Mock 4 hard activities (difficulty >= 50)
+        const mockClient = {
+          query: jest.fn().mockResolvedValue({
+            rows: Array(4).fill(null).map((_, i) => ({
+              player_id: 'test-player-id',
+              activity_id: `test-activity-${i}`,
+              performed_at: new Date(),
+              day_number: 1,
+              time_of_day: '12:00',
+              activity_name: 'Advanced Code',
+              category: 'work',
+              difficulty: 50,
+              relevant_stats: ['knowledge'],
+              created_at: new Date()
+            }))
+          }),
+          release: jest.fn()
+        };
+        mockPool.connect = jest.fn().mockResolvedValue(mockClient);
+
+        const player = createTestPlayer({ workedToday: true });
+        const result = await calculateAmbitionChange(mockPool, player);
+
+        const bonus = result.components.find(c => c.source === 'ambition_hard_activities');
+        expect(bonus).toBeDefined();
+        expect(bonus?.value).toBe(3.0); // 1.0 * 3 (capped)
+        expect(bonus?.details).toContain('capped from 4');
+      });
+    });
+  });
+
+  describe('Vitality - Sleep Schedule Bonus', () => {
+    it('should give bonus for sleeping at 8pm-11:59pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '22:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should give bonus for sleeping at exactly 8pm (20:00)', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '20:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should give bonus for sleeping just before midnight (23:59)', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '23:30');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeDefined();
+      expect(bonus?.value).toBe(1.5);
+    });
+
+    it('should NOT give bonus for sleeping before 8pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '19:30');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
+
+    it('should NOT give bonus for sleeping at 7pm', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '19:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
+
+    it('should NOT give bonus for sleeping after midnight', async () => {
+      const player = createTestPlayer();
+      const result = await calculateVitalityChange(player, '01:00');
+
+      const bonus = result.components.find(c => c.source === 'vitality_sleep_schedule');
+      expect(bonus).toBeUndefined();
+    });
   });
 
   describe('Bug #3: Catastrophic Failure Detection', () => {

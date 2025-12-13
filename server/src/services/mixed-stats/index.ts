@@ -304,6 +304,29 @@ export async function calculateCreativityChange(
     });
   }
 
+  // NEGATIVE: Repeated the same activity multiple times today (3x multiplier)
+  // Count occurrences of each activity today
+  const activityCounts = new Map<string, number>();
+  for (const activity of todayActivities) {
+    const count = activityCounts.get(activity.activityId) || 0;
+    activityCounts.set(activity.activityId, count + 1);
+  }
+
+  // Find activities that were repeated (2+ times)
+  const repeatedToday = Array.from(activityCounts.entries()).filter(([_, count]) => count >= 2);
+  if (repeatedToday.length > 0) {
+    const value = -1.0 * repeatedToday.length;
+    change += value;
+    const totalRepetitions = repeatedToday.reduce((sum, [_, count]) => sum + count, 0);
+    components.push({
+      source: 'creativity_repetitive_day',
+      category: 'Mixed Stats (Creativity)',
+      description: 'Repetitive activities',
+      value,
+      details: `${repeatedToday.length} ${repeatedToday.length === 1 ? 'activity' : 'activities'} repeated today (${totalRepetitions} total repetitions)`
+    });
+  }
+
   return { change, components };
 }
 
