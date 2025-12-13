@@ -7,8 +7,8 @@ import { ACTIVITIES, getActivityById } from './index';
 
 describe('Phase 2 Activities', () => {
   describe('Activity Count', () => {
-    it('should have exactly 30 activities', () => {
-      expect(ACTIVITIES).toHaveLength(30);
+    it('should have exactly 37 activities', () => {
+      expect(ACTIVITIES).toHaveLength(37);  // Added 7 mixed stat training activities
     });
   });
 
@@ -126,13 +126,13 @@ describe('Phase 2 Activities', () => {
   describe('Self-Improvement Activities', () => {
     const selfImprovementActivities = ACTIVITIES.filter(a => a.category === 'self_improvement');
 
-    it('should have 6 self-improvement activities', () => {
-      expect(selfImprovementActivities).toHaveLength(6);
+    it('should have 11 self-improvement activities', () => {
+      expect(selfImprovementActivities).toHaveLength(11);  // Added 5 mixed stat training activities
     });
 
-    it('should have negative energy costs (effort required)', () => {
+    it('should have zero or negative energy costs (effort required or restorative)', () => {
       selfImprovementActivities.forEach(activity => {
-        expect(activity.energyCost).toBeLessThan(0);
+        expect(activity.energyCost).toBeLessThanOrEqual(0);  // Allow 0 for meditation
       });
     });
 
@@ -149,8 +149,8 @@ describe('Phase 2 Activities', () => {
   describe('Leisure Activities', () => {
     const leisureActivities = ACTIVITIES.filter(a => a.category === 'leisure');
 
-    it('should have 7 leisure activities', () => {
-      expect(leisureActivities).toHaveLength(7);
+    it('should have 9 leisure activities', () => {
+      expect(leisureActivities).toHaveLength(9);  // Added 2 wit training activities
     });
 
     it('should have low or positive energy costs (relaxing)', () => {
