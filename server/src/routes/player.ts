@@ -11,6 +11,7 @@ import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
 import { processDailyStatChanges, setBaseStat, setCurrentStat, getBaseStat, getCurrentStat } from '../services/stat';
 import { calculateDefensiveStatChanges } from '../services/defensive-stats';
+import { calculateMixedStatChanges } from '../services/mixed-stats';
 import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype, StatChangeBreakdown, StatChangeComponent } from '../../../shared/types';
 
 const router = Router();
@@ -174,9 +175,21 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'empathy',
       getCurrentStat(statsAfterDefensive, 'empathy') + defensiveChanges.empathy);
 
+    // PHASE 1.5: Apply mixed stat changes to CURRENT stats (not base)
+    // These represent activity variety patterns (weaker than defensive stats: 3x vs 5x)
+    const mixedChanges = await calculateMixedStatChanges(pool, player);
+
+    let statsAfterMixed = { ...statsAfterDefensive };
+    statsAfterMixed = setCurrentStat(statsAfterMixed, 'poise',
+      getCurrentStat(statsAfterMixed, 'poise') + mixedChanges.poise);
+    statsAfterMixed = setCurrentStat(statsAfterMixed, 'creativity',
+      getCurrentStat(statsAfterMixed, 'creativity') + mixedChanges.creativity);
+    statsAfterMixed = setCurrentStat(statsAfterMixed, 'wit',
+      getCurrentStat(statsAfterMixed, 'wit') + mixedChanges.wit);
+
     // PHASE 2: Process daily stat changes (base growth for ALL, current decay for OFFENSIVE only)
     const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
-    const statResult = processDailyStatChanges(statsAfterDefensive, trainedStats);
+    const statResult = processDailyStatChanges(statsAfterMixed, trainedStats);
 
     const finalStats = statResult.newStats;
 
@@ -202,6 +215,11 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       // Add defensive stat components (if any)
       if (defensiveChanges.components.has(stat)) {
         components.push(...defensiveChanges.components.get(stat)!);
+      }
+
+      // Add mixed stat components (if any)
+      if (mixedChanges.components.has(stat)) {
+        components.push(...mixedChanges.components.get(stat)!);
       }
 
       // Add base growth and decay components (if any)
@@ -267,6 +285,11 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
           vitality: defensiveChanges.vitality,
           ambition: defensiveChanges.ambition,
           empathy: defensiveChanges.empathy
+        },
+        mixedStatChanges: {  // Phase 2.5.4
+          poise: mixedChanges.poise,
+          creativity: mixedChanges.creativity,
+          wit: mixedChanges.wit
         },
         statChangeBreakdowns  // New comprehensive breakdown
       }

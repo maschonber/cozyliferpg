@@ -429,6 +429,7 @@ export async function migratePhase251ActivityHistory() {
           category VARCHAR(50),
           difficulty INTEGER,
           relevant_stats TEXT[],
+          tags TEXT[],  -- Phase 2.5.4: For filtering (e.g., 'work', 'recovery')
 
           -- Costs (actual costs paid)
           time_cost INTEGER NOT NULL,
@@ -485,6 +486,44 @@ export async function migratePhase251ActivityHistory() {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('❌ Phase 2.5.1 migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Phase 2.5.4 Migration: Add tags column to player_activities
+export async function migratePhase254MixedStats() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Phase 2.5.4 mixed stats migration...');
+
+    // Check if tags column exists in player_activities
+    const tagsCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_activities' AND column_name='tags'
+    `);
+
+    if (tagsCheck.rows.length === 0) {
+      console.log('  Adding tags column to player_activities...');
+      await client.query(`
+        ALTER TABLE player_activities
+        ADD COLUMN tags TEXT[]
+      `);
+      console.log('  ✅ Added tags column to player_activities');
+    } else {
+      console.log('  ⏭️  tags column already exists in player_activities');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Phase 2.5.4 mixed stats migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Phase 2.5.4 migration failed:', error);
     throw error;
   } finally {
     client.release();

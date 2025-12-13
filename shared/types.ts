@@ -227,6 +227,9 @@ export interface Activity {
 
   // Outcome system (Phase 2.5.3)
   outcomeProfile?: ActivityOutcomeProfile;  // Defines varied outcomes by tier
+
+  // Tags for filtering (Phase 2.5.4)
+  tags?: string[];  // Optional tags for mixed stat calculations (e.g., 'work', 'recovery')
 }
 
 /**
@@ -583,6 +586,7 @@ export interface PlayerActivity {
   category: ActivityCategory;
   difficulty?: number;
   relevantStats: StatName[];
+  tags?: string[];  // Optional tags for filtering (e.g., 'work', 'recovery')
 
   // Costs (actual costs paid)
   timeCost: number;
