@@ -118,7 +118,7 @@ function generateBestOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
   };
 
   // Apply main stat gains
-  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.best.mainMultiplier);
+  const mainGain = profile.mainStatGain * OUTCOME_SCALING.best.mainMultiplier;
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -155,7 +155,7 @@ function generateOkayOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome 
   };
 
   // Apply main stat gains
-  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.okay.mainMultiplier);
+  const mainGain = profile.mainStatGain * OUTCOME_SCALING.okay.mainMultiplier;
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -180,7 +180,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
   };
 
   // Apply reduced main stat gains
-  const mainGain = Math.round(profile.mainStatGain * OUTCOME_SCALING.mixed.mainMultiplier);
+  const mainGain = profile.mainStatGain * OUTCOME_SCALING.mixed.mainMultiplier;
   for (const stat of profile.mainStats) {
     outcome.statEffects[stat] = mainGain;
   }
@@ -193,7 +193,7 @@ function generateMixedOutcome(profile: ActivityOutcomeProfile): GeneratedOutcome
     if (effects.stats && effects.stats.length > 0) {
       const selectedStats = selectRandom(effects.stats, 1);
       for (const stat of selectedStats) {
-        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - Math.round(effects.statPenalty || 1);
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1);
       }
     }
 
@@ -247,7 +247,7 @@ function generateCatastrophicOutcome(profile: ActivityOutcomeProfile): Generated
       const penaltyCount = Math.min(2, effects.stats.length);
       const selectedStats = selectRandom(effects.stats, penaltyCount);
       for (const stat of selectedStats) {
-        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - Math.round((effects.statPenalty || 1) * 1.5);
+        outcome.statEffects[stat] = (outcome.statEffects[stat] || 0) - (effects.statPenalty || 1) * 1.5;
       }
     }
 
