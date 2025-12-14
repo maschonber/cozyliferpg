@@ -1,32 +1,54 @@
 # Claude Code Instructions for CozyLifeRPG
 
-## Pre-Push Checklist
+## Pre-Commit Checklist
 
-Before pushing any changes to the repository, **ALWAYS** run the following build steps to catch TypeScript compilation errors:
+Before committing any changes, **ALWAYS** run the following commands to catch errors:
 
-### 1. Build Backend (Server)
+### 1. Run Full Backend Test Suite
+
+From the project root:
 
 ```bash
-cd server
-npm install  # Only needed if dependencies changed
-npm run build
+npm run test:backend
 ```
 
 This will:
-- Run TypeScript compilation on all server code
-- Catch type errors, missing imports, and interface mismatches
-- Ensure the code will build successfully in CI/CD
+- Run all Jest tests across the entire backend
+- Ensure no regressions in functionality
+- Verify that new tests pass
 
-### 2. Run Backend Tests
+**IMPORTANT**: Always run the full test suite, not just individual test files. Tests run quickly (~2 seconds) and may have interdependencies.
+
+### 2. Run TypeScript Type Checking
+
+From the project root:
+
+```bash
+npm run typecheck --prefix server
+```
+
+Or from the server directory:
 
 ```bash
 cd server
-npm test
+npm run typecheck
 ```
 
-This will run the Jest test suite to ensure no regressions.
+This will:
+- Run TypeScript compilation (`tsc --noEmit`) to check types without building
+- Catch type errors, missing imports, and interface mismatches
+- Ensure the code will build successfully in CI/CD
 
-### 3. Build Frontend (Client)
+**Why both?**
+- `npm run test:backend` uses Jest with ts-jest which is lenient about types (runtime focus)
+- `npm run typecheck` uses strict TypeScript compilation (static type checking)
+- Railway runs both, so you must too!
+
+### 3. Only Commit if Both Pass
+
+Only proceed with `git commit` if BOTH commands succeed with no errors.
+
+### 4. Optional: Build Frontend (if frontend changes)
 
 ```bash
 npm run build
@@ -34,7 +56,7 @@ npm run build
 
 This will build the Angular frontend application.
 
-### 4. Run All Builds (Recommended)
+### 5. Optional: Run All Builds
 
 From the project root:
 
