@@ -28,9 +28,11 @@ function createTestPlayer(trackingOverrides: Partial<StatTracking> = {}): Player
     currentDay: 1,
     currentTime: '12:00',
     currentEnergy: 50,
+    maxEnergy: 100,
     currentLocation: 'home',
     money: 100,
     lastSleptAt: '23:00',
+    archetype: 'balanced',
     stats: getStartingStats('balanced'),
     tracking: {
       minEnergyToday: 50,
