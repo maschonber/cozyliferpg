@@ -44,8 +44,8 @@ function createTestPlayer(trackingOverrides: Partial<StatTracking> = {}): Player
       statsTrainedToday: [],
       ...trackingOverrides
     },
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 }
 

@@ -38,8 +38,8 @@ function createTestPlayer(): PlayerCharacter {
       hadCatastrophicFailureToday: false,
       statsTrainedToday: []
     },
-    createdAt: new Date(),
-    updatedAt: new Date()
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
   };
 }
 
