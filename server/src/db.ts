@@ -530,3 +530,145 @@ export async function migratePhase254MixedStats() {
   }
 }
 
+// Relationship Redesign Migration: Update schema for Trust/Affection/Desire system
+export async function migrateRelationshipRedesign() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Relationship Redesign migration...');
+
+    // ===== 1. Update relationships table =====
+    // Check if trust column exists (use as migration marker)
+    const trustCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='relationships' AND column_name='trust'
+    `);
+
+    if (trustCheck.rows.length === 0) {
+      console.log('  Updating relationships table...');
+
+      // Drop old columns and add new ones
+      // Note: This is a destructive migration - old data will be lost
+      await client.query(`
+        ALTER TABLE relationships
+        DROP COLUMN IF EXISTS friendship,
+        DROP COLUMN IF EXISTS romance,
+        ADD COLUMN trust INTEGER NOT NULL DEFAULT 0 CHECK (trust >= -100 AND trust <= 100),
+        ADD COLUMN affection INTEGER NOT NULL DEFAULT 0 CHECK (affection >= -100 AND affection <= 100),
+        ADD COLUMN desire INTEGER NOT NULL DEFAULT 0 CHECK (desire >= -100 AND desire <= 100),
+        ADD COLUMN desire_cap INTEGER CHECK (desire_cap IS NULL OR (desire_cap >= 0 AND desire_cap <= 100))
+      `);
+
+      // Update unlocked_states to use new relationship states
+      await client.query(`
+        UPDATE relationships
+        SET current_state = 'stranger',
+            unlocked_states = ARRAY['stranger']::TEXT[]
+      `);
+
+      console.log('  ✅ Updated relationships table with Trust/Affection/Desire axes');
+    } else {
+      console.log('  ⏭️  relationships table already updated');
+    }
+
+    // ===== 2. Update interactions table =====
+    const trustDeltaCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='interactions' AND column_name='trust_delta'
+    `);
+
+    if (trustDeltaCheck.rows.length === 0) {
+      console.log('  Updating interactions table...');
+
+      await client.query(`
+        ALTER TABLE interactions
+        DROP COLUMN IF EXISTS friendship_delta,
+        DROP COLUMN IF EXISTS romance_delta,
+        ADD COLUMN trust_delta INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN affection_delta INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN desire_delta INTEGER NOT NULL DEFAULT 0,
+        ADD COLUMN emotion_snapshot JSONB
+      `);
+
+      console.log('  ✅ Updated interactions table with new axis deltas');
+    } else {
+      console.log('  ⏭️  interactions table already updated');
+    }
+
+    // ===== 3. Update npcs table =====
+    const revealedTraitsCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='npcs' AND column_name='revealed_traits'
+    `);
+
+    if (revealedTraitsCheck.rows.length === 0) {
+      console.log('  Updating npcs table...');
+
+      await client.query(`
+        ALTER TABLE npcs
+        ADD COLUMN revealed_traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        ADD COLUMN emotion_state JSONB NOT NULL DEFAULT '{
+          "joy": 15,
+          "affection": 10,
+          "excitement": 5,
+          "calm": 20,
+          "sadness": 5,
+          "anger": 0,
+          "anxiety": 5,
+          "romantic": 10,
+          "lastUpdated": ""
+        }'::JSONB
+      `);
+
+      // Update existing NPCs with proper lastUpdated timestamp
+      await client.query(`
+        UPDATE npcs
+        SET emotion_state = jsonb_set(
+          emotion_state,
+          '{lastUpdated}',
+          to_jsonb(to_char(NOW(), 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"'))
+        )
+      `);
+
+      console.log('  ✅ Updated npcs table with revealed_traits and emotion_state');
+    } else {
+      console.log('  ⏭️  npcs table already updated');
+    }
+
+    // ===== 4. Update player_characters table =====
+    const sexualPrefCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='sexual_preference'
+    `);
+
+    if (sexualPrefCheck.rows.length === 0) {
+      console.log('  Updating player_characters table...');
+
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN sexual_preference VARCHAR(20) NOT NULL DEFAULT 'everyone'
+        CHECK (sexual_preference IN ('women', 'men', 'everyone', 'no_one'))
+      `);
+
+      console.log('  ✅ Added sexual_preference to player_characters');
+    } else {
+      console.log('  ⏭️  player_characters table already updated');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Relationship Redesign migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Relationship Redesign migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+

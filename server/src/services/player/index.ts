@@ -28,6 +28,9 @@ function mapRowToPlayerCharacter(row: any): PlayerCharacter {
     lastSleptAt: row.last_slept_at,
     currentLocation: row.current_location || 'home',
 
+    // Relationship preferences (Relationship Redesign)
+    sexualPreference: row.sexual_preference || 'everyone',
+
     // Phase 2.5: Stats
     archetype: row.archetype || 'balanced',
     stats: {
