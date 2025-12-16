@@ -42,8 +42,10 @@ function mapRowToRelationship(row: any, npc?: NPC): Relationship {
     id: row.id,
     playerId: row.player_id,
     npcId: row.npc_id,
-    friendship: row.friendship,
-    romance: row.romance,
+    trust: row.trust,
+    affection: row.affection,
+    desire: row.desire,
+    desireCap: row.desire_cap,
     currentState: row.current_state,
     unlockedStates: row.unlocked_states,
     firstMet: row.first_met.toISOString(),
@@ -140,7 +142,9 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         n.name as npc_name,
         n.archetype as npc_archetype,
         n.traits as npc_traits,
+        n.revealed_traits as npc_revealed_traits,
         n.gender as npc_gender,
+        n.emotion_state as npc_emotion_state,
         n.hair_color, n.hair_style, n.eye_color, n.face_details,
         n.body_type, n.torso_size, n.height, n.skin_tone,
         n.upper_trace, n.lower_trace, n.style, n.body_details,
@@ -161,7 +165,11 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         name: row.npc_name,
         archetype: row.npc_archetype,
         traits: row.npc_traits,
+        revealedTraits: row.npc_revealed_traits || [],
         gender: row.npc_gender,
+        emotionState: typeof row.npc_emotion_state === 'string'
+          ? JSON.parse(row.npc_emotion_state)
+          : row.npc_emotion_state,
         appearance: {
           hairColor: row.hair_color,
           hairStyle: row.hair_style,
@@ -242,7 +250,11 @@ router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relatio
       name: npcRow.name,
       archetype: npcRow.archetype,
       traits: npcRow.traits,
+      revealedTraits: npcRow.revealed_traits || [],
       gender: npcRow.gender,
+      emotionState: typeof npcRow.emotion_state === 'string'
+        ? JSON.parse(npcRow.emotion_state)
+        : npcRow.emotion_state,
       appearance: {
         hairColor: npcRow.hair_color,
         hairStyle: npcRow.hair_style,
@@ -346,17 +358,24 @@ router.post(
       // Get or create relationship
       const { relationship } = await getOrCreateRelationship(client, userId, npcId);
 
-      // Calculate new values
-      const { friendship: newFriendship, romance: newRomance } = applyActivityEffects(
-        relationship.friendship,
-        relationship.romance,
-        activity.effects.friendship || 0,
-        activity.effects.romance || 0
+      // Calculate new values with the 3-axis system
+      const trustDelta = activity.effects.trust || 0;
+      const affectionDelta = activity.effects.affection || 0;
+      const desireDelta = activity.effects.desire || 0;
+
+      const { trust: newTrust, affection: newAffection, desire: newDesire } = applyActivityEffects(
+        relationship.trust,
+        relationship.affection,
+        relationship.desire,
+        trustDelta,
+        affectionDelta,
+        desireDelta,
+        relationship.desireCap
       );
 
       // Calculate new state
       const previousState = relationship.currentState;
-      const newState = calculateRelationshipState(newFriendship, newRomance);
+      const newState = calculateRelationshipState(newTrust, newAffection, newDesire);
       const stateChanged = previousState !== newState;
 
       // Update unlocked states
@@ -364,8 +383,9 @@ router.post(
 
       // Get emotional state
       const emotionalState = getContextualEmotionalState(
-        activity.effects.friendship || 0,
-        activity.effects.romance || 0,
+        trustDelta,
+        affectionDelta,
+        desireDelta,
         newState
       );
 
@@ -384,11 +404,11 @@ router.post(
       await client.query(
         `
         UPDATE relationships
-        SET friendship = $1, romance = $2, current_state = $3,
-            unlocked_states = $4, last_interaction = $5
-        WHERE id = $6
+        SET trust = $1, affection = $2, desire = $3, current_state = $4,
+            unlocked_states = $5, last_interaction = $6
+        WHERE id = $7
         `,
-        [newFriendship, newRomance, newState, unlockedStates, new Date(), relationship.id]
+        [newTrust, newAffection, newDesire, newState, unlockedStates, new Date(), relationship.id]
       );
 
       // Create interaction record
@@ -397,15 +417,16 @@ router.post(
         `
         INSERT INTO interactions (
           id, relationship_id, activity_type,
-          friendship_delta, romance_delta, emotional_state, created_at
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          trust_delta, affection_delta, desire_delta, emotional_state, created_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         `,
         [
           interactionId,
           relationship.id,
           activity.name,
-          activity.effects.friendship || 0,
-          activity.effects.romance || 0,
+          trustDelta,
+          affectionDelta,
+          desireDelta,
           emotionalState,
           new Date()
         ]
@@ -420,7 +441,9 @@ router.post(
           n.name as npc_name,
           n.archetype as npc_archetype,
           n.traits as npc_traits,
+          n.revealed_traits as npc_revealed_traits,
           n.gender as npc_gender,
+          n.emotion_state as npc_emotion_state,
           n.hair_color, n.hair_style, n.eye_color, n.face_details,
           n.body_type, n.torso_size, n.height, n.skin_tone,
           n.upper_trace, n.lower_trace, n.style, n.body_details,
@@ -440,7 +463,11 @@ router.post(
         name: row.npc_name,
         archetype: row.npc_archetype,
         traits: row.npc_traits,
+        revealedTraits: row.npc_revealed_traits || [],
         gender: row.npc_gender,
+        emotionState: typeof row.npc_emotion_state === 'string'
+          ? JSON.parse(row.npc_emotion_state)
+          : row.npc_emotion_state,
         appearance: {
           hairColor: row.hair_color,
           hairStyle: row.hair_style,
@@ -464,7 +491,7 @@ router.post(
 
       console.log(
         `✅ Interaction: ${activity.name} with ${npc.name} ` +
-          `(F: ${relationship.friendship} → ${newFriendship}, R: ${relationship.romance} → ${newRomance}) ` +
+          `(T: ${relationship.trust} → ${newTrust}, A: ${relationship.affection} → ${newAffection}, D: ${relationship.desire} → ${newDesire}) ` +
           `State: ${previousState}${stateChanged ? ` → ${newState}` : ''} ` +
           `[Energy: ${player.currentEnergy} → ${newEnergy}, Money: ${player.money} → ${newMoney}]`
       );

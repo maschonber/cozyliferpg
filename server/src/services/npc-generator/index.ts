@@ -6,7 +6,17 @@
  * random generation with rule-based or AI-powered generation in the future.
  */
 
-import { NPC, NPCAppearance, Gender } from '../../../../shared/types';
+import {
+  NPC,
+  NPCAppearance,
+  Gender,
+  NPCArchetype,
+  NPCTrait,
+  PersonalityTrait,
+  RomanceTrait,
+  InterestTrait,
+  NPCEmotionState
+} from '../../../../shared/types';
 import { randomUUID } from 'crypto';
 
 // ===== Generation Data Pools =====
@@ -48,7 +58,7 @@ const LAST_NAMES = [
   'Collins', 'Edwards', 'Stewart', 'Morris', 'Murphy', 'Cook', 'Rogers'
 ];
 
-const ARCHETYPES = [
+const ARCHETYPES: NPCArchetype[] = [
   'Artist',
   'Athlete',
   'Bookworm',
@@ -56,32 +66,45 @@ const ARCHETYPES = [
   'Scientist'
 ];
 
-const PERSONALITY_TRAITS = [
+const PERSONALITY_TRAITS: PersonalityTrait[] = [
   'outgoing',
-  'introverted',
-  'creative',
+  'reserved',
   'logical',
+  'creative',
+  'intuitive',
   'adventurous',
   'cautious',
-  'optimistic',
-  'pessimistic',
-  'empathetic',
-  'analytical',
   'spontaneous',
-  'organized'
+  'optimistic',
+  'melancholic',
+  'passionate',
+  'stoic',
+  'empathetic',
+  'independent',
+  'nurturing',
+  'competitive'
 ];
 
-const INTEREST_TRAITS = [
+const ROMANCE_TRAITS: RomanceTrait[] = [
+  'flirtatious',
+  'romantic',
+  'physical',
+  'intellectual',
+  'slow_burn',
+  'intense',
+  'commitment_seeking',
+  'free_spirit'
+];
+
+const INTEREST_TRAITS: InterestTrait[] = [
   'coffee_lover',
   'fitness_enthusiast',
   'music_fan',
   'art_appreciator',
-  'tech_savvy',
-  'nature_lover',
   'foodie',
   'reader',
   'gamer',
-  'traveler'
+  'nature_lover'
 ];
 
 const HAIR_COLORS = [
@@ -237,21 +260,85 @@ function generateLoras(): string[] {
 /**
  * Generate random archetype
  */
-function generateArchetype(): string {
+function generateArchetype(): NPCArchetype {
   return randomChoice(ARCHETYPES);
 }
 
 /**
- * Generate random traits (2-3 personality + 2-3 interests)
+ * Generate random traits (2-3 personality + 1-2 romance + 2-3 interests)
  */
-function generateTraits(): string[] {
+function generateTraits(): NPCTrait[] {
   const personalityCount = randomInt(2, 3);
+  const romanceCount = randomInt(1, 2);
   const interestCount = randomInt(2, 3);
 
   const personality = randomChoices(PERSONALITY_TRAITS, personalityCount);
+  const romance = randomChoices(ROMANCE_TRAITS, romanceCount);
   const interests = randomChoices(INTEREST_TRAITS, interestCount);
 
-  return [...personality, ...interests];
+  return [...personality, ...romance, ...interests];
+}
+
+/**
+ * Generate default emotion state for a new NPC
+ * Values are based on personality traits if available
+ */
+function generateEmotionState(traits: NPCTrait[]): NPCEmotionState {
+  // Base emotion values
+  let joy = 15;
+  let affection = 10;
+  let excitement = 5;
+  let calm = 20;
+  let sadness = 5;
+  let anger = 0;
+  let anxiety = 5;
+  let romantic = 10;
+
+  // Adjust based on personality traits
+  if (traits.includes('optimistic')) {
+    joy += 10;
+    sadness -= 3;
+  }
+  if (traits.includes('melancholic')) {
+    sadness += 10;
+    joy -= 5;
+  }
+  if (traits.includes('passionate')) {
+    excitement += 10;
+    romantic += 10;
+  }
+  if (traits.includes('stoic')) {
+    calm += 15;
+    excitement -= 3;
+  }
+  if (traits.includes('adventurous')) {
+    excitement += 5;
+  }
+  if (traits.includes('cautious')) {
+    anxiety += 5;
+  }
+  if (traits.includes('flirtatious')) {
+    romantic += 10;
+  }
+  if (traits.includes('reserved')) {
+    calm += 5;
+  }
+  if (traits.includes('outgoing')) {
+    joy += 5;
+    excitement += 5;
+  }
+
+  return {
+    joy: Math.max(0, Math.min(100, joy)),
+    affection: Math.max(0, Math.min(100, affection)),
+    excitement: Math.max(0, Math.min(100, excitement)),
+    calm: Math.max(0, Math.min(100, calm)),
+    sadness: Math.max(0, Math.min(100, sadness)),
+    anger: Math.max(0, Math.min(100, anger)),
+    anxiety: Math.max(0, Math.min(100, anxiety)),
+    romantic: Math.max(0, Math.min(100, romantic)),
+    lastUpdated: new Date().toISOString()
+  };
 }
 
 // ===== Main Generator =====
@@ -269,12 +356,15 @@ function generateTraits(): string[] {
 export function generateNPC(): Omit<NPC, 'id' | 'createdAt' | 'currentLocation'> {
   // Generate gender first, then use it for name selection
   const gender = generateGender();
+  const traits = generateTraits();
 
   return {
     name: generateName(gender),
     archetype: generateArchetype(),
-    traits: generateTraits(),
+    traits,
+    revealedTraits: [],  // No traits revealed initially
     gender,
+    emotionState: generateEmotionState(traits),
     appearance: generateAppearance(),
     loras: generateLoras()
   };
@@ -298,13 +388,13 @@ export function createNPC(currentLocation: string = 'park'): NPC {
 /**
  * Get all available archetypes
  */
-export function getArchetypes(): string[] {
+export function getArchetypes(): NPCArchetype[] {
   return [...ARCHETYPES];
 }
 
 /**
  * Get all available traits
  */
-export function getAllTraits(): string[] {
-  return [...PERSONALITY_TRAITS, ...INTEREST_TRAITS];
+export function getAllTraits(): NPCTrait[] {
+  return [...PERSONALITY_TRAITS, ...ROMANCE_TRAITS, ...INTEREST_TRAITS];
 }

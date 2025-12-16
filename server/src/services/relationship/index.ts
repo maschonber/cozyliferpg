@@ -88,7 +88,7 @@ export const ACTIVITIES = [
     timeCost: 60,
     energyCost: -8,
     moneyCost: -5,
-    effects: { friendship: 10 },  // Main benefit (auto-scales by outcome)
+    effects: { affection: 10 },  // Main benefit (auto-scales by outcome)
     // Phase 2.5: Stats
     difficulty: 20,
     relevantStats: ['confidence'] as StatName[],
@@ -115,7 +115,7 @@ export const ACTIVITIES = [
     timeCost: 30,
     energyCost: -5,
     moneyCost: 0,
-    effects: { friendship: 5 },  // Main benefit
+    effects: { affection: 5 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 15,
     relevantStats: ['confidence'] as StatName[],
@@ -142,7 +142,7 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: -30,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { romance: 15 },  // Main benefit
+    effects: { desire: 15 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 40,
     relevantStats: ['confidence', 'wit'] as StatName[],
@@ -170,7 +170,7 @@ export const ACTIVITIES = [
     energyCost: -12,
     moneyCost: 0,
     minRelationship: 'friend',
-    effects: { friendship: 20 },  // Main benefit
+    effects: { affection: 20, trust: 10 },  // Main benefit - deep conversations build trust too
     // Phase 2.5: Stats - Requires emotional depth
     difficulty: 50,
     relevantStats: ['wit', 'knowledge'] as StatName[],  // Changed from empathy (defensive)
@@ -199,7 +199,7 @@ export const ACTIVITIES = [
     energyCost: -8,
     moneyCost: -20,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 10, romance: 5 },  // Main benefit
+    effects: { affection: 10, desire: 5 },  // Main benefit
     // Phase 2.5: Stats - Low difficulty passive activity
     difficulty: 15,
     relevantStats: [] as StatName[],
@@ -224,7 +224,7 @@ export const ACTIVITIES = [
     energyCost: -15,
     moneyCost: 0,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: { friendship: 10 },  // Main benefit
+    effects: { affection: 10, trust: 5 },  // Main benefit - exercising together builds trust
     // Phase 2.5: Stats
     difficulty: 35,
     relevantStats: ['fitness'] as StatName[],
@@ -252,7 +252,7 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: -15,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 12, romance: 8 },  // Main benefit
+    effects: { affection: 12, desire: 8 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 40,
     relevantStats: ['creativity'] as StatName[],
@@ -280,7 +280,7 @@ export const ACTIVITIES = [
     timeCost: 45,
     energyCost: -8,
     moneyCost: 0,
-    effects: { romance: 12 },  // Main benefit
+    effects: { desire: 12 },  // Main benefit
     // Phase 2.5: Stats
     difficulty: 45,
     relevantStats: ['confidence', 'wit'] as StatName[],
@@ -854,7 +854,7 @@ export const ACTIVITIES = [
     energyCost: -10,
     moneyCost: -15,
     allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: { friendship: 15, romance: 8 },
+    effects: { affection: 15, desire: 8 },
     // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
     difficulty: 25,
     relevantStats: ['poise', 'confidence'] as StatName[],
@@ -882,7 +882,7 @@ export const ACTIVITIES = [
     energyCost: -8,
     moneyCost: -10,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 10 },
+    effects: { affection: 10, trust: 5 },  // Friendly competition builds trust
     // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
     difficulty: 30,
     relevantStats: ['poise', 'confidence'] as StatName[],
@@ -910,7 +910,7 @@ export const ACTIVITIES = [
     energyCost: -5,
     moneyCost: -5,
     allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { friendship: 8, romance: 10 },
+    effects: { affection: 8, desire: 10 },
     // Phase 2.5.3: Social activity - easy romantic, minimal stat gains
     difficulty: 15,
     relevantStats: ['poise', 'confidence'] as StatName[],
@@ -964,30 +964,24 @@ export const ACTIVITIES = [
 
 /**
  * Map relationship states to default emotional states
+ * Updated for Trust/Affection/Desire system
  */
 const STATE_EMOTION_MAP: Record<RelationshipState, EmotionalState> = {
-  // Combined states
-  'close_romantic_partner': 'happy',
-  'romantic_partner': 'flirty',
-  'bitter_ex': 'sad',
-  'complicated': 'sad',
-  'rival': 'angry',
-  'unrequited': 'sad',
-
-  // Friendship-based
-  'enemy': 'angry',
-  'dislike': 'neutral',
-  'stranger': 'neutral',
-  'acquaintance': 'neutral',
-  'friend': 'happy',
+  // Positive combined states
+  'partner': 'happy',
+  'lover': 'flirty',
   'close_friend': 'happy',
+  'friend': 'happy',
+  'crush': 'flirty',
+  'acquaintance': 'neutral',
+  'stranger': 'neutral',
 
-  // Romance-based
-  'repulsed': 'angry',
-  'uncomfortable': 'neutral',
-  'attracted': 'flirty',
-  'romantic_interest': 'flirty',
-  'in_love': 'happy'
+  // Mixed/complex states
+  'complicated': 'sad',
+
+  // Negative states
+  'rival': 'angry',
+  'enemy': 'angry'
 };
 
 // ===== Utility Functions =====
@@ -1002,60 +996,85 @@ function clamp(value: number): number {
 // ===== State Calculation =====
 
 /**
- * Determine relationship state based on friendship and romance values
+ * Determine relationship state based on Trust/Affection/Desire values
  *
- * Priority:
- * 1. Combined states (both dimensions matter)
- * 2. Romance states (if romance has stronger magnitude)
- * 3. Friendship states (default)
+ * Priority (checked in order, first match wins):
+ * 1. Positive combined states (requires multiple high axes)
+ * 2. Negative states
+ * 3. Single-axis states
+ * 4. Default to stranger
  */
 export function calculateRelationshipState(
-  friendship: number,
-  romance: number
+  trust: number,
+  affection: number,
+  desire: number
 ): RelationshipState {
-  // Combined states (highest priority)
-  if (friendship >= 80 && romance >= 80) return 'close_romantic_partner';
-  if (friendship >= 50 && romance >= 60) return 'romantic_partner';
-  if (friendship <= -30 && romance <= -50) return 'bitter_ex';
-  if (friendship >= 50 && romance <= -30) return 'complicated';
-  if (friendship <= -50 && romance >= -19) return 'rival';
-  if (friendship <= 30 && romance >= 60) return 'unrequited';
+  // === Positive combined states (highest priority) ===
+  // Partner: high trust + affection + desire
+  if (trust >= 60 && affection >= 60 && desire >= 50) return 'partner';
 
-  // Single dimension states
-  // Use romance if it has stronger magnitude
-  if (Math.abs(romance) > Math.abs(friendship)) {
-    if (romance >= 80) return 'in_love';
-    if (romance >= 50) return 'romantic_interest';
-    if (romance >= 20) return 'attracted';
-    if (romance <= -50) return 'repulsed';
-    if (romance <= -20) return 'uncomfortable';
+  // Lover: high desire + affection but lower trust (passionate but less stable)
+  if (desire >= 60 && affection >= 40 && trust < 60) return 'lover';
+
+  // Close friend: high affection + trust, low desire
+  if (affection >= 60 && trust >= 40 && desire < 30) return 'close_friend';
+
+  // Friend: moderate affection and trust
+  if (affection >= 30 && trust >= 20) return 'friend';
+
+  // Crush: high desire but low affection (infatuation without connection)
+  if (desire >= 40 && affection < 30) return 'crush';
+
+  // === Negative states ===
+  // Enemy: strongly negative trust AND affection
+  if (trust < -50 && affection < -50) return 'enemy';
+
+  // Rival: negative trust OR affection
+  if (trust < -30 || affection < -30) return 'rival';
+
+  // === Mixed states ===
+  // Complicated: mix of positive and negative across axes
+  const hasPositive = trust > 20 || affection > 20 || desire > 20;
+  const hasNegative = trust < -20 || affection < -20 || desire < -20;
+  if (hasPositive && hasNegative) return 'complicated';
+
+  // === Neutral/early states ===
+  // Acquaintance: any axis slightly positive, none negative
+  if ((trust >= 10 || affection >= 10 || desire >= 10) &&
+      trust > -10 && affection > -10 && desire > -10) {
+    return 'acquaintance';
   }
 
-  // Default to friendship dimension
-  if (friendship >= 80) return 'close_friend';
-  if (friendship >= 50) return 'friend';
-  if (friendship >= 20) return 'acquaintance';
-  if (friendship <= -50) return 'enemy';
-  if (friendship <= -20) return 'dislike';
-
-  // Complete neutral
+  // Default: stranger
   return 'stranger';
 }
 
 /**
  * Apply activity effects to relationship values
  *
- * @returns New friendship and romance values (clamped to -100/+100)
+ * @param desireCap Optional cap on desire (for sexual preference filtering)
+ * @returns New trust, affection, and desire values (clamped to -100/+100)
  */
 export function applyActivityEffects(
-  currentFriendship: number,
-  currentRomance: number,
-  friendshipDelta: number,
-  romanceDelta: number
-): { friendship: number; romance: number } {
+  currentTrust: number,
+  currentAffection: number,
+  currentDesire: number,
+  trustDelta: number,
+  affectionDelta: number,
+  desireDelta: number,
+  desireCap?: number
+): { trust: number; affection: number; desire: number } {
+  let newDesire = clamp(currentDesire + desireDelta);
+
+  // Apply desire cap if specified
+  if (desireCap !== undefined && newDesire > desireCap) {
+    newDesire = desireCap;
+  }
+
   return {
-    friendship: clamp(currentFriendship + friendshipDelta),
-    romance: clamp(currentRomance + romanceDelta)
+    trust: clamp(currentTrust + trustDelta),
+    affection: clamp(currentAffection + affectionDelta),
+    desire: newDesire
   };
 }
 
@@ -1069,34 +1088,35 @@ export function getEmotionalStateForRelationship(state: RelationshipState): Emot
 /**
  * Get contextual emotional state after an activity
  *
- * Overrides default emotion based on activity type:
- * - Positive friendship activity → happy
- * - Positive romance activity → flirty
- * - Negative friendship activity → sad or angry (based on severity)
- * - Negative romance activity → sad
+ * Overrides default emotion based on activity deltas:
+ * - Strong negative effects → angry
+ * - Mild negative effects → sad
+ * - Positive desire → flirty
+ * - Positive affection/trust → happy
  */
 export function getContextualEmotionalState(
-  friendshipDelta: number,
-  romanceDelta: number,
+  trustDelta: number,
+  affectionDelta: number,
+  desireDelta: number,
   newState: RelationshipState
 ): EmotionalState {
   // Strong negative effects → angry
-  if (friendshipDelta <= -15 || romanceDelta <= -15) {
+  if (trustDelta <= -15 || affectionDelta <= -15 || desireDelta <= -15) {
     return 'angry';
   }
 
   // Mild negative effects → sad
-  if (friendshipDelta < 0 || romanceDelta < 0) {
+  if (trustDelta < 0 || affectionDelta < 0 || desireDelta < 0) {
     return 'sad';
   }
 
-  // Positive romance activity → flirty
-  if (romanceDelta > 0) {
+  // Positive desire activity → flirty
+  if (desireDelta > 0) {
     return 'flirty';
   }
 
-  // Positive friendship activity → happy
-  if (friendshipDelta > 0) {
+  // Positive affection or trust activity → happy
+  if (affectionDelta > 0 || trustDelta > 0) {
     return 'happy';
   }
 
@@ -1144,28 +1164,21 @@ export function getActivityById(activityId: string): typeof ACTIVITIES[0] | unde
  */
 export function getStateDescription(state: RelationshipState): string {
   const descriptions: Record<RelationshipState, string> = {
-    // Combined
-    'close_romantic_partner': 'Deeply in love and best friends',
-    'romantic_partner': 'In a romantic relationship',
-    'bitter_ex': 'Former romantic partner, now hostile',
-    'complicated': 'Good friends but romantic tension',
-    'rival': 'Strong animosity and competition',
-    'unrequited': 'One-sided romantic feelings',
-
-    // Friendship
-    'enemy': 'Strong dislike, actively hostile',
-    'dislike': 'Mild negative feelings',
+    // Positive combined states
+    'partner': 'Deeply committed romantic partner with trust and love',
+    'lover': 'Passionate romantic connection, still building trust',
+    'close_friend': 'Best friends with deep trust and affection',
+    'friend': 'Good friends who enjoy spending time together',
+    'crush': 'Strong attraction, but not yet emotionally connected',
+    'acquaintance': 'Friendly but still getting to know each other',
     'stranger': 'Just met, neutral feelings',
-    'acquaintance': 'Friendly but not close',
-    'friend': 'Good relationship, enjoys spending time',
-    'close_friend': 'Best friends, deep trust',
 
-    // Romance
-    'repulsed': 'Strong romantic aversion',
-    'uncomfortable': 'Mild romantic discomfort',
-    'attracted': 'Starting to develop feelings',
-    'romantic_interest': 'Clear romantic feelings',
-    'in_love': 'Strong romantic attachment'
+    // Mixed states
+    'complicated': 'Mixed feelings, complex relationship dynamics',
+
+    // Negative states
+    'rival': 'Tension and animosity, on bad terms',
+    'enemy': 'Strong mutual dislike, actively hostile'
   };
 
   return descriptions[state];

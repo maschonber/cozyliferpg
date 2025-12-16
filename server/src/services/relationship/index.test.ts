@@ -98,11 +98,12 @@ describe('Phase 2 Activities', () => {
       expect(socialActivities).toHaveLength(11);
     });
 
-    it('should have friendship or romance effects', () => {
+    it('should have trust, affection, or desire effects', () => {
       socialActivities.forEach(activity => {
-        const hasFriendship = activity.effects.friendship !== undefined;
-        const hasRomance = activity.effects.romance !== undefined;
-        expect(hasFriendship || hasRomance).toBe(true);
+        const hasTrust = activity.effects.trust !== undefined;
+        const hasAffection = activity.effects.affection !== undefined;
+        const hasDesire = activity.effects.desire !== undefined;
+        expect(hasTrust || hasAffection || hasDesire).toBe(true);
       });
     });
 

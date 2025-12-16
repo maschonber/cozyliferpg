@@ -59,14 +59,140 @@ export interface NPCAppearance {
 export type Gender = 'female' | 'male' | 'other';
 
 /**
+ * Sexual preference for relationship filtering
+ */
+export type SexualPreference = 'women' | 'men' | 'everyone' | 'no_one';
+
+// ===== Trait System (Relationship Redesign) =====
+
+/**
+ * Personality traits - affect social interactions and emotion baselines
+ */
+export type PersonalityTrait =
+  // Social energy
+  | 'outgoing'
+  | 'reserved'
+  // Thinking style
+  | 'logical'
+  | 'creative'
+  | 'intuitive'
+  // Risk attitude
+  | 'adventurous'
+  | 'cautious'
+  | 'spontaneous'
+  // Emotional style
+  | 'optimistic'
+  | 'melancholic'
+  | 'passionate'
+  | 'stoic'
+  // Interpersonal
+  | 'empathetic'
+  | 'independent'
+  | 'nurturing'
+  | 'competitive';
+
+/**
+ * Romance traits - affect romantic relationship dynamics
+ */
+export type RomanceTrait =
+  | 'flirtatious'
+  | 'romantic'
+  | 'physical'
+  | 'intellectual'
+  | 'slow_burn'
+  | 'intense'
+  | 'commitment_seeking'
+  | 'free_spirit';
+
+/**
+ * Interest traits - affect activity bonuses
+ */
+export type InterestTrait =
+  | 'coffee_lover'
+  | 'fitness_enthusiast'
+  | 'music_fan'
+  | 'art_appreciator'
+  | 'foodie'
+  | 'reader'
+  | 'gamer'
+  | 'nature_lover';
+
+/**
+ * Combined trait type for NPCs
+ */
+export type NPCTrait = PersonalityTrait | RomanceTrait | InterestTrait;
+
+// ===== Emotion System (Relationship Redesign) =====
+
+/**
+ * Core emotion types tracked numerically
+ */
+export type EmotionType =
+  | 'joy'
+  | 'affection'
+  | 'excitement'
+  | 'calm'
+  | 'sadness'
+  | 'anger'
+  | 'anxiety'
+  | 'romantic';
+
+/**
+ * Emotion intensity tier based on value
+ */
+export type EmotionIntensity = 'mild' | 'moderate' | 'strong' | 'intense';
+
+/**
+ * Emotion values for an NPC (0-100 each)
+ */
+export interface EmotionValues {
+  joy: number;
+  affection: number;
+  excitement: number;
+  calm: number;
+  sadness: number;
+  anger: number;
+  anxiety: number;
+  romantic: number;
+}
+
+/**
+ * Full emotion state with metadata
+ */
+export interface NPCEmotionState extends EmotionValues {
+  lastUpdated: string;
+}
+
+/**
+ * Display-ready emotion with intensity
+ */
+export interface EmotionDisplay {
+  emotion: EmotionType;
+  intensity: EmotionIntensity;
+  value: number;
+  label: string;  // e.g., "joyful", "content", "ecstatic"
+}
+
+/**
+ * NPC Archetype
+ */
+export type NPCArchetype = 'Artist' | 'Athlete' | 'Bookworm' | 'Musician' | 'Scientist';
+
+/**
  * NPC (Non-Player Character)
  */
 export interface NPC {
   id: string;
   name: string;
-  archetype: string;  // Artist, Athlete, Bookworm, Musician, Scientist
-  traits: string[];   // Array of personality traits
+  archetype: NPCArchetype;
   gender: Gender;
+
+  // Trait system (Relationship Redesign)
+  traits: NPCTrait[];           // All traits (hidden from player initially)
+  revealedTraits: NPCTrait[];   // Traits discovered by player through gameplay
+
+  // Emotion system (Relationship Redesign)
+  emotionState: NPCEmotionState;
 
   // Appearance (for AI image generation)
   appearance: NPCAppearance;
@@ -85,32 +211,26 @@ export interface NPC {
 }
 
 /**
- * Relationship state based on friendship/romance values
+ * Relationship state derived from Trust/Affection/Desire axes
  */
 export type RelationshipState =
-  // Combined states (both dimensions matter)
-  | 'close_romantic_partner'
-  | 'romantic_partner'
-  | 'bitter_ex'
-  | 'complicated'
-  | 'rival'
-  | 'unrequited'
-  // Friendship-based states
-  | 'enemy'
-  | 'dislike'
-  | 'stranger'
-  | 'acquaintance'
-  | 'friend'
-  | 'close_friend'
-  // Romance-based states
-  | 'repulsed'
-  | 'uncomfortable'
-  | 'attracted'
-  | 'romantic_interest'
-  | 'in_love';
+  // Positive combined states (requires multiple high axes)
+  | 'partner'           // Trust >= 60, Affection >= 60, Desire >= 50
+  | 'lover'             // Desire >= 60, Affection >= 40, Trust < 60
+  | 'close_friend'      // Affection >= 60, Trust >= 40, Desire < 30
+  | 'friend'            // Affection >= 30, Trust >= 20
+  | 'crush'             // Desire >= 40, Affection < 30
+  | 'acquaintance'      // Any axis >= 10, none strongly negative
+  | 'stranger'          // All axes near 0 (-10 to 10)
+  // Mixed/complex states
+  | 'complicated'       // Mixed positive/negative across axes
+  // Negative states
+  | 'rival'             // Trust < -30 OR Affection < -30
+  | 'enemy';            // Trust < -50 AND Affection < -50
 
 /**
- * Emotional state for image generation
+ * Emotional state for image generation (legacy - use EmotionDisplay for new code)
+ * @deprecated Use EmotionDisplay from emotion system instead
  */
 export type EmotionalState = 'neutral' | 'happy' | 'sad' | 'flirty' | 'angry';
 
@@ -121,11 +241,27 @@ export interface Interaction {
   id: string;
   relationshipId: string;
   activityType: string;
-  friendshipDelta: number;
-  romanceDelta: number;
-  emotionalState?: EmotionalState;
+
+  // Axis deltas (Relationship Redesign)
+  trustDelta: number;
+  affectionDelta: number;
+  desireDelta: number;
+
+  // Emotion at time of interaction
+  emotionalState?: EmotionalState;  // Legacy field for compatibility
+  emotionSnapshot?: EmotionValues;  // Full emotion state at interaction time
+
   notes?: string;
   createdAt: string;
+}
+
+/**
+ * Relationship axes structure
+ */
+export interface RelationshipAxes {
+  trust: number;      // -100 to +100: Reliability, safety, dependability
+  affection: number;  // -100 to +100: Warmth, fondness, emotional bond
+  desire: number;     // -100 to +100: Romantic/physical attraction, chemistry
 }
 
 /**
@@ -136,13 +272,17 @@ export interface Relationship {
   playerId: string;
   npcId: string;
 
-  // Multi-dimensional values (-100 to +100)
-  friendship: number;
-  romance: number;
+  // Three-axis relationship values (-100 to +100 each)
+  trust: number;
+  affection: number;
+  desire: number;
+
+  // Desire cap based on player sexual preference (undefined = no cap)
+  desireCap?: number;
 
   // State tracking
   currentState: RelationshipState;
-  unlockedStates: string[];
+  unlockedStates: RelationshipState[];
 
   // Timestamps
   firstMet: string;
@@ -216,10 +356,11 @@ export interface Activity {
   minEnergy?: number;              // Minimum energy required
   minRelationship?: string;        // e.g., "friend" (for relationship-gated activities)
 
-  // Effects (from Phase 1)
+  // Relationship effects (Relationship Redesign)
   effects: {
-    friendship?: number;
-    romance?: number;
+    trust?: number;
+    affection?: number;
+    desire?: number;
   };
 
   // Stat system (Phase 2.5)
@@ -332,6 +473,9 @@ export interface PlayerCharacter {
 
   // Location tracking (Phase 3)
   currentLocation: LocationId; // Where the player currently is
+
+  // Relationship preferences (Relationship Redesign)
+  sexualPreference: SexualPreference;  // Affects desire cap for NPCs
 
   // Stats (Phase 2.5)
   archetype: PlayerArchetype;
@@ -493,9 +637,12 @@ export interface ActivityOutcome {
   adjustedRoll: number;          // After stat bonus and difficulty penalty
   description: string;           // Flavor text for this outcome
 
-  // Effects (deltas from base activity values)
-  friendshipDelta?: number;
-  romanceDelta?: number;
+  // Relationship effects (deltas from base activity values)
+  trustDelta?: number;
+  affectionDelta?: number;
+  desireDelta?: number;
+
+  // Resource effects
   energyDelta?: number;          // Additional energy cost/savings
   moneyDelta?: number;           // Additional money cost/savings
   timeDelta?: number;            // Additional time cost/savings (minutes)

@@ -46,8 +46,8 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
         hair_color, hair_style, eye_color, face_details,
         body_type, torso_size, height, skin_tone,
         upper_trace, lower_trace, style, body_details,
-        loras, current_location, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+        loras, current_location, revealed_traits, emotion_state, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *
       `,
       [
@@ -70,6 +70,8 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
         npcData.appearance.bodyDetails,
         npcData.loras,
         player.currentLocation, // Spawn at player's location
+        npcData.revealedTraits,
+        JSON.stringify(npcData.emotionState),
         createdAt
       ]
     );
@@ -82,7 +84,11 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      revealedTraits: row.revealed_traits || [],
       gender: row.gender,
+      emotionState: typeof row.emotion_state === 'string'
+        ? JSON.parse(row.emotion_state)
+        : row.emotion_state,
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,
@@ -136,7 +142,11 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      revealedTraits: row.revealed_traits || [],
       gender: row.gender,
+      emotionState: typeof row.emotion_state === 'string'
+        ? JSON.parse(row.emotion_state)
+        : row.emotion_state,
       currentLocation: row.current_location, // Phase 3
       appearance: {
         hairColor: row.hair_color,
@@ -199,7 +209,11 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => 
       name: row.name,
       archetype: row.archetype,
       traits: row.traits,
+      revealedTraits: row.revealed_traits || [],
       gender: row.gender,
+      emotionState: typeof row.emotion_state === 'string'
+        ? JSON.parse(row.emotion_state)
+        : row.emotion_state,
       appearance: {
         hairColor: row.hair_color,
         hairStyle: row.hair_style,
