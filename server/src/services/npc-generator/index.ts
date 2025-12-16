@@ -18,6 +18,7 @@ import {
   NPCEmotionState
 } from '../../../../shared/types';
 import { randomUUID } from 'crypto';
+import { initializeEmotions } from '../emotion';
 
 // ===== Generation Data Pools =====
 
@@ -281,64 +282,13 @@ function generateTraits(): NPCTrait[] {
 
 /**
  * Generate default emotion state for a new NPC
- * Values are based on personality traits if available
+ * Delegated to emotion service for consistent emotion initialization
+ *
+ * Note: We use a placeholder npcId since the actual ID will be assigned
+ * by the database. The emotion service doesn't use the npcId parameter.
  */
 function generateEmotionState(traits: NPCTrait[]): NPCEmotionState {
-  // Base emotion values
-  let joy = 15;
-  let affection = 10;
-  let excitement = 5;
-  let calm = 20;
-  let sadness = 5;
-  let anger = 0;
-  let anxiety = 5;
-  let romantic = 10;
-
-  // Adjust based on personality traits
-  if (traits.includes('optimistic')) {
-    joy += 10;
-    sadness -= 3;
-  }
-  if (traits.includes('melancholic')) {
-    sadness += 10;
-    joy -= 5;
-  }
-  if (traits.includes('passionate')) {
-    excitement += 10;
-    romantic += 10;
-  }
-  if (traits.includes('stoic')) {
-    calm += 15;
-    excitement -= 3;
-  }
-  if (traits.includes('adventurous')) {
-    excitement += 5;
-  }
-  if (traits.includes('cautious')) {
-    anxiety += 5;
-  }
-  if (traits.includes('flirtatious')) {
-    romantic += 10;
-  }
-  if (traits.includes('reserved')) {
-    calm += 5;
-  }
-  if (traits.includes('outgoing')) {
-    joy += 5;
-    excitement += 5;
-  }
-
-  return {
-    joy: Math.max(0, Math.min(100, joy)),
-    affection: Math.max(0, Math.min(100, affection)),
-    excitement: Math.max(0, Math.min(100, excitement)),
-    calm: Math.max(0, Math.min(100, calm)),
-    sadness: Math.max(0, Math.min(100, sadness)),
-    anger: Math.max(0, Math.min(100, anger)),
-    anxiety: Math.max(0, Math.min(100, anxiety)),
-    romantic: Math.max(0, Math.min(100, romantic)),
-    lastUpdated: new Date().toISOString()
-  };
+  return initializeEmotions('temp_id', traits);
 }
 
 // ===== Main Generator =====
