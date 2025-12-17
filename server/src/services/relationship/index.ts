@@ -1,988 +1,25 @@
 /**
  * Relationship Service
- * Manages relationship state calculations, activity effects, and emotional state mapping
  *
- * ARCHITECTURE NOTE: This service encapsulates all relationship logic
- * to make it easy to expand with additional dimensions and complex rules.
+ * Pure functions for relationship state calculations and activity logic.
+ * All activity data has been moved to activities.ts for better maintainability.
+ *
+ * Architecture: Configuration-driven, pure functions, clear separation of concerns
  */
 
-import { RelationshipState, EmotionalState, StatName } from '../../../../shared/types';
+import { RelationshipState, EmotionalState } from '../../../../shared/types';
+import { ACTIVITIES } from './activities';
+import {
+  RELATIONSHIP_THRESHOLDS,
+  STATE_EMOTION_MAP,
+  CONTEXTUAL_EMOTION_THRESHOLDS,
+  STATE_DESCRIPTIONS
+} from './config';
 
-// ===== Constants =====
+// ===== Exports =====
 
-/**
- * Phase 2+3 Activities
- */
-export const ACTIVITIES = [
-  // Work Activities (solo) - Money is the main reward (scales by outcome)
-  {
-    id: 'work_part_time',
-    name: 'Work Part-Time Job',
-    description: 'Work a 4-hour shift at your part-time job',
-    category: 'work' as const,
-    requiresNPC: false,
-    location: 'shopping_district' as const,
-    timeCost: 240,
-    energyCost: -30,
-    moneyCost: 0,  // Money comes from outcome scaling
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
-    effects: {},
-    // Phase 2.5.3: Work activity with money as main reward
-    difficulty: 30,
-    relevantStats: ['ambition'] as StatName[],
-    outcomeProfile: {
-      mainStats: [] as StatName[],  // No main stat - money is the main reward
-      mainStatGain: 0,
-      mainMoneyGain: 80,  // Scales: best=$140, okay=$80, mixed=$40, catastrophic=$0
-      secondaryStats: ['confidence', 'poise', 'wit'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence', 'ambition'] as StatName[],
-        statPenalty: 1,
-        energyCost: 10,
-        timeCost: 30
-      }
-    },
-    tags: ['work']
-  },
-  {
-    id: 'work_full_day',
-    name: 'Work Full Day',
-    description: 'Work a full 8-hour shift for maximum pay',
-    category: 'work' as const,
-    requiresNPC: false,
-    location: 'shopping_district' as const,
-    timeCost: 480,
-    energyCost: -50,
-    moneyCost: 0,  // Money comes from outcome scaling
-    allowedTimeSlots: ['morning' as const],
-    effects: {},
-    // Phase 2.5.3: Work activity with money as main reward
-    difficulty: 40,
-    relevantStats: ['ambition', 'vitality'] as StatName[],
-    statRequirements: { ambition: 20 },
-    outcomeProfile: {
-      mainStats: [] as StatName[],  // No main stat - money is the main reward
-      mainStatGain: 0,
-      mainMoneyGain: 150,  // Scales: best=$262, okay=$150, mixed=$75, catastrophic=$0
-      secondaryStats: ['ambition', 'vitality', 'confidence'] as StatName[],
-      secondaryStatGain: 1,
-      negativeEffects: {
-        stats: ['confidence', 'ambition'] as StatName[],
-        statPenalty: 1.5,
-        energyCost: 15,
-        timeCost: 60
-      }
-    },
-    tags: ['work']
-  },
-
-  // Social Activities (with NPCs) - Train: Confidence, Wit, Empathy
-  {
-    id: 'have_coffee',
-    name: 'Have Coffee Together',
-    description: 'Grab a casual coffee and catch up',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'coffee_shop' as const,
-    timeCost: 60,
-    energyCost: -8,
-    moneyCost: -5,
-    effects: { affection: 10 },  // Main benefit (auto-scales by outcome)
-    // Phase 2.5: Stats
-    difficulty: 20,
-    relevantStats: ['confidence'] as StatName[],
-    // Phase 2.5.3: Outcome Profile - minimal stat training, relationship is main benefit
-    outcomeProfile: {
-      mainStats: ['confidence'] as StatName[],
-      mainStatGain: 0.5,  // Small stat gain
-      secondaryStats: ['wit', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 0.5,
-        moneyCost: 5  // Had to pay for them too
-      }
-    }
-  },
-  {
-    id: 'quick_chat',
-    name: 'Quick Chat',
-    description: 'Have a brief conversation',
-    category: 'social' as const,
-    requiresNPC: true,
-    // No location - available anywhere with NPC
-    timeCost: 30,
-    energyCost: -5,
-    moneyCost: 0,
-    effects: { affection: 5 },  // Main benefit
-    // Phase 2.5: Stats
-    difficulty: 15,
-    relevantStats: ['confidence'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['confidence'] as StatName[],
-      mainStatGain: 0.3,  // Very small
-      secondaryStats: ['wit'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 0.3
-      }
-    }
-  },
-  {
-    id: 'casual_date',
-    name: 'Go on Casual Date',
-    description: 'Go out for dinner or drinks together',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'bar' as const,
-    timeCost: 120,
-    energyCost: -10,
-    moneyCost: -30,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { desire: 15 },  // Main benefit
-    // Phase 2.5: Stats
-    difficulty: 40,
-    relevantStats: ['confidence', 'wit'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['confidence'] as StatName[],
-      mainStatGain: 1,
-      secondaryStats: ['wit', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 1,
-        moneyCost: 15  // They didn't offer to split
-      }
-    }
-  },
-  {
-    id: 'deep_conversation',
-    name: 'Have Deep Conversation',
-    description: 'Share meaningful thoughts and feelings',
-    category: 'social' as const,
-    requiresNPC: true,
-    // No location - available anywhere with NPC
-    timeCost: 90,
-    energyCost: -12,
-    moneyCost: 0,
-    minRelationship: 'friend',
-    effects: { affection: 20, trust: 10 },  // Main benefit - deep conversations build trust too
-    // Phase 2.5: Stats - Requires emotional depth
-    difficulty: 50,
-    relevantStats: ['wit', 'knowledge'] as StatName[],  // Changed from empathy (defensive)
-    statRequirements: { empathy: 25 },  // Still requires empathy as gate
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['wit'] as StatName[],  // Mixed stat as main (deep conversations train wit)
-      mainStatGain: 1.5,  // Reduced from 2.0 (mixed stat should be weaker than active)
-      secondaryStats: ['knowledge', 'poise'] as StatName[],
-      secondaryStatGain: 1,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 1,
-        energyCost: 10  // Emotionally draining
-      }
-    }
-  },
-  {
-    id: 'go_to_movies',
-    name: 'Go to Movies',
-    description: 'Watch a film together at the cinema',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'movie_theater' as const,
-    timeCost: 150,
-    energyCost: -8,
-    moneyCost: -20,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { affection: 10, desire: 5 },  // Main benefit
-    // Phase 2.5: Stats - Low difficulty passive activity
-    difficulty: 15,
-    relevantStats: [] as StatName[],
-    // Phase 2.5.3: Outcome Profile - passive activity, minimal gains
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],  // Mixed stat, relaxing together
-      mainStatGain: 0.5,
-      secondaryStats: [] as StatName[],
-      negativeEffects: {
-        moneyCost: 10  // Bought extra snacks
-      }
-    }
-  },
-  {
-    id: 'exercise_together',
-    name: 'Exercise Together',
-    description: 'Work out or play sports together',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'gym' as const,
-    timeCost: 90,
-    energyCost: -15,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: { affection: 10, trust: 5 },  // Main benefit - exercising together builds trust
-    // Phase 2.5: Stats
-    difficulty: 35,
-    relevantStats: ['fitness'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['fitness'] as StatName[],
-      mainStatGain: 1.5,  // Social fitness is less effective than solo
-      secondaryStats: ['poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 10  // Injured or embarrassed
-      }
-    }
-  },
-  {
-    id: 'cook_dinner',
-    name: 'Cook Dinner Together',
-    description: 'Prepare and share a homemade meal',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'home' as const,
-    timeCost: 120,
-    energyCost: -10,
-    moneyCost: -15,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { affection: 12, desire: 8 },  // Main benefit
-    // Phase 2.5: Stats
-    difficulty: 40,
-    relevantStats: ['creativity'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['creativity'] as StatName[],  // Mixed stat as main
-      mainStatGain: 1.5,
-      secondaryStats: ['poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 1,
-        moneyCost: 10,  // Burned the food, ordered pizza
-        timeCost: 30
-      }
-    }
-  },
-  {
-    id: 'flirt_playfully',
-    name: 'Flirt Playfully',
-    description: 'Engage in some lighthearted flirting',
-    category: 'social' as const,
-    requiresNPC: true,
-    // No location - available anywhere with NPC
-    timeCost: 45,
-    energyCost: -8,
-    moneyCost: 0,
-    effects: { desire: 12 },  // Main benefit
-    // Phase 2.5: Stats
-    difficulty: 45,
-    relevantStats: ['confidence', 'wit'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['wit'] as StatName[],  // Mixed stat as main
-      mainStatGain: 1.5,
-      secondaryStats: ['confidence', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 1.5,  // They didn't find it funny
-        energyCost: 8
-      }
-    }
-  },
-
-  // Self-Improvement Activities (solo) - Primary stat training
-  {
-    id: 'study_library',
-    name: 'Study at Library',
-    description: 'Hit the books and expand your knowledge',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'library' as const,
-    timeCost: 120,
-    energyCost: -12,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5: Stats - Train Knowledge (requires basic learning skills)
-    difficulty: 45,
-    relevantStats: ['knowledge'] as StatName[],
-    statEffects: { knowledge: 5 },  // Deprecated - use outcomeProfile
-    statRequirements: { knowledge: 10 },
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['knowledge'] as StatName[],  // Active stat
-      mainStatGain: 2.5,  // Reduced from 5
-      secondaryStats: ['creativity', 'poise'] as StatName[],  // Removed defensive stat (ambition)
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 8  // Mental exhaustion/frustration
-      }
-    }
-  },
-  {
-    id: 'work_out_gym',
-    name: 'Work Out at Gym',
-    description: 'Get a solid workout in at the gym',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'gym' as const,
-    timeCost: 90,
-    energyCost: -15,
-    moneyCost: -10,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5: Stats - Train Fitness
-    difficulty: 40,
-    relevantStats: ['fitness'] as StatName[],
-    // Phase 2.5.3: Outcome Profile
-    outcomeProfile: {
-      mainStats: ['fitness'] as StatName[],  // Active stat
-      mainStatGain: 3,  // Reduced from 5
-      secondaryStats: ['poise', 'confidence'] as StatName[],  // Removed defensive stat (vitality)
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 1,
-        energyCost: 10,  // Injury or strain
-        timeCost: 15  // Waited for equipment
-      }
-    }
-  },
-  {
-    id: 'read_book',
-    name: 'Read a Book',
-    description: 'Read for pleasure and relaxation',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 90,
-    energyCost: -5,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5.3: Outcome profile
-    difficulty: 25,
-    relevantStats: ['knowledge'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['knowledge'] as StatName[],
-      mainStatGain: 2,
-      secondaryStats: ['creativity'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['fitness'] as StatName[],
-        statPenalty: 0.5,
-        timeCost: 15
-      }
-    }
-  },
-  {
-    id: 'creative_hobby',
-    name: 'Practice Creative Hobby',
-    description: 'Work on art, music, or creative projects',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 120,
-    energyCost: -10,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5.3: Outcome profile (Creativity is mixed stat, can be primary)
-    difficulty: 45,
-    relevantStats: ['creativity'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['creativity'] as StatName[],
-      mainStatGain: 1.5,  // Reduced from 2.5 (mixed stat should be weaker than active)
-      secondaryStats: ['knowledge', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['fitness', 'confidence'] as StatName[],
-        statPenalty: 0.5,
-        moneyCost: 5,  // Materials used up
-        timeCost: 20  // Lost in flow state
-      }
-    }
-  },
-
-  // Leisure/Relaxation Activities (solo) - No rolls, minor stat gains
-  {
-    id: 'stroll_park',
-    name: 'Stroll in the Park',
-    description: 'Take a peaceful walk outdoors',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'park' as const,
-    timeCost: 60,
-    energyCost: -3,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5: No roll (auto-success), minor poise gain
-    // Note: Vitality grows from healthy patterns (defensive stat), not direct training
-    statEffects: { poise: 1 }
-  },
-  {
-    id: 'play_video_games',
-    name: 'Play Video Games',
-    description: 'Unwind with some gaming',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 120,
-    energyCost: -5,
-    moneyCost: 0,
-    effects: {}
-    // Phase 2.5: Pure leisure, no stat gains
-  },
-  {
-    id: 'watch_tv',
-    name: 'Watch TV',
-    description: 'Relax and watch your favorite shows',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 90,
-    energyCost: 0,
-    moneyCost: 0,
-    effects: {}
-    // Phase 2.5: Pure leisure, no stat gains
-  },
-  {
-    id: 'listen_music',
-    name: 'Listen to Music',
-    description: 'Put on some tunes and chill',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 30,
-    energyCost: 0,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5.3: Light leisure activity with minor poise training
-    difficulty: 10,
-    relevantStats: ['poise'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 1,
-      secondaryStats: ['creativity'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        timeCost: 10  // Time flies when enjoying music
-      }
-    }
-  },
-
-  // Mixed Stat Training Activities (solo) - Train poise, creativity, and wit
-  // Weaker gains than active stats (1.0-1.5 vs 2.0-3.0)
-  {
-    id: 'yoga_practice',
-    name: 'Yoga Class',
-    description: 'Attend a yoga class to work on flexibility, balance, and mindful movement',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'gym' as const,
-    timeCost: 60,
-    energyCost: -12,  // Increased from -8 to match gym activity intensity
-    moneyCost: -10,  // Class fee
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - poise (physical grace)
-    difficulty: 35,
-    relevantStats: ['poise', 'fitness'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 1.5,  // Mixed stat gain (weaker than active stats)
-      secondaryStats: ['fitness', 'vitality'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['poise'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 5,  // Overexerted
-        timeCost: 15  // Had to rest
-      }
-    }
-  },
-  {
-    id: 'meditation',
-    name: 'Meditate',
-    description: 'Practice mindfulness and mental composure',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 45,
-    energyCost: 0,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const, 'night' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - poise (composure, mental grace)
-    difficulty: 25,
-    relevantStats: ['poise'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 1.0,  // Mixed stat gain
-      secondaryStats: ['vitality'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        timeCost: 15  // Mind wandered
-      }
-    }
-  },
-  {
-    id: 'stretching',
-    name: 'Stretching Routine',
-    description: 'Improve flexibility and body awareness',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 30,
-    energyCost: -5,  // Increased from -3
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - poise (body awareness)
-    difficulty: 20,
-    relevantStats: ['poise', 'fitness'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 1.0,  // Mixed stat gain
-      secondaryStats: ['fitness'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        stats: ['fitness'] as StatName[],
-        statPenalty: 0.3,
-        energyCost: 3  // Mild muscle strain
-      }
-    }
-  },
-  {
-    id: 'journaling',
-    name: 'Write in Journal',
-    description: 'Express thoughts and ideas through writing',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 60,
-    energyCost: -8,  // Increased from -5 (mental effort)
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const, 'night' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - creativity (self-expression)
-    difficulty: 30,
-    relevantStats: ['creativity'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['creativity'] as StatName[],
-      mainStatGain: 1.0,  // Mixed stat gain
-      secondaryStats: ['knowledge', 'wit'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        energyCost: 5,  // Mental fatigue
-        timeCost: 20  // Lost in thought
-      }
-    }
-  },
-  {
-    id: 'sketching',
-    name: 'Sketch/Draw',
-    description: 'Practice visual art and creative observation',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'park' as const,
-    timeCost: 75,
-    energyCost: -8,  // Increased from -5 (focused mental/physical effort)
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - creativity (artistic expression)
-    difficulty: 35,
-    relevantStats: ['creativity'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['creativity'] as StatName[],
-      mainStatGain: 1.2,  // Mixed stat gain
-      secondaryStats: ['poise', 'knowledge'] as StatName[],
-      secondaryStatGain: 0.4,
-      negativeEffects: {
-        stats: ['creativity'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 5,  // Frustrated with results
-        timeCost: 15  // Kept redoing
-      }
-    }
-  },
-  {
-    id: 'word_games',
-    name: 'Bar Trivia Night',
-    description: 'Test your knowledge and wit at the local trivia competition',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'bar' as const,
-    timeCost: 90,  // Increased from 45 (full trivia event)
-    energyCost: -10,  // Increased from -3 (social + mental effort)
-    moneyCost: -5,  // Drinks/cover charge
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - wit (quick thinking)
-    difficulty: 30,
-    relevantStats: ['wit', 'knowledge'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['wit'] as StatName[],
-      mainStatGain: 1.0,  // Mixed stat gain
-      secondaryStats: ['knowledge'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        energyCost: 5,  // Mental fatigue
-        moneyCost: 5,  // Bought extra drinks
-        timeCost: 20  // Lost track of time socializing
-      }
-    }
-  },
-  {
-    id: 'comedy_show',
-    name: 'Watch Comedy Show',
-    description: 'Enjoy standup comedy and sharpen your sense of humor',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 60,
-    energyCost: 0,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5.4: Mixed stat training - wit (humor appreciation)
-    difficulty: 15,
-    relevantStats: ['wit'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['wit'] as StatName[],
-      mainStatGain: 0.8,  // Light mixed stat gain (passive activity)
-      secondaryStats: ['creativity'] as StatName[],
-      secondaryStatGain: 0.2,
-      negativeEffects: {
-        timeCost: 20  // Binge-watched
-      }
-    }
-  },
-
-  // Self-Care Activities (solo) - Support defensive stats through healthy patterns
-  {
-    id: 'take_nap',
-    name: 'Take a Nap',
-    description: 'Get some quick rest to recharge',
-    category: 'self_care' as const,
-    requiresNPC: false,
-    location: 'home' as const,
-    timeCost: 60,
-    energyCost: 5,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5: Supports Vitality through energy management (defensive stat calc)
-    // No direct stat training - Vitality grows from sustainable patterns
-    tags: ['recovery']
-  },
-  {
-    id: 'go_to_sleep',
-    name: 'Go to Sleep',
-    description: 'Go to bed and end the day',
-    category: 'self_care' as const,
-    requiresNPC: false,
-    // No location - works everywhere (special handling to travel home)
-    timeCost: 0, // Special: ends day
-    energyCost: 0, // Special: calculated based on sleep duration
-    moneyCost: 0,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: {},
-    // Phase 2.5: Special handling - stat processing happens in sleep endpoint
-    tags: ['recovery']
-  },
-
-  // Discovery Activity (solo)
-  {
-    id: 'meet_someone',
-    name: 'Meet Someone New',
-    description: 'Explore the neighborhood and meet a new person',
-    category: 'discovery' as const,
-    requiresNPC: false,
-    // No location - available everywhere except home (handled in logic)
-    timeCost: 45,
-    energyCost: -20,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5.3: Outcome profile - challenging social discovery
-    difficulty: 50,
-    relevantStats: ['confidence'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['confidence'] as StatName[],
-      mainStatGain: 2.5,
-      secondaryStats: ['wit', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence', 'poise'] as StatName[],
-        statPenalty: 1,
-        energyCost: 10,  // Social anxiety
-        timeCost: 20  // Awkward conversation
-      }
-    }
-  },
-
-  // ===== PHASE 3 NEW ACTIVITIES =====
-
-  // New Solo Activities
-  {
-    id: 'beach_walk',
-    name: 'Beach Walk',
-    description: 'Take a peaceful walk along the shoreline',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'beach' as const,
-    timeCost: 45,
-    energyCost: -3,
-    moneyCost: 0,
-    effects: {},
-    // Phase 2.5: No roll, minor poise gain
-    // Note: Vitality grows from healthy patterns (defensive stat), not direct training
-    statEffects: { poise: 1 }
-  },
-  {
-    id: 'window_shopping',
-    name: 'Window Shopping',
-    description: 'Browse shops without buying anything',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'shopping_district' as const,
-    timeCost: 60,
-    energyCost: -5,
-    moneyCost: 0,
-    effects: {}
-    // Phase 2.5: Pure leisure, no stat gains
-  },
-  {
-    id: 'morning_jog',
-    name: 'Morning Jog',
-    description: 'Go for an energizing run outdoors',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'park' as const,
-    timeCost: 45,
-    energyCost: -10,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
-    effects: {},
-    // Phase 2.5.3: Outcome profile - outdoor fitness training
-    difficulty: 30,
-    relevantStats: ['fitness'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['fitness'] as StatName[],
-      mainStatGain: 3,
-      secondaryStats: ['poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['fitness'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 5,  // Overexertion
-        timeCost: 10  // Got lost/distracted
-      }
-    }
-  },
-  {
-    id: 'swim_beach',
-    name: 'Swim at Beach',
-    description: 'Take a refreshing swim in the ocean',
-    category: 'self_improvement' as const,
-    requiresNPC: false,
-    location: 'beach' as const,
-    timeCost: 60,
-    energyCost: -12,
-    moneyCost: 0,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: {},
-    // Phase 2.5.3: Outcome profile - swimming fitness training
-    difficulty: 40,
-    relevantStats: ['fitness'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['fitness'] as StatName[],
-      mainStatGain: 3,
-      secondaryStats: ['poise', 'confidence'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['fitness'] as StatName[],
-        statPenalty: 0.5,
-        energyCost: 8,  // Water too cold/rough
-        timeCost: 15  // Had to rest
-      }
-    }
-  },
-  {
-    id: 'play_arcade',
-    name: 'Play Arcade Games',
-    description: 'Have fun with retro arcade games',
-    category: 'leisure' as const,
-    requiresNPC: false,
-    location: 'boardwalk' as const,
-    timeCost: 90,
-    energyCost: -8,
-    moneyCost: -10,
-    effects: {},
-    // Phase 2.5.3: Light leisure with minor wit training (mixed stat)
-    difficulty: 15,
-    relevantStats: ['wit'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['wit'] as StatName[],
-      mainStatGain: 1.5,
-      secondaryStats: ['poise'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        moneyCost: 5,  // Spent more tokens
-        timeCost: 20  // Got too into it
-      }
-    }
-  },
-
-  // New Social Activities
-  {
-    id: 'beach_picnic',
-    name: 'Beach Picnic',
-    description: 'Share food and relaxation by the ocean',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'beach' as const,
-    timeCost: 90,
-    energyCost: -10,
-    moneyCost: -15,
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const, 'evening' as const],
-    effects: { affection: 15, desire: 8 },
-    // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
-    difficulty: 25,
-    relevantStats: ['poise', 'confidence'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 0.8,
-      secondaryStats: ['confidence', 'wit'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        stats: ['confidence', 'poise'] as StatName[],
-        statPenalty: 0.5,
-        moneyCost: 5,  // Food cost more
-        timeCost: 15  // Awkward silences
-      }
-    }
-  },
-  {
-    id: 'play_pool_darts',
-    name: 'Play Pool/Darts',
-    description: 'Friendly competition over bar games',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'bar' as const,
-    timeCost: 60,
-    energyCost: -8,
-    moneyCost: -10,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { affection: 10, trust: 5 },  // Friendly competition builds trust
-    // Phase 2.5.3: Social activity - relationship is main outcome, minimal stat gains
-    difficulty: 30,
-    relevantStats: ['poise', 'confidence'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 1,
-      secondaryStats: ['confidence', 'wit'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence', 'poise'] as StatName[],
-        statPenalty: 0.5,
-        moneyCost: 5,  // Bought extra drinks
-        energyCost: 5  // Stayed too late
-      }
-    }
-  },
-  {
-    id: 'boardwalk_stroll',
-    name: 'Boardwalk Stroll',
-    description: 'Take a romantic walk along the pier',
-    category: 'social' as const,
-    requiresNPC: true,
-    location: 'boardwalk' as const,
-    timeCost: 75,
-    energyCost: -5,
-    moneyCost: -5,
-    allowedTimeSlots: ['evening' as const, 'night' as const],
-    effects: { affection: 8, desire: 10 },
-    // Phase 2.5.3: Social activity - easy romantic, minimal stat gains
-    difficulty: 15,
-    relevantStats: ['poise', 'confidence'] as StatName[],
-    outcomeProfile: {
-      mainStats: ['poise'] as StatName[],
-      mainStatGain: 0.5,
-      secondaryStats: ['confidence'] as StatName[],
-      secondaryStatGain: 0.3,
-      negativeEffects: {
-        stats: ['confidence'] as StatName[],
-        statPenalty: 0.3,
-        moneyCost: 3,  // Bought snacks
-        timeCost: 10  // Lost track of time
-      }
-    }
-  },
-
-  // New Work Activity
-  {
-    id: 'work_barista',
-    name: 'Work as Barista',
-    description: 'Serve coffee and pastries at the cafe',
-    category: 'work' as const,
-    requiresNPC: false,
-    location: 'coffee_shop' as const,
-    timeCost: 240,
-    energyCost: -35,
-    moneyCost: 0,  // Money comes from outcome scaling
-    allowedTimeSlots: ['morning' as const, 'afternoon' as const],
-    effects: {},
-    // Phase 2.5.3: Work activity with money as main reward
-    difficulty: 35,
-    relevantStats: ['confidence'] as StatName[],
-    outcomeProfile: {
-      mainStats: [] as StatName[],  // No main stat - money is the main reward
-      mainStatGain: 0,
-      mainMoneyGain: 70,  // Scales: best=$122, okay=$70, mixed=$35, catastrophic=$0
-      secondaryStats: ['confidence', 'wit', 'poise'] as StatName[],
-      secondaryStatGain: 0.5,
-      negativeEffects: {
-        stats: ['confidence', 'poise'] as StatName[],
-        statPenalty: 1,
-        energyCost: 10,
-        moneyCost: 5,  // Broke something
-        timeCost: 30
-      }
-    },
-    tags: ['work']
-  }
-];
-
-/**
- * Map relationship states to default emotional states
- * Updated for Trust/Affection/Desire system
- */
-const STATE_EMOTION_MAP: Record<RelationshipState, EmotionalState> = {
-  // Positive combined states
-  'partner': 'happy',
-  'lover': 'flirty',
-  'close_friend': 'happy',
-  'friend': 'happy',
-  'crush': 'flirty',
-  'acquaintance': 'neutral',
-  'stranger': 'neutral',
-
-  // Mixed/complex states
-  'complicated': 'sad',
-
-  // Negative states
-  'rival': 'angry',
-  'enemy': 'angry'
-};
+// Re-export activities for backward compatibility
+export { ACTIVITIES };
 
 // ===== Utility Functions =====
 
@@ -998,50 +35,100 @@ function clamp(value: number): number {
 /**
  * Determine relationship state based on Trust/Affection/Desire values
  *
- * Priority (checked in order, first match wins):
- * 1. Positive combined states (requires multiple high axes)
- * 2. Negative states
- * 3. Single-axis states
- * 4. Default to stranger
+ * Uses thresholds from config.ts for easy tuning.
+ * Priority order: positive combined > negative > mixed > neutral
+ *
+ * @param trust - Trust value (-100 to 100)
+ * @param affection - Affection value (-100 to 100)
+ * @param desire - Desire value (-100 to 100)
+ * @returns Calculated relationship state
  */
 export function calculateRelationshipState(
   trust: number,
   affection: number,
   desire: number
 ): RelationshipState {
-  // === Positive combined states (highest priority) ===
-  // Partner: high trust + affection + desire
-  if (trust >= 60 && affection >= 60 && desire >= 50) return 'partner';
+  const t = RELATIONSHIP_THRESHOLDS;
 
-  // Lover: high desire + affection but lower trust (passionate but less stable)
-  if (desire >= 60 && affection >= 40 && trust < 60) return 'lover';
+  // === Positive combined states (highest priority) ===
+
+  // Partner: high trust + affection + desire
+  if (
+    trust >= t.partner.trust &&
+    affection >= t.partner.affection &&
+    desire >= t.partner.desire
+  ) {
+    return 'partner';
+  }
+
+  // Lover: high desire + affection but lower trust
+  if (
+    desire >= t.lover.desire &&
+    affection >= t.lover.affection &&
+    trust < t.lover.trust
+  ) {
+    return 'lover';
+  }
 
   // Close friend: high affection + trust, low desire
-  if (affection >= 60 && trust >= 40 && desire < 30) return 'close_friend';
+  if (
+    affection >= t.close_friend.affection &&
+    trust >= t.close_friend.trust &&
+    desire < t.close_friend.desire
+  ) {
+    return 'close_friend';
+  }
 
   // Friend: moderate affection and trust
-  if (affection >= 30 && trust >= 20) return 'friend';
+  if (affection >= t.friend.affection && trust >= t.friend.trust) {
+    return 'friend';
+  }
 
-  // Crush: high desire but low affection (infatuation without connection)
-  if (desire >= 40 && affection < 30) return 'crush';
+  // Crush: high desire but low affection
+  if (desire >= t.crush.desire && affection < t.crush.affection) {
+    return 'crush';
+  }
 
   // === Negative states ===
+
   // Enemy: strongly negative trust AND affection
-  if (trust < -50 && affection < -50) return 'enemy';
+  if (trust < t.enemy.trust && affection < t.enemy.affection) {
+    return 'enemy';
+  }
 
   // Rival: negative trust OR affection
-  if (trust < -30 || affection < -30) return 'rival';
+  if (trust < t.rival.trust || affection < t.rival.affection) {
+    return 'rival';
+  }
 
   // === Mixed states ===
+
   // Complicated: mix of positive and negative across axes
-  const hasPositive = trust > 20 || affection > 20 || desire > 20;
-  const hasNegative = trust < -20 || affection < -20 || desire < -20;
-  if (hasPositive && hasNegative) return 'complicated';
+  const hasPositive =
+    trust > t.complicated.positiveThreshold ||
+    affection > t.complicated.positiveThreshold ||
+    desire > t.complicated.positiveThreshold;
+
+  const hasNegative =
+    trust < t.complicated.negativeThreshold ||
+    affection < t.complicated.negativeThreshold ||
+    desire < t.complicated.negativeThreshold;
+
+  if (hasPositive && hasNegative) {
+    return 'complicated';
+  }
 
   // === Neutral/early states ===
+
   // Acquaintance: any axis slightly positive, none negative
-  if ((trust >= 10 || affection >= 10 || desire >= 10) &&
-      trust > -10 && affection > -10 && desire > -10) {
+  if (
+    (trust >= t.acquaintance.positive ||
+      affection >= t.acquaintance.positive ||
+      desire >= t.acquaintance.positive) &&
+    trust > t.acquaintance.negative &&
+    affection > t.acquaintance.negative &&
+    desire > t.acquaintance.negative
+  ) {
     return 'acquaintance';
   }
 
@@ -1052,7 +139,13 @@ export function calculateRelationshipState(
 /**
  * Apply activity effects to relationship values
  *
- * @param desireCap Optional cap on desire (for sexual preference filtering)
+ * @param currentTrust - Current trust value
+ * @param currentAffection - Current affection value
+ * @param currentDesire - Current desire value
+ * @param trustDelta - Change in trust
+ * @param affectionDelta - Change in affection
+ * @param desireDelta - Change in desire
+ * @param desireCap - Optional cap on desire (for sexual preference filtering)
  * @returns New trust, affection, and desire values (clamped to -100/+100)
  */
 export function applyActivityEffects(
@@ -1066,7 +159,7 @@ export function applyActivityEffects(
 ): { trust: number; affection: number; desire: number } {
   let newDesire = clamp(currentDesire + desireDelta);
 
-  // Apply desire cap if specified
+  // Apply desire cap if specified (sexual preference)
   if (desireCap !== undefined && newDesire > desireCap) {
     newDesire = desireCap;
   }
@@ -1078,21 +171,31 @@ export function applyActivityEffects(
   };
 }
 
+// ===== Emotional State Functions =====
+
 /**
  * Get default emotional state for a relationship state
+ *
+ * Uses STATE_EMOTION_MAP from config.ts.
+ * Legacy system - will be replaced by emotion service in Task 7.
  */
-export function getEmotionalStateForRelationship(state: RelationshipState): EmotionalState {
+export function getEmotionalStateForRelationship(
+  state: RelationshipState
+): EmotionalState {
   return STATE_EMOTION_MAP[state];
 }
 
 /**
  * Get contextual emotional state after an activity
  *
- * Overrides default emotion based on activity deltas:
- * - Strong negative effects → angry
- * - Mild negative effects → sad
- * - Positive desire → flirty
- * - Positive affection/trust → happy
+ * Overrides default emotion based on activity deltas.
+ * Uses thresholds from config.ts for consistency.
+ *
+ * @param trustDelta - Change in trust from activity
+ * @param affectionDelta - Change in affection from activity
+ * @param desireDelta - Change in desire from activity
+ * @param newState - New relationship state after activity
+ * @returns Contextual emotional state
  */
 export function getContextualEmotionalState(
   trustDelta: number,
@@ -1100,13 +203,23 @@ export function getContextualEmotionalState(
   desireDelta: number,
   newState: RelationshipState
 ): EmotionalState {
+  const t = CONTEXTUAL_EMOTION_THRESHOLDS;
+
   // Strong negative effects → angry
-  if (trustDelta <= -15 || affectionDelta <= -15 || desireDelta <= -15) {
+  if (
+    trustDelta <= t.strongNegative ||
+    affectionDelta <= t.strongNegative ||
+    desireDelta <= t.strongNegative
+  ) {
     return 'angry';
   }
 
   // Mild negative effects → sad
-  if (trustDelta < 0 || affectionDelta < 0 || desireDelta < 0) {
+  if (
+    trustDelta < t.anyNegative ||
+    affectionDelta < t.anyNegative ||
+    desireDelta < t.anyNegative
+  ) {
     return 'sad';
   }
 
@@ -1124,10 +237,16 @@ export function getContextualEmotionalState(
   return getEmotionalStateForRelationship(newState);
 }
 
+// ===== State Management Functions =====
+
 /**
  * Update unlocked states list
  *
- * Adds new state if not already unlocked
+ * Adds new state if not already unlocked.
+ *
+ * @param currentUnlocked - Currently unlocked states
+ * @param newState - New state to potentially unlock
+ * @returns Updated unlocked states array
  */
 export function updateUnlockedStates(
   currentUnlocked: string[],
@@ -1140,55 +259,51 @@ export function updateUnlockedStates(
   return [...currentUnlocked, newState];
 }
 
+// ===== Activity Query Functions =====
+
 /**
- * Get all activities available at current relationship state
+ * Get all available activities
  *
- * FUTURE: Filter based on requirements (min friendship, min romance, etc.)
+ * Currently returns all activities.
+ * FUTURE (Task 6): Filter based on relationship requirements.
  */
 export function getAvailableActivities(): typeof ACTIVITIES {
-  // Phase 1: All activities always available (debug mode)
   return ACTIVITIES;
 }
 
 /**
  * Find activity by ID
+ *
+ * @param activityId - Activity identifier
+ * @returns Activity object or undefined if not found
  */
-export function getActivityById(activityId: string): typeof ACTIVITIES[0] | undefined {
+export function getActivityById(
+  activityId: string
+): typeof ACTIVITIES[0] | undefined {
   return ACTIVITIES.find((a) => a.id === activityId);
 }
 
-// ===== Relationship State Info =====
+// ===== Display Functions =====
 
 /**
  * Get human-readable description of relationship state
+ *
+ * @param state - Relationship state
+ * @returns Description string for UI display
  */
 export function getStateDescription(state: RelationshipState): string {
-  const descriptions: Record<RelationshipState, string> = {
-    // Positive combined states
-    'partner': 'Deeply committed romantic partner with trust and love',
-    'lover': 'Passionate romantic connection, still building trust',
-    'close_friend': 'Best friends with deep trust and affection',
-    'friend': 'Good friends who enjoy spending time together',
-    'crush': 'Strong attraction, but not yet emotionally connected',
-    'acquaintance': 'Friendly but still getting to know each other',
-    'stranger': 'Just met, neutral feelings',
-
-    // Mixed states
-    'complicated': 'Mixed feelings, complex relationship dynamics',
-
-    // Negative states
-    'rival': 'Tension and animosity, on bad terms',
-    'enemy': 'Strong mutual dislike, actively hostile'
-  };
-
-  return descriptions[state];
+  return STATE_DESCRIPTIONS[state];
 }
 
 /**
- * Get display name for relationship state (for UI)
+ * Get display name for relationship state (Title Case)
+ *
+ * Converts snake_case to Title Case for UI.
+ *
+ * @param state - Relationship state
+ * @returns Display name (e.g., "Close Friend")
  */
 export function getStateDisplayName(state: RelationshipState): string {
-  // Convert snake_case to Title Case
   return state
     .split('_')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))

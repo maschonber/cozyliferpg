@@ -33,6 +33,7 @@ function createTestPlayer(trackingOverrides: Partial<StatTracking> = {}): Player
     money: 100,
     lastSleptAt: '23:00',
     archetype: 'balanced',
+    sexualPreference: 'everyone',
     stats: getStartingStats('balanced'),
     tracking: {
       minEnergyToday: 50,
