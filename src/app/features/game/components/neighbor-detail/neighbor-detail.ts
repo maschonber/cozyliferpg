@@ -214,11 +214,12 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Get variant for activity button (positive/negative coloring)
    */
   getActivityVariant(activity: any): 'default' | 'positive' | 'negative' {
-    const friendship = activity.effects?.friendship || 0;
-    const romance = activity.effects?.romance || 0;
+    const trust = activity.effects?.trust || 0;
+    const affection = activity.effects?.affection || 0;
+    const desire = activity.effects?.desire || 0;
 
-    if (friendship > 0 || romance > 0) return 'positive';
-    if (friendship < 0 || romance < 0) return 'negative';
+    if (trust > 0 || affection > 0 || desire > 0) return 'positive';
+    if (trust < 0 || affection < 0 || desire < 0) return 'negative';
     return 'default';
   }
 }

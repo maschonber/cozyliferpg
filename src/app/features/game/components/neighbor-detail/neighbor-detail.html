@@ -96,31 +96,45 @@
         </mat-card-header>
 
         <mat-card-content>
-          <!-- Friendship -->
+          <!-- Trust -->
           <div class="relationship-metric">
             <div class="metric-header">
-              <mat-icon color="primary">favorite</mat-icon>
-              <span class="metric-label">Friendship</span>
-              <span class="metric-value">{{ selectedRelationship()!.friendship }}</span>
+              <mat-icon color="primary">shield</mat-icon>
+              <span class="metric-label">Trust</span>
+              <span class="metric-value">{{ selectedRelationship()!.trust }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.friendship)"
-              [color]="getProgressColor(selectedRelationship()!.friendship)">
+              [value]="getProgressValue(selectedRelationship()!.trust)"
+              [color]="getProgressColor(selectedRelationship()!.trust)">
             </mat-progress-bar>
           </div>
 
-          <!-- Romance -->
+          <!-- Affection -->
           <div class="relationship-metric">
             <div class="metric-header">
-              <mat-icon color="accent">whatshot</mat-icon>
-              <span class="metric-label">Romance</span>
-              <span class="metric-value">{{ selectedRelationship()!.romance }}</span>
+              <mat-icon color="primary">favorite</mat-icon>
+              <span class="metric-label">Affection</span>
+              <span class="metric-value">{{ selectedRelationship()!.affection }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.romance)"
-              [color]="getProgressColor(selectedRelationship()!.romance)">
+              [value]="getProgressValue(selectedRelationship()!.affection)"
+              [color]="getProgressColor(selectedRelationship()!.affection)">
+            </mat-progress-bar>
+          </div>
+
+          <!-- Desire -->
+          <div class="relationship-metric">
+            <div class="metric-header">
+              <mat-icon color="accent">whatshot</mat-icon>
+              <span class="metric-label">Desire</span>
+              <span class="metric-value">{{ selectedRelationship()!.desire }}</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="getProgressValue(selectedRelationship()!.desire)"
+              [color]="getProgressColor(selectedRelationship()!.desire)">
             </mat-progress-bar>
           </div>
 

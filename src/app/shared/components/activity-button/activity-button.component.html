@@ -57,18 +57,24 @@
     }
 
     <!-- Optional Effects (for social activities) -->
-    @if (effects && (effects.friendship || effects.romance)) {
+    @if (effects && (effects.trust || effects.affection || effects.desire)) {
       <div class="activity-effects">
-        @if (effects.friendship) {
-          <span [class.positive-effect]="effects.friendship > 0"
-                [class.negative-effect]="effects.friendship < 0">
-            Friendship {{ effects.friendship > 0 ? '+' : '' }}{{ effects.friendship }}
+        @if (effects.trust) {
+          <span [class.positive-effect]="effects.trust > 0"
+                [class.negative-effect]="effects.trust < 0">
+            Trust {{ effects.trust > 0 ? '+' : '' }}{{ effects.trust }}
           </span>
         }
-        @if (effects.romance) {
-          <span [class.positive-effect]="effects.romance > 0"
-                [class.negative-effect]="effects.romance < 0">
-            Romance {{ effects.romance > 0 ? '+' : '' }}{{ effects.romance }}
+        @if (effects.affection) {
+          <span [class.positive-effect]="effects.affection > 0"
+                [class.negative-effect]="effects.affection < 0">
+            Affection {{ effects.affection > 0 ? '+' : '' }}{{ effects.affection }}
+          </span>
+        }
+        @if (effects.desire) {
+          <span [class.positive-effect]="effects.desire > 0"
+                [class.negative-effect]="effects.desire < 0">
+            Desire {{ effects.desire > 0 ? '+' : '' }}{{ effects.desire }}
           </span>
         }
       </div>
