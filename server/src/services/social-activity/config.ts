@@ -137,18 +137,21 @@ export const EMOTION_INTENSITY_MULTIPLIERS = {
  * Relationship effect scaling by outcome tier
  *
  * Scales the base relationship axis changes based on activity outcome.
+ * System is designed for volatility - mixed outcomes damage relationships,
+ * catastrophic outcomes cause significant harm.
  */
 export const OUTCOME_RELATIONSHIP_SCALING: Record<OutcomeTier, number> = {
   best: 1.5,         // Best outcome: 150% of base effect
   okay: 1.0,         // Okay outcome: 100% of base effect
-  mixed: 0.3,        // Mixed outcome: 30% of base effect
-  catastrophic: -0.5 // Catastrophic: reverse 50% of base effect (damages relationship)
+  mixed: -0.4,       // Mixed outcome: reverse 40% of base effect (damages relationship)
+  catastrophic: -1.2 // Catastrophic: reverse 120% of base effect (severe relationship damage)
 };
 
 /**
  * Emotion effect scaling by outcome tier
  *
  * Scales the base emotion changes based on activity outcome.
+ * More volatile system - okay outcomes are mixed, mixed/catastrophic are increasingly negative.
  */
 export const OUTCOME_EMOTION_SCALING: Record<OutcomeTier, Partial<EmotionValues>> = {
   best: {
@@ -165,32 +168,36 @@ export const OUTCOME_EMOTION_SCALING: Record<OutcomeTier, Partial<EmotionValues>
   },
 
   okay: {
-    // Mild positive emotion shifts
+    // Mixed emotions - some positive, some negative
     joy: 5,
-    affection: 3,
     calm: 3,
-    // Slightly reduce negative emotions
-    sadness: -3,
-    anger: -3,
-    anxiety: -3
+    // Slight negative emotions (things went okay but not great)
+    anxiety: 3,
+    sadness: 2
   },
 
   mixed: {
-    // No strong emotion change, slight anxiety
-    anxiety: 5,
-    sadness: 3
+    // Negative emotional response
+    anxiety: 10,
+    sadness: 8,
+    anger: 5,
+    // Reduce positive emotions
+    joy: -8,
+    affection: -5,
+    excitement: -5
   },
 
   catastrophic: {
-    // Strong negative emotion shifts
-    sadness: 15,
-    anger: 10,
-    anxiety: 15,
-    // Reduce positive emotions
-    joy: -15,
-    affection: -10,
-    excitement: -10,
-    romantic: -10
+    // Very strong negative emotion shifts
+    sadness: 20,
+    anger: 18,
+    anxiety: 20,
+    // Significantly reduce positive emotions
+    joy: -20,
+    affection: -15,
+    excitement: -15,
+    romantic: -15,
+    calm: -10
   }
 };
 

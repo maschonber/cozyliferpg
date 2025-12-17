@@ -395,20 +395,20 @@ describe('Social Activity Service - Outcome Effects', () => {
       expect(scaled.desire).toBe(8);
     });
 
-    it('should scale effects by 0.3x for mixed outcome', () => {
+    it('should reverse effects by -0.4x for mixed outcome', () => {
       const scaled = scaleRelationshipEffects(baseEffects, 'mixed');
 
-      expect(scaled.affection).toBe(3);   // 10 * 0.3
-      expect(scaled.trust).toBe(2);       // 5 * 0.3 = 1.5 → 2 (rounded)
-      expect(scaled.desire).toBe(2);      // 8 * 0.3 = 2.4 → 2 (rounded)
+      expect(scaled.affection).toBe(-4);  // 10 * -0.4
+      expect(scaled.trust).toBe(-2);      // 5 * -0.4 = -2
+      expect(scaled.desire).toBe(-3);     // 8 * -0.4 = -3.2 → -3 (rounded)
     });
 
-    it('should reverse effects by -0.5x for catastrophic outcome', () => {
+    it('should reverse effects by -1.2x for catastrophic outcome', () => {
       const scaled = scaleRelationshipEffects(baseEffects, 'catastrophic');
 
-      expect(scaled.affection).toBe(-5);  // 10 * -0.5
-      expect(scaled.trust).toBe(-2);      // 5 * -0.5 = -2.5 → -2 (rounded)
-      expect(scaled.desire).toBe(-4);     // 8 * -0.5
+      expect(scaled.affection).toBe(-12); // 10 * -1.2
+      expect(scaled.trust).toBe(-6);      // 5 * -1.2
+      expect(scaled.desire).toBe(-10);    // 8 * -1.2 = -9.6 → -10 (rounded)
     });
 
     it('should handle partial effects', () => {
@@ -457,9 +457,15 @@ describe('Social Activity Service - Outcome Effects', () => {
       const bestEffects = calculateEmotionEffects('have_coffee', 'best');
       const mixedEffects = calculateEmotionEffects('have_coffee', 'mixed');
 
-      // Best outcome should have stronger positive effects than mixed
-      if (bestEffects.joy && mixedEffects.joy) {
-        expect(bestEffects.joy).toBeGreaterThan(mixedEffects.joy);
+      // Best outcome should have positive effects
+      expect(bestEffects.joy).toBeGreaterThan(0);
+
+      // Mixed outcome should have negative effects
+      if (mixedEffects.anxiety) {
+        expect(mixedEffects.anxiety).toBeGreaterThan(0);
+      }
+      if (mixedEffects.sadness) {
+        expect(mixedEffects.sadness).toBeGreaterThan(0);
       }
     });
   });
@@ -609,9 +615,9 @@ describe('Social Activity Service - Integration', () => {
 
     expect(difficulty.finalDifficulty).toBeGreaterThan(30);  // Much harder
 
-    // Even best outcome should have reduced effects in this context
+    // Mixed outcome should damage the relationship
     const effects = getActivityEffects('flirt_playfully', { desire: 12 }, 'mixed');
 
-    expect(effects.relationshipEffects.desire).toBeLessThan(12);  // Scaled down for mixed
+    expect(effects.relationshipEffects.desire).toBeLessThan(0);  // Negative for mixed outcome
   });
 });
