@@ -6,12 +6,72 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { generateNPC } from '../services/npc-generator';
-import { NPC, ApiResponse } from '../../../shared/types';
+import { NPC, ApiResponse, NPCEmotionState, EmotionDisplay } from '../../../shared/types';
 import { randomUUID } from 'crypto';
 import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter } from '../services/player';
+import { decayEmotions, getDominantEmotions, getHoursSinceUpdate } from '../services/emotion';
 
 const router = Router();
+
+/**
+ * Helper: Build NPC from database row
+ * - Applies emotion decay
+ * - Filters traits based on showAllTraits flag
+ * - Returns NPC with dominant emotion included
+ */
+function buildNPCFromRow(row: any, showAllTraits: boolean = false, trustLevel: number = 0): NPC & { dominantEmotion?: EmotionDisplay } {
+  // Parse emotion state
+  let emotionState: NPCEmotionState = typeof row.emotion_state === 'string'
+    ? JSON.parse(row.emotion_state)
+    : row.emotion_state;
+
+  // Apply decay based on time since last update
+  const hoursSinceUpdate = getHoursSinceUpdate(emotionState.lastUpdated);
+  if (hoursSinceUpdate > 0) {
+    emotionState = decayEmotions(
+      emotionState,
+      hoursSinceUpdate,
+      trustLevel,
+      row.traits
+    );
+  }
+
+  // Get dominant emotion for display
+  const dominantEmotionData = getDominantEmotions(emotionState);
+
+  // Build NPC object
+  const npc: NPC & { dominantEmotion?: EmotionDisplay } = {
+    id: row.id,
+    name: row.name,
+    archetype: row.archetype,
+    // Filter traits: only show revealed traits unless showAllTraits is true
+    traits: showAllTraits ? row.traits : row.revealed_traits || [],
+    revealedTraits: row.revealed_traits || [],
+    gender: row.gender,
+    emotionState,
+    appearance: {
+      hairColor: row.hair_color,
+      hairStyle: row.hair_style,
+      eyeColor: row.eye_color,
+      faceDetails: row.face_details,
+      bodyType: row.body_type,
+      torsoSize: row.torso_size,
+      height: row.height,
+      skinTone: row.skin_tone,
+      upperTrace: row.upper_trace,
+      lowerTrace: row.lower_trace,
+      style: row.style,
+      bodyDetails: row.body_details
+    },
+    loras: row.loras,
+    currentLocation: row.current_location,
+    createdAt: row.created_at.toISOString(),
+    dominantEmotion: dominantEmotionData.primary
+  };
+
+  return npc;
+}
 
 /**
  * POST /api/npcs
@@ -128,43 +188,24 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
 /**
  * GET /api/npcs
  * Get all NPCs
+ *
+ * Task 7: Returns NPCs with:
+ * - Filtered traits (only revealed, unless ?showAllTraits=true)
+ * - Emotion decay applied
+ * - Dominant emotion included
  */
 router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
   const client = await pool.connect();
+
+  // Check for debug flag to show all traits
+  const showAllTraits = req.query.showAllTraits === 'true';
 
   try {
     const result = await client.query(
       `SELECT * FROM npcs ORDER BY created_at DESC`
     );
 
-    const npcs: NPC[] = result.rows.map((row) => ({
-      id: row.id,
-      name: row.name,
-      archetype: row.archetype,
-      traits: row.traits,
-      revealedTraits: row.revealed_traits || [],
-      gender: row.gender,
-      emotionState: typeof row.emotion_state === 'string'
-        ? JSON.parse(row.emotion_state)
-        : row.emotion_state,
-      currentLocation: row.current_location, // Phase 3
-      appearance: {
-        hairColor: row.hair_color,
-        hairStyle: row.hair_style,
-        eyeColor: row.eye_color,
-        faceDetails: row.face_details,
-        bodyType: row.body_type,
-        torsoSize: row.torso_size,
-        height: row.height,
-        skinTone: row.skin_tone,
-        upperTrace: row.upper_trace,
-        lowerTrace: row.lower_trace,
-        style: row.style,
-        bodyDetails: row.body_details
-      },
-      loras: row.loras,
-      createdAt: row.created_at.toISOString()
-    }));
+    const npcs = result.rows.map((row) => buildNPCFromRow(row, showAllTraits, 0));
 
     res.json({
       success: true,
@@ -184,10 +225,19 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
 /**
  * GET /api/npcs/:id
  * Get NPC by ID
+ *
+ * Task 7: Returns NPC with:
+ * - Filtered traits (only revealed, unless ?showAllTraits=true)
+ * - Emotion decay applied
+ * - Dominant emotion included
+ * - Trust level from relationship if it exists
  */
 router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
   const { id } = req.params;
   const client = await pool.connect();
+
+  // Check for debug flag to show all traits
+  const showAllTraits = req.query.showAllTraits === 'true';
 
   try {
     const result = await client.query(
@@ -203,35 +253,20 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => 
       return;
     }
 
+    // Get trust level from relationship if it exists (for better emotion decay)
+    let trustLevel = 0;
+    if (req.user?.userId) {
+      const relResult = await client.query(
+        `SELECT trust FROM relationships WHERE player_id = $1 AND npc_id = $2`,
+        [req.user.userId, id]
+      );
+      if (relResult.rows.length > 0) {
+        trustLevel = relResult.rows[0].trust;
+      }
+    }
+
     const row = result.rows[0];
-    const npc: NPC = {
-      id: row.id,
-      name: row.name,
-      archetype: row.archetype,
-      traits: row.traits,
-      revealedTraits: row.revealed_traits || [],
-      gender: row.gender,
-      emotionState: typeof row.emotion_state === 'string'
-        ? JSON.parse(row.emotion_state)
-        : row.emotion_state,
-      appearance: {
-        hairColor: row.hair_color,
-        hairStyle: row.hair_style,
-        eyeColor: row.eye_color,
-        faceDetails: row.face_details,
-        bodyType: row.body_type,
-        torsoSize: row.torso_size,
-        height: row.height,
-        skinTone: row.skin_tone,
-        upperTrace: row.upper_trace,
-        lowerTrace: row.lower_trace,
-        style: row.style,
-        bodyDetails: row.body_details
-      },
-      loras: row.loras,
-      currentLocation: row.current_location,
-      createdAt: row.created_at.toISOString()
-    };
+    const npc = buildNPCFromRow(row, showAllTraits, trustLevel);
 
     res.json({
       success: true,
