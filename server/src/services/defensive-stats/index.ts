@@ -1,12 +1,17 @@
 /**
  * Defensive Stats Service (Phase 2.5.2)
- * Calculates Vitality, Ambition, and Empathy based on lifestyle patterns
+ *
+ * Calculates Vitality, Ambition, and Empathy based on lifestyle patterns.
+ * All thresholds and bonuses extracted to config.ts for easy tuning.
+ *
+ * Architecture: Pure calculation logic, configuration-driven values
  */
 
 import { Pool } from 'pg';
 import { PlayerCharacter, PlayerActivity, StatTracking, StatName, StatChangeComponent } from '../../../../shared/types';
 import { getActivitiesForDay } from '../activity-history';
 import { getCurrentStat } from '../stat';
+import { BEDTIME_HOURS, VITALITY_CONFIG, AMBITION_CONFIG, EMPATHY_CONFIG } from './config';
 
 // ===== Helper Functions =====
 
@@ -23,8 +28,7 @@ function parseTimeToHours(time: string): number {
  */
 function sleptBeforeMidnight(bedtime: string): boolean {
   const hours = parseTimeToHours(bedtime);
-  // Must be at or after 8pm (20:00) and before midnight (24:00)
-  return hours >= 20 && hours < 24;
+  return hours >= BEDTIME_HOURS.earlyBedMin && hours < BEDTIME_HOURS.earlyBedMax;
 }
 
 /**
@@ -32,8 +36,7 @@ function sleptBeforeMidnight(bedtime: string): boolean {
  */
 function sleptAfter2AM(bedtime: string): boolean {
   const hours = parseTimeToHours(bedtime);
-  // 2 AM or 3 AM (early morning)
-  return hours >= 2 && hours < 6;
+  return hours >= BEDTIME_HOURS.lateNightMin && hours < BEDTIME_HOURS.lateNightMax;
 }
 
 /**
@@ -67,7 +70,9 @@ function getHighestRelevantStat(
 
 /**
  * Calculate Vitality change based on sustainable living patterns
- * Rewards balanced energy management and healthy habits
+ *
+ * Rewards balanced energy management and healthy habits.
+ * Uses VITALITY_CONFIG for all thresholds and values.
  */
 export async function calculateVitalityChange(
   player: PlayerCharacter,
@@ -76,22 +81,24 @@ export async function calculateVitalityChange(
   let change = 0;
   const tracking = player.tracking;
   const components: StatChangeComponent[] = [];
+  const cfg = VITALITY_CONFIG;
 
-  // Positive factors (5x multiplier for defensive stat growth)
-  if (tracking.minEnergyToday >= 30) {
-    const value = 2.5;
+  // === Positive factors ===
+
+  if (tracking.minEnergyToday >= cfg.bonuses.minEnergy.threshold) {
+    const value = cfg.bonuses.minEnergy.value;
     change += value;
     components.push({
       source: 'vitality_min_energy',
       category: 'Defensive Stats (Vitality)',
-      description: 'Maintained energy above 30',
+      description: `Maintained energy above ${cfg.bonuses.minEnergy.threshold}`,
       value,
       details: `Min energy: ${tracking.minEnergyToday}`
     });
   }
 
   if (sleptBeforeMidnight(bedtime)) {
-    const value = 1.5;
+    const value = cfg.bonuses.sleepSchedule.value;
     change += value;
     components.push({
       source: 'vitality_sleep_schedule',
@@ -102,20 +109,21 @@ export async function calculateVitalityChange(
     });
   }
 
-  if (tracking.endingEnergyToday >= 20 && tracking.endingEnergyToday <= 50) {
-    const value = 1.5;
+  if (tracking.endingEnergyToday >= cfg.bonuses.energyBalance.min &&
+      tracking.endingEnergyToday <= cfg.bonuses.energyBalance.max) {
+    const value = cfg.bonuses.energyBalance.value;
     change += value;
     components.push({
       source: 'vitality_energy_balance',
       category: 'Defensive Stats (Vitality)',
       description: 'Balanced energy usage',
       value,
-      details: `Ending energy: ${tracking.endingEnergyToday} (optimal: 20-50)`
+      details: `Ending energy: ${tracking.endingEnergyToday} (optimal: ${cfg.bonuses.energyBalance.min}-${cfg.bonuses.energyBalance.max})`
     });
   }
 
   if (!tracking.hadCatastrophicFailureToday) {
-    const value = 1.0;
+    const value = cfg.bonuses.noCatastrophe.value;
     change += value;
     components.push({
       source: 'vitality_no_catastrophe',
@@ -126,10 +134,9 @@ export async function calculateVitalityChange(
   }
 
   // Rest day after work bonus
-  // Give bonus on first rest day after working (restStreak = 1 and workStreak = 0)
   const isFirstRestDayAfterWork = tracking.restStreak === 1 && tracking.workStreak === 0;
   if (isFirstRestDayAfterWork) {
-    const value = 2.0;
+    const value = cfg.bonuses.restRecovery.value;
     change += value;
     components.push({
       source: 'vitality_rest_recovery',
@@ -140,9 +147,11 @@ export async function calculateVitalityChange(
     });
   }
 
-  // Negative factors (5x multiplier with progressive penalties)
+  // === Negative factors ===
+
   if (tracking.minEnergyToday <= 0) {
-    const penalty = -2.5 * (1 + tracking.burnoutStreak * 0.2);
+    const penalty = cfg.penalties.burnout.base *
+                    (1 + tracking.burnoutStreak * cfg.penalties.burnout.streakMultiplier);
     change += penalty;
     components.push({
       source: 'vitality_burnout',
@@ -156,7 +165,8 @@ export async function calculateVitalityChange(
   }
 
   if (sleptAfter2AM(bedtime)) {
-    const penalty = -2.5 * (1 + tracking.lateNightStreak * 0.2);
+    const penalty = cfg.penalties.lateNight.base *
+                    (1 + tracking.lateNightStreak * cfg.penalties.lateNight.streakMultiplier);
     change += penalty;
     components.push({
       source: 'vitality_late_night',
@@ -169,21 +179,21 @@ export async function calculateVitalityChange(
     });
   }
 
-  if (tracking.endingEnergyToday > 50) {
-    const value = -1.5;
+  if (tracking.endingEnergyToday > cfg.penalties.wastedEnergy.threshold) {
+    const value = cfg.penalties.wastedEnergy.value;
     change += value;
     components.push({
       source: 'vitality_wasted_energy',
       category: 'Defensive Stats (Vitality)',
       description: 'Ended day with excess energy',
       value,
-      details: `Energy: ${tracking.endingEnergyToday} (optimal: 20-50)`
+      details: `Energy: ${tracking.endingEnergyToday} (optimal: ${cfg.bonuses.energyBalance.min}-${cfg.bonuses.energyBalance.max})`
     });
   }
 
   // Consecutive work days without rest
-  if (tracking.workStreak >= 3) {
-    const penalty = -1.5 * (tracking.workStreak - 2);
+  if (tracking.workStreak >= cfg.penalties.overwork.threshold) {
+    const penalty = cfg.penalties.overwork.base * (tracking.workStreak - 2);
     change += penalty;
     components.push({
       source: 'vitality_overwork',
@@ -195,8 +205,8 @@ export async function calculateVitalityChange(
   }
 
   // Consecutive rest days (slacking)
-  if (tracking.restStreak >= 3) {
-    const penalty = -1.5 * (tracking.restStreak - 2);
+  if (tracking.restStreak >= cfg.penalties.slacking.threshold) {
+    const penalty = cfg.penalties.slacking.base * (tracking.restStreak - 2);
     change += penalty;
     components.push({
       source: 'vitality_slacking',
@@ -214,7 +224,9 @@ export async function calculateVitalityChange(
 
 /**
  * Calculate Ambition change based on pushing limits and work ethic
- * Rewards consistent effort and challenging yourself
+ *
+ * Rewards consistent effort and challenging yourself.
+ * Uses AMBITION_CONFIG for all thresholds and values.
  */
 export async function calculateAmbitionChange(
   pool: Pool,
@@ -223,13 +235,15 @@ export async function calculateAmbitionChange(
   let change = 0;
   const tracking = player.tracking;
   const components: StatChangeComponent[] = [];
+  const cfg = AMBITION_CONFIG;
 
   // Get today's activities
   const activities = await getActivitiesForDay(pool, player.id, player.currentDay);
 
-  // Positive factors - Work consistency (5x multiplier for defensive stat growth)
+  // === Positive factors ===
+
   if (tracking.workedToday) {
-    const value = 2.0;
+    const value = cfg.bonuses.workedToday.value;
     change += value;
     components.push({
       source: 'ambition_worked_today',
@@ -239,8 +253,8 @@ export async function calculateAmbitionChange(
     });
   }
 
-  if (tracking.workStreak >= 2) {
-    const value = 1.5;
+  if (tracking.workStreak >= cfg.bonuses.workStreak.threshold) {
+    const value = cfg.bonuses.workStreak.value;
     change += value;
     components.push({
       source: 'ambition_work_streak',
@@ -251,8 +265,8 @@ export async function calculateAmbitionChange(
     });
   }
 
-  if (tracking.workStreak >= 5) {
-    const value = 2.5;
+  if (tracking.workStreak >= cfg.bonuses.longWorkStreak.threshold) {
+    const value = cfg.bonuses.longWorkStreak.value;
     change += value;
     components.push({
       source: 'ambition_long_work_streak',
@@ -271,53 +285,56 @@ export async function calculateAmbitionChange(
     let hardActivityCount = 0;
 
     for (const activity of activities) {
-      // Check if activity was significantly above comfort level (20+ above stat)
-      if (activity.difficulty && activity.difficulty >= relevantStatValue + 20) {
+      // Check if activity was significantly above comfort level
+      if (activity.difficulty &&
+          activity.difficulty >= relevantStatValue + cfg.bonuses.pushedLimits.comfortGap) {
         pushedSelfCount++;
       }
 
       // Attempted hard activity (absolute threshold)
-      if (activity.difficulty && activity.difficulty >= 50) {
+      if (activity.difficulty &&
+          activity.difficulty >= cfg.bonuses.hardActivities.difficultyThreshold) {
         hardActivityCount++;
       }
     }
 
-    // Cap challenging activities to max 3 per day
+    // Cap challenging activities
     if (pushedSelfCount > 0) {
-      const cappedCount = Math.min(pushedSelfCount, 3);
-      const value = 2.0 * cappedCount;
+      const cappedCount = Math.min(pushedSelfCount, cfg.bonuses.pushedLimits.maxActivitiesPerDay);
+      const value = cfg.bonuses.pushedLimits.valuePerActivity * cappedCount;
       change += value;
       components.push({
         source: 'ambition_pushed_limits',
         category: 'Defensive Stats (Ambition)',
         description: 'Pushed beyond comfort level',
         value,
-        details: pushedSelfCount > 3
+        details: pushedSelfCount > cfg.bonuses.pushedLimits.maxActivitiesPerDay
           ? `${cappedCount} challenging ${cappedCount === 1 ? 'activity' : 'activities'} (capped from ${pushedSelfCount})`
           : `${cappedCount} challenging ${cappedCount === 1 ? 'activity' : 'activities'}`
       });
     }
 
-    // Cap hard activities to max 3 per day
+    // Cap hard activities
     if (hardActivityCount > 0) {
-      const cappedCount = Math.min(hardActivityCount, 3);
-      const value = 1.0 * cappedCount;
+      const cappedCount = Math.min(hardActivityCount, cfg.bonuses.hardActivities.maxActivitiesPerDay);
+      const value = cfg.bonuses.hardActivities.valuePerActivity * cappedCount;
       change += value;
       components.push({
         source: 'ambition_hard_activities',
         category: 'Defensive Stats (Ambition)',
         description: 'Attempted hard activities',
         value,
-        details: hardActivityCount > 3
-          ? `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥50 (capped from ${hardActivityCount})`
-          : `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥50`
+        details: hardActivityCount > cfg.bonuses.hardActivities.maxActivitiesPerDay
+          ? `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥${cfg.bonuses.hardActivities.difficultyThreshold} (capped from ${hardActivityCount})`
+          : `${cappedCount} ${cappedCount === 1 ? 'activity' : 'activities'} with difficulty ≥${cfg.bonuses.hardActivities.difficultyThreshold}`
       });
     }
   }
 
-  // Negative factors (5x multiplier with aggressive scaling)
+  // === Negative factors ===
+
   if (!tracking.workedToday) {
-    const value = -1.0;
+    const value = cfg.penalties.noWork.value;
     change += value;
     components.push({
       source: 'ambition_no_work',
@@ -328,8 +345,8 @@ export async function calculateAmbitionChange(
   }
 
   const noWorkStreak = tracking.restStreak;
-  if (noWorkStreak >= 2) {
-    const penalty = -1.5 * noWorkStreak;
+  if (noWorkStreak >= cfg.penalties.restStreak.threshold) {
+    const penalty = cfg.penalties.restStreak.base * noWorkStreak;
     change += penalty;
     components.push({
       source: 'ambition_rest_streak',
@@ -342,13 +359,16 @@ export async function calculateAmbitionChange(
 
   // Check if all activities were easy
   if (highestStat && activities.length > 0) {
-    const easyThreshold = Math.max(20, highestStat.value - 20);
+    const easyThreshold = Math.max(
+      cfg.penalties.coasting.minDifficulty,
+      highestStat.value + cfg.penalties.coasting.comfortGap
+    );
     const allEasy = activities.every(a =>
       !a.difficulty || a.difficulty < easyThreshold
     );
 
     if (allEasy) {
-      const value = -1.5;
+      const value = cfg.penalties.coasting.value;
       change += value;
       components.push({
         source: 'ambition_coasting',
@@ -367,7 +387,9 @@ export async function calculateAmbitionChange(
 
 /**
  * Calculate Empathy change based on genuine connections
- * Rewards authentic care for others and diverse relationships
+ *
+ * Rewards authentic care for others and diverse relationships.
+ * Uses EMPATHY_CONFIG for all thresholds and values.
  */
 export async function calculateEmpathyChange(
   pool: Pool,
@@ -376,24 +398,27 @@ export async function calculateEmpathyChange(
   let change = 0;
   const components: StatChangeComponent[] = [];
   const client = await pool.connect();
+  const cfg = EMPATHY_CONFIG;
 
   try {
     // Get today's activities
     const activities = await getActivitiesForDay(pool, player.id, player.currentDay);
 
-    // Daily triggers - meaningful conversation (>60 minutes) (5x multiplier)
+    // === Positive factors ===
+
+    // Daily trigger - meaningful conversation
     const hadMeaningfulConversation = activities.some(a =>
-      a.category === 'social' && a.timeCost >= 60
+      a.category === 'social' && a.timeCost >= cfg.bonuses.meaningfulConversation.minDuration
     );
     if (hadMeaningfulConversation) {
-      const value = 1.5;
+      const value = cfg.bonuses.meaningfulConversation.value;
       change += value;
       components.push({
         source: 'empathy_meaningful_conversation',
         category: 'Defensive Stats (Empathy)',
         description: 'Had meaningful conversation',
         value,
-        details: 'Social activity ≥60 minutes'
+        details: `Social activity ≥${cfg.bonuses.meaningfulConversation.minDuration} minutes`
       });
     }
 
@@ -405,10 +430,13 @@ export async function calculateEmpathyChange(
     const relationships = relationshipsResult.rows;
 
     // Define platonic friends and romantic interests
-    const platonicFriends = relationships.filter(
-      r => r.friendship > 30 && r.romance < 10
+    const platonicFriends = relationships.filter(r =>
+      r.friendship > cfg.thresholds.platonicFriend.minFriendship &&
+      r.romance < cfg.thresholds.platonicFriend.maxRomance
     );
-    const romanticInterests = relationships.filter(r => r.romance > 20);
+    const romanticInterests = relationships.filter(r =>
+      r.romance > cfg.thresholds.romanticInterest.minRomance
+    );
 
     // Get NPCs interacted with today
     const npcsInteractedToday = new Set(
@@ -420,7 +448,7 @@ export async function calculateEmpathyChange(
       r => npcsInteractedToday.has(r.npc_id)
     );
     if (interactedWithPlatonicFriend) {
-      const value = 2.5;
+      const value = cfg.bonuses.platonicInteraction.value;
       change += value;
       components.push({
         source: 'empathy_platonic_friend',
@@ -430,9 +458,9 @@ export async function calculateEmpathyChange(
       });
     }
 
-    // Pattern bonuses
-    if (platonicFriends.length >= 2) {
-      const value = 1.0;
+    // Pattern bonuses - friend circle size
+    if (platonicFriends.length >= cfg.bonuses.friendCircle.smallThreshold) {
+      const value = cfg.bonuses.friendCircle.smallValue;
       change += value;
       components.push({
         source: 'empathy_friend_circle',
@@ -442,8 +470,8 @@ export async function calculateEmpathyChange(
         details: `${platonicFriends.length} platonic friends`
       });
     }
-    if (platonicFriends.length >= 4) {
-      const value = 1.5;
+    if (platonicFriends.length >= cfg.bonuses.friendCircle.largeThreshold) {
+      const value = cfg.bonuses.friendCircle.largeValue;
       change += value;
       components.push({
         source: 'empathy_large_friend_circle',
@@ -454,9 +482,9 @@ export async function calculateEmpathyChange(
       });
     }
 
-    // Get interactions from last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    // Get interactions from last N days
+    const recentDaysAgo = new Date();
+    recentDaysAgo.setDate(recentDaysAgo.getDate() - cfg.timeWindows.recentInteractions);
 
     const recentInteractionsResult = await client.query(
       `
@@ -465,12 +493,12 @@ export async function calculateEmpathyChange(
       JOIN relationships r ON i.relationship_id = r.id
       WHERE r.player_id = $1 AND i.created_at >= $2
       `,
-      [player.userId, sevenDaysAgo]
+      [player.userId, recentDaysAgo]
     );
 
     const uniqueNpcsThisWeek = recentInteractionsResult.rows.length;
-    if (uniqueNpcsThisWeek >= 5) {
-      const value = 1.0;
+    if (uniqueNpcsThisWeek >= cfg.bonuses.diversity.threshold) {
+      const value = cfg.bonuses.diversity.value;
       change += value;
       components.push({
         source: 'empathy_diversity',
@@ -483,8 +511,8 @@ export async function calculateEmpathyChange(
 
     // Check if all friends were contacted this week
     const friendsResult = await client.query(
-      `SELECT npc_id FROM relationships WHERE player_id = $1 AND friendship >= 50`,
-      [player.userId]
+      `SELECT npc_id FROM relationships WHERE player_id = $1 AND friendship >= $2`,
+      [player.userId, cfg.thresholds.closeFriend.minFriendship]
     );
     const friends = friendsResult.rows;
 
@@ -493,7 +521,7 @@ export async function calculateEmpathyChange(
       const allFriendsContacted = friends.every(f => recentNpcIds.has(f.npc_id));
 
       if (allFriendsContacted) {
-        const value = 1.0;
+        const value = cfg.bonuses.maintainedFriendships.value;
         change += value;
         components.push({
           source: 'empathy_maintained_friendships',
@@ -505,14 +533,15 @@ export async function calculateEmpathyChange(
       }
     }
 
-    // Negative factors (5x multiplier)
+    // === Negative factors ===
+
     // Only interacted with romantic interests today
     if (npcsInteractedToday.size > 0) {
       const onlyRomanticToday = Array.from(npcsInteractedToday).every(npcId =>
         romanticInterests.some(r => r.npc_id === npcId)
       );
       if (onlyRomanticToday && romanticInterests.length > 0) {
-        const value = -2.0;
+        const value = cfg.penalties.onlyRomantic.value;
         change += value;
         components.push({
           source: 'empathy_only_romantic',
@@ -533,7 +562,7 @@ export async function calculateEmpathyChange(
       WHERE r.player_id = $1 AND i.created_at >= $2
       GROUP BY r.npc_id, r.friendship, r.romance
       `,
-      [player.userId, sevenDaysAgo]
+      [player.userId, recentDaysAgo]
     );
 
     let platonicInteractions = 0;
@@ -541,15 +570,17 @@ export async function calculateEmpathyChange(
 
     for (const row of weekInteractionsResult.rows) {
       const count = parseInt(row.interaction_count);
-      if (row.friendship > 30 && row.romance < 10) {
+      if (row.friendship > cfg.thresholds.platonicFriend.minFriendship &&
+          row.romance < cfg.thresholds.platonicFriend.maxRomance) {
         platonicInteractions += count;
-      } else if (row.romance > 20) {
+      } else if (row.romance > cfg.thresholds.romanticInterest.minRomance) {
         romanticInteractionsCount += count;
       }
     }
 
-    if (romanticInteractionsCount > 2 * platonicInteractions && platonicInteractions > 0) {
-      const value = -1.5;
+    if (romanticInteractionsCount > cfg.penalties.romanceImbalance.ratio * platonicInteractions &&
+        platonicInteractions > 0) {
+      const value = cfg.penalties.romanceImbalance.value;
       change += value;
       components.push({
         source: 'empathy_romance_imbalance',
@@ -560,16 +591,16 @@ export async function calculateEmpathyChange(
       });
     }
 
-    // Check for neglected friends (friendship > 40, not contacted in 7+ days)
+    // Check for neglected friends
     const allInteractionsResult = await client.query(
       `
       SELECT r.npc_id, MAX(i.created_at) as last_contact
       FROM relationships r
       LEFT JOIN interactions i ON i.relationship_id = r.id
-      WHERE r.player_id = $1 AND r.friendship > 40
+      WHERE r.player_id = $1 AND r.friendship > $2
       GROUP BY r.npc_id
       `,
-      [player.userId]
+      [player.userId, cfg.thresholds.neglectedFriend.minFriendship]
     );
 
     let neglectedCount = 0;
@@ -579,32 +610,29 @@ export async function calculateEmpathyChange(
       } else {
         const lastContact = new Date(row.last_contact);
         const daysSince = (Date.now() - lastContact.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSince > 7) {
+        if (daysSince > cfg.thresholds.neglectedFriend.daysSinceContact) {
           neglectedCount++;
         }
       }
     }
 
     if (neglectedCount > 0) {
-      const value = -1.5 * neglectedCount;
+      const value = cfg.penalties.neglectedFriend.valuePerFriend * neglectedCount;
       change += value;
       components.push({
         source: 'empathy_neglected_friends',
         category: 'Defensive Stats (Empathy)',
         description: 'Neglected friends',
         value,
-        details: `${neglectedCount} ${neglectedCount === 1 ? 'friend' : 'friends'} not contacted in 7+ days`
+        details: `${neglectedCount} ${neglectedCount === 1 ? 'friend' : 'friends'} not contacted in ${cfg.thresholds.neglectedFriend.daysSinceContact}+ days`
       });
     }
 
     // Was dismissive or rude today (negative social interaction)
-    // Only check social activities for negative empathy/confidence effects
     const hadNegativeInteraction = activities.some(a => {
-      // Only check social activities
       if (a.category !== 'social') return false;
 
       if (a.statEffects) {
-        // Check if empathy or confidence decreased (indicates rude/dismissive behavior)
         return (a.statEffects.empathy !== undefined && a.statEffects.empathy < 0) ||
                (a.statEffects.confidence !== undefined && a.statEffects.confidence < 0);
       }
@@ -612,7 +640,7 @@ export async function calculateEmpathyChange(
     });
 
     if (hadNegativeInteraction) {
-      const value = -2.5;
+      const value = cfg.penalties.negativeInteraction.value;
       change += value;
       components.push({
         source: 'empathy_negative_interaction',
@@ -633,7 +661,8 @@ export async function calculateEmpathyChange(
 
 /**
  * Calculate all defensive stat changes during sleep
- * Returns changes for Vitality, Ambition, and Empathy with breakdown components
+ *
+ * Returns changes for Vitality, Ambition, and Empathy with breakdown components.
  */
 export async function calculateDefensiveStatChanges(
   pool: Pool,

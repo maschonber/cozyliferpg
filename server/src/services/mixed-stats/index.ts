@@ -9,6 +9,7 @@ import { Pool } from 'pg';
 import { PlayerCharacter, PlayerActivity, StatChangeComponent, StatName } from '../../../../shared/types';
 import { getActivitiesForDay, getActivitiesForLastNDays } from '../activity-history';
 import { STAT_CATEGORIES } from '../stat';
+import { TIME_WINDOWS, POISE_CONFIG, CREATIVITY_CONFIG, WIT_CONFIG } from './config';
 
 // ===== Helper Functions =====
 
@@ -47,7 +48,7 @@ function isPhysicalActivity(activity: PlayerActivity): boolean {
  * Check if activity is a quick interaction (< 60 minutes)
  */
 function isQuickInteraction(activity: PlayerActivity): boolean {
-  return activity.category === 'social' && activity.timeCost < 60;
+  return activity.category === 'social' && activity.timeCost < WIT_CONFIG.thresholds.quickInteraction;
 }
 
 /**
@@ -101,19 +102,20 @@ export async function calculatePoiseChange(
 
   // Get activities for different time windows
   const todayActivities = await getActivitiesForDay(pool, player.id, player.currentDay);
-  const last3Days = await getActivitiesForLastNDays(pool, player.id, 3);
-  const last7Days = await getActivitiesForLastNDays(pool, player.id, 7);
+  const last3Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.shortTerm);
+  const last7Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.mediumTerm);
 
   // POSITIVE: Physical activity variety in last 3 days (3x multiplier, scaling bonus)
   const physicalActivities = last3Days.filter(isPhysicalActivity);
   const uniquePhysicalTypes = new Set(physicalActivities.map(a => a.activityId));
   const physicalVarietyCount = uniquePhysicalTypes.size;
 
-  if (physicalVarietyCount >= 2) {
+  const cfg = POISE_CONFIG.bonuses.physicalVariety;
+  if (physicalVarietyCount >= cfg.thresholds.min) {
     let value = 0;
-    if (physicalVarietyCount === 2) value = 0.5;
-    else if (physicalVarietyCount === 3) value = 1.0;
-    else value = 1.5; // 4+
+    if (physicalVarietyCount === cfg.thresholds.low) value = cfg.values.low;
+    else if (physicalVarietyCount === cfg.thresholds.medium) value = cfg.values.medium;
+    else value = cfg.values.high; // 4+
 
     change += value;
     components.push({
@@ -121,14 +123,14 @@ export async function calculatePoiseChange(
       category: 'Mixed Stats (Poise)',
       description: 'Physical activity variety',
       value,
-      details: `${physicalVarietyCount} different physical activities in last 3 days`
+      details: `${physicalVarietyCount} different physical activities in last ${cfg.lookbackDays} days`
     });
   }
 
   // POSITIVE: Best outcome achieved today (3x multiplier)
   const hadBestOutcomeToday = todayActivities.some(a => a.outcomeTier === 'best');
   if (hadBestOutcomeToday) {
-    const value = 1.5;
+    const value = POISE_CONFIG.bonuses.bestOutcome.value;
     change += value;
     components.push({
       source: 'poise_best_outcome',
@@ -144,35 +146,35 @@ export async function calculatePoiseChange(
     a => a.category === 'social' && a.outcomeTier === 'best'
   );
   if (socialBestOutcomeThisWeek) {
-    const value = 0.5;
+    const value = POISE_CONFIG.bonuses.socialBest.value;
     change += value;
     components.push({
       source: 'poise_social_best',
       category: 'Mixed Stats (Poise)',
       description: 'Social grace demonstrated',
       value,
-      details: 'Best outcome in social activity this week'
+      details: `Best outcome in social activity in last ${POISE_CONFIG.bonuses.socialBest.lookbackDays} days`
     });
   }
 
   // NEGATIVE: Only sedentary activities for 3+ days (3x multiplier)
   const hasPhysicalActivities = physicalActivities.length > 0;
   if (!hasPhysicalActivities && last3Days.length > 0) {
-    const value = -2.0;
+    const value = POISE_CONFIG.penalties.sedentary.value;
     change += value;
     components.push({
       source: 'poise_sedentary',
       category: 'Mixed Stats (Poise)',
       description: 'Body stagnation',
       value,
-      details: 'No physical activities in last 3 days'
+      details: `No physical activities in last ${POISE_CONFIG.penalties.sedentary.lookbackDays} days`
     });
   }
 
   // NEGATIVE: Napped 2+ times today (3x multiplier)
   const napCount = todayActivities.filter(a => a.tags?.includes('recovery') && a.activityName.includes('Nap')).length;
-  if (napCount >= 2) {
-    const value = -1.0;
+  if (napCount >= POISE_CONFIG.penalties.multipleNaps.threshold) {
+    const value = POISE_CONFIG.penalties.multipleNaps.value;
     change += value;
     components.push({
       source: 'poise_multiple_naps',
@@ -202,9 +204,9 @@ export async function calculateCreativityChange(
   // Get activities for different time windows
   const todayActivities = await getActivitiesForDay(pool, player.id, player.currentDay);
   const yesterdayActivities = await getActivitiesForDay(pool, player.id, player.currentDay - 1);
-  const last3Days = await getActivitiesForLastNDays(pool, player.id, 3);
-  const last7Days = await getActivitiesForLastNDays(pool, player.id, 7);
-  const last14Days = await getActivitiesForLastNDays(pool, player.id, 14);
+  const last3Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.shortTerm);
+  const last7Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.mediumTerm);
+  const last14Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.longTerm);
 
   // Filter for leisure activities only
   const todayLeisure = todayActivities.filter(isLeisureActivity);
@@ -218,7 +220,7 @@ export async function calculateCreativityChange(
 
   const hasNewActivityToday = todayLeisure.some(a => !yesterdayActivityIds.has(a.activityId));
   if (hasNewActivityToday && todayLeisure.length > 0) {
-    const value = 1.5;
+    const value = CREATIVITY_CONFIG.bonuses.dailyVariety.value;
     change += value;
     components.push({
       source: 'creativity_daily_variety',
@@ -232,13 +234,13 @@ export async function calculateCreativityChange(
   // POSITIVE: Tried activity not done in previous 7 days (3x multiplier)
   const last7to14Days = last14Days.filter(a => {
     const dayDiff = player.currentDay - a.dayNumber;
-    return dayDiff >= 7 && dayDiff < 14;
+    return dayDiff >= CREATIVITY_CONFIG.bonuses.novelty.lookbackDays && dayDiff < TIME_WINDOWS.longTerm;
   }).filter(isLeisureActivity);
   const oldActivityIds = new Set(last7to14Days.map(a => a.activityId));
 
   const triedNovelActivity = todayLeisure.some(a => !oldActivityIds.has(a.activityId));
   if (triedNovelActivity && todayLeisure.length > 0) {
-    const value = 1.5;
+    const value = CREATIVITY_CONFIG.bonuses.novelty.value;
     change += value;
     components.push({
       source: 'creativity_novelty',
@@ -255,8 +257,8 @@ export async function calculateCreativityChange(
       .map(getActivityCategory)
       .filter((c): c is 'physical' | 'mental' | 'social' => c !== null)
   );
-  if (categoriesThisWeek.size === 3) {
-    const value = 1.0;
+  if (categoriesThisWeek.size === CREATIVITY_CONFIG.bonuses.crossDomain.requiredCategories) {
+    const value = CREATIVITY_CONFIG.bonuses.crossDomain.value;
     change += value;
     components.push({
       source: 'creativity_cross_domain',
@@ -279,51 +281,46 @@ export async function calculateCreativityChange(
 
   const repeatedActivities = Array.from(day1Ids).filter(id => day2Ids.has(id) && day3Ids.has(id));
   if (repeatedActivities.length > 0) {
-    const value = -2.0;
+    const value = CREATIVITY_CONFIG.penalties.stuckInRut.value;
     change += value;
     components.push({
       source: 'creativity_stuck_in_rut',
       category: 'Mixed Stats (Creativity)',
       description: 'Stuck in rut',
       value,
-      details: `Same activity ${repeatedActivities.length > 1 ? 'activities' : 'activity'} 3 days in a row`
+      details: `Same activity ${repeatedActivities.length > 1 ? 'activities' : 'activity'} ${CREATIVITY_CONFIG.penalties.stuckInRut.lookbackDays} days in a row`
     });
   }
 
-  // NEGATIVE: Only 1-2 unique leisure activities all week (3x multiplier)
-  const uniqueLeisureIds = getUniqueActivityIds(last7DaysLeisure);
-  if (uniqueLeisureIds.size >= 1 && uniqueLeisureIds.size <= 2) {
-    const value = -1.5;
+  // NEGATIVE: No leisure activities today (3x multiplier)
+  if (todayLeisure.length === 0) {
+    const value = CREATIVITY_CONFIG.penalties.noLeisure.value;
     change += value;
     components.push({
-      source: 'creativity_narrow_routine',
+      source: 'creativity_no_leisure',
       category: 'Mixed Stats (Creativity)',
-      description: 'Narrow routine',
+      description: 'No leisure',
       value,
-      details: `Only ${uniqueLeisureIds.size} unique leisure ${uniqueLeisureIds.size === 1 ? 'activity' : 'activities'} this week`
+      details: 'No leisure activities today'
     });
   }
 
-  // NEGATIVE: Repeated the same activity multiple times today (3x multiplier)
-  // Count occurrences of each activity today
-  const activityCounts = new Map<string, number>();
-  for (const activity of todayActivities) {
-    const count = activityCounts.get(activity.activityId) || 0;
-    activityCounts.set(activity.activityId, count + 1);
-  }
+  // NEGATIVE: Repeated NPCs in social activities (3x multiplier)
+  // Check if any NPCs appear in all of the last 3 days
+  const day1NpcIds = new Set(day1.filter(a => a.npcId).map(a => a.npcId!));
+  const day2NpcIds = new Set(day2.filter(a => a.npcId).map(a => a.npcId!));
+  const day3NpcIds = new Set(day3.filter(a => a.npcId).map(a => a.npcId!));
 
-  // Find activities that were repeated (2+ times)
-  const repeatedToday = Array.from(activityCounts.entries()).filter(([_, count]) => count >= 2);
-  if (repeatedToday.length > 0) {
-    const value = -1.0 * repeatedToday.length;
+  const repeatedNpcs = Array.from(day1NpcIds).filter(id => day2NpcIds.has(id) && day3NpcIds.has(id));
+  if (repeatedNpcs.length > 0) {
+    const value = CREATIVITY_CONFIG.penalties.repeatedNpcs.valuePerNpc * repeatedNpcs.length;
     change += value;
-    const totalRepetitions = repeatedToday.reduce((sum, [_, count]) => sum + count, 0);
     components.push({
-      source: 'creativity_repetitive_day',
+      source: 'creativity_repeated_npcs',
       category: 'Mixed Stats (Creativity)',
-      description: 'Repetitive activities',
+      description: 'Social routine',
       value,
-      details: `${repeatedToday.length} ${repeatedToday.length === 1 ? 'activity' : 'activities'} repeated today (${totalRepetitions} total repetitions)`
+      details: `Talked to same ${repeatedNpcs.length} ${repeatedNpcs.length === 1 ? 'person' : 'people'} all 3 days`
     });
   }
 
@@ -345,8 +342,8 @@ export async function calculateWitChange(
 
   // Get activities for different time windows
   const todayActivities = await getActivitiesForDay(pool, player.id, player.currentDay);
-  const last3Days = await getActivitiesForLastNDays(pool, player.id, 3);
-  const last7Days = await getActivitiesForLastNDays(pool, player.id, 7);
+  const last3Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.shortTerm);
+  const last7Days = await getActivitiesForLastNDays(pool, player.id, TIME_WINDOWS.mediumTerm);
 
   // Filter for social activities
   const todaySocial = todayActivities.filter(isSocialActivity);
@@ -355,22 +352,22 @@ export async function calculateWitChange(
 
   // POSITIVE: 3+ different social partners in last 3 days (3x multiplier)
   const uniquePartners = getUniqueNpcIds(last3DaysSocial);
-  if (uniquePartners.size >= 3) {
-    const value = 1.5;
+  if (uniquePartners.size >= WIT_CONFIG.bonuses.conversationalRange.minPartners) {
+    const value = WIT_CONFIG.bonuses.conversationalRange.value;
     change += value;
     components.push({
       source: 'wit_conversational_range',
       category: 'Mixed Stats (Wit)',
       description: 'Conversational range',
       value,
-      details: `Interacted with ${uniquePartners.size} different people in last 3 days`
+      details: `Interacted with ${uniquePartners.size} different people in last ${WIT_CONFIG.bonuses.conversationalRange.lookbackDays} days`
     });
   }
 
   // POSITIVE: Had quick/playful interaction today (3x multiplier)
   const hadQuickInteraction = todaySocial.some(isQuickInteraction);
   if (hadQuickInteraction) {
-    const value = 1.0;
+    const value = WIT_CONFIG.bonuses.quickInteraction.value;
     change += value;
     components.push({
       source: 'wit_quick_interaction',
@@ -384,22 +381,22 @@ export async function calculateWitChange(
   // POSITIVE: Mixed interaction types in last 3 days (3x multiplier)
   // Check for variety: quick (< 60 min) and longer interactions
   const hasQuickInteractions = last3DaysSocial.some(isQuickInteraction);
-  const hasLongInteractions = last3DaysSocial.some(a => a.timeCost >= 60);
+  const hasLongInteractions = last3DaysSocial.some(a => a.timeCost >= WIT_CONFIG.thresholds.longInteraction);
   if (hasQuickInteractions && hasLongInteractions) {
-    const value = 1.0;
+    const value = WIT_CONFIG.bonuses.tonalAgility.value;
     change += value;
     components.push({
       source: 'wit_tonal_agility',
       category: 'Mixed Stats (Wit)',
       description: 'Tonal agility',
       value,
-      details: 'Mixed interaction types in last 3 days'
+      details: `Mixed interaction types in last ${WIT_CONFIG.bonuses.tonalAgility.lookbackDays} days`
     });
   }
 
   // NEGATIVE: No social interaction today (3x multiplier)
   if (todaySocial.length === 0) {
-    const value = -0.5;
+    const value = WIT_CONFIG.penalties.noPractice.value;
     change += value;
     components.push({
       source: 'wit_no_practice',
@@ -412,29 +409,29 @@ export async function calculateWitChange(
 
   // NEGATIVE: Only talked to 1 person in last 3 days (3x multiplier)
   if (uniquePartners.size === 1 && last3DaysSocial.length > 0) {
-    const value = -1.5;
+    const value = WIT_CONFIG.penalties.conversationalRut.value;
     change += value;
     components.push({
       source: 'wit_conversational_rut',
       category: 'Mixed Stats (Wit)',
       description: 'Conversational rut',
       value,
-      details: 'Only talked to 1 person in last 3 days'
+      details: `Only talked to 1 person in last ${WIT_CONFIG.penalties.conversationalRut.lookbackDays} days`
     });
   }
 
   // NEGATIVE: Only deep conversations, no quick/playful this week (3x multiplier)
   const hasOnlyLongInteractions = last7DaysSocial.length > 0 &&
-    allActivities(last7DaysSocial, a => a.timeCost >= 60);
+    allActivities(last7DaysSocial, a => a.timeCost >= WIT_CONFIG.thresholds.longInteraction);
   if (hasOnlyLongInteractions) {
-    const value = -1.0;
+    const value = WIT_CONFIG.penalties.noQuickThinking.value;
     change += value;
     components.push({
       source: 'wit_no_quick_thinking',
       category: 'Mixed Stats (Wit)',
       description: 'Lost quick-thinking edge',
       value,
-      details: 'Only deep conversations, no quick interactions this week'
+      details: `Only deep conversations, no quick interactions in last ${WIT_CONFIG.penalties.noQuickThinking.lookbackDays} days`
     });
   }
 
