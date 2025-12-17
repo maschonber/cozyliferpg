@@ -5,9 +5,22 @@
  * All activity data has been moved to activities.ts for better maintainability.
  *
  * Architecture: Configuration-driven, pure functions, clear separation of concerns
+ *
+ * Task 3: Relationship Axis System
+ * - Three-axis relationship model (Trust, Affection, Desire)
+ * - State derivation from axes
+ * - Difficulty modifiers based on relationship level
+ * - Repair difficulty scaling for negative relationships
+ * - Preference-based desire capping
  */
 
-import { RelationshipState, EmotionalState } from '../../../../shared/types';
+import {
+  RelationshipState,
+  EmotionalState,
+  RelationshipAxes,
+  SexualPreference,
+  Gender
+} from '../../../../shared/types';
 import { ACTIVITIES } from './activities';
 import {
   RELATIONSHIP_THRESHOLDS,
@@ -136,8 +149,56 @@ export function calculateRelationshipState(
   return 'stranger';
 }
 
+// ===== Relationship Axis Modification =====
+
+/**
+ * Apply relationship deltas to current axes
+ *
+ * Task 3 Requirement 1: Axis modification
+ * - Apply Trust, Affection, Desire changes
+ * - Respect desireCap for preference-limited relationships
+ * - Clamp to -100/+100
+ *
+ * @param current - Current relationship axes
+ * @param deltas - Changes to apply (partial - only specify changed axes)
+ * @param desireCap - Optional cap on desire value (for sexual preference filtering)
+ * @returns New relationship axes with deltas applied and clamped
+ *
+ * @example
+ * const newAxes = applyRelationshipDelta(
+ *   { trust: 30, affection: 40, desire: 20 },
+ *   { affection: 15, desire: 10 },
+ *   25  // Desire capped at 25 due to sexual preference
+ * );
+ * // Result: { trust: 30, affection: 55, desire: 25 }
+ */
+export function applyRelationshipDelta(
+  current: RelationshipAxes,
+  deltas: Partial<RelationshipAxes>,
+  desireCap?: number
+): RelationshipAxes {
+  // Apply deltas to each axis
+  const newTrust = clamp(current.trust + (deltas.trust ?? 0));
+  const newAffection = clamp(current.affection + (deltas.affection ?? 0));
+  let newDesire = clamp(current.desire + (deltas.desire ?? 0));
+
+  // Apply desire cap if specified (sexual preference)
+  if (desireCap !== undefined && newDesire > desireCap) {
+    newDesire = desireCap;
+  }
+
+  return {
+    trust: newTrust,
+    affection: newAffection,
+    desire: newDesire
+  };
+}
+
 /**
  * Apply activity effects to relationship values
+ *
+ * DEPRECATED: Use applyRelationshipDelta instead.
+ * Kept for backward compatibility with existing code.
  *
  * @param currentTrust - Current trust value
  * @param currentAffection - Current affection value
@@ -147,6 +208,7 @@ export function calculateRelationshipState(
  * @param desireDelta - Change in desire
  * @param desireCap - Optional cap on desire (for sexual preference filtering)
  * @returns New trust, affection, and desire values (clamped to -100/+100)
+ * @deprecated Use applyRelationshipDelta with RelationshipAxes instead
  */
 export function applyActivityEffects(
   currentTrust: number,
@@ -157,18 +219,142 @@ export function applyActivityEffects(
   desireDelta: number,
   desireCap?: number
 ): { trust: number; affection: number; desire: number } {
-  let newDesire = clamp(currentDesire + desireDelta);
+  return applyRelationshipDelta(
+    { trust: currentTrust, affection: currentAffection, desire: currentDesire },
+    { trust: trustDelta, affection: affectionDelta, desire: desireDelta },
+    desireCap
+  );
+}
 
-  // Apply desire cap if specified (sexual preference)
-  if (desireCap !== undefined && newDesire > desireCap) {
-    newDesire = desireCap;
+// ===== Difficulty and Repair Calculations =====
+
+/**
+ * Get difficulty modifier based on relationship state
+ *
+ * Task 3 Requirement 3: Difficulty modifier
+ * - Positive relationships make interactions easier (negative modifier)
+ * - Negative relationships make interactions harder (positive modifier)
+ * - Stranger/neutral relationships have no modifier
+ *
+ * @param axes - Current relationship axes
+ * @param state - Current relationship state
+ * @returns Difficulty modifier (-15 to +30)
+ *
+ * @example
+ * getRelationshipDifficultyModifier({ trust: 70, affection: 80, desire: 60 }, 'partner')
+ * // → -15 (much easier with a partner)
+ *
+ * getRelationshipDifficultyModifier({ trust: -60, affection: -60, desire: 0 }, 'enemy')
+ * // → +30 (much harder with an enemy)
+ */
+export function getRelationshipDifficultyModifier(
+  axes: RelationshipAxes,
+  state: RelationshipState
+): number {
+  // State-based modifiers (highest priority states first)
+  switch (state) {
+    // Positive combined states (easier interactions)
+    case 'partner':
+      return -15; // Deeply committed, very easy
+    case 'lover':
+      return -12; // Passionate connection, easier
+    case 'close_friend':
+      return -12; // Deep trust and affection, easier
+    case 'friend':
+      return -8; // Good friends, moderately easier
+    case 'crush':
+      return -5; // Attraction helps a bit
+
+    // Negative states (harder interactions)
+    case 'enemy':
+      return 30; // Actively hostile, very hard
+    case 'rival':
+      return 15; // Tension and animosity, harder
+
+    // Mixed/complex states
+    case 'complicated':
+      return 10; // Mixed feelings make things harder
+
+    // Neutral/early states
+    case 'acquaintance':
+      return -3; // Slightly positive, slightly easier
+    case 'stranger':
+      return 0; // Neutral, no modifier
+
+    default:
+      return 0;
+  }
+}
+
+/**
+ * Calculate repair difficulty for negative relationship values
+ *
+ * Task 3 Requirement 4: Repair difficulty scaling
+ * - Logarithmic scaling: repairing from -80 is proportionally harder than from -40
+ * - Used when attempting to repair damaged relationships
+ *
+ * @param currentValue - Current axis value (should be negative)
+ * @param baseDifficulty - Base difficulty of the repair activity (default: 50)
+ * @returns Scaled difficulty value
+ *
+ * @example
+ * getRepairDifficulty(-40, 50) // → 90 (50 * (1 + 40/50))
+ * getRepairDifficulty(-80, 50) // → 130 (50 * (1 + 80/50))
+ * getRepairDifficulty(20, 50)  // → 50 (no scaling for positive values)
+ */
+export function getRepairDifficulty(
+  currentValue: number,
+  baseDifficulty: number = 50
+): number {
+  // Only scale for negative values
+  if (currentValue >= 0) {
+    return baseDifficulty;
   }
 
-  return {
-    trust: clamp(currentTrust + trustDelta),
-    affection: clamp(currentAffection + affectionDelta),
-    desire: newDesire
-  };
+  // Formula: baseDifficulty * (1 + Math.abs(currentValue) / 50)
+  // This creates logarithmic scaling where deeper negatives are proportionally harder
+  const scalingFactor = 1 + Math.abs(currentValue) / 50;
+  return Math.round(baseDifficulty * scalingFactor);
+}
+
+/**
+ * Calculate desire cap based on player sexual preference and NPC gender
+ *
+ * Task 3 Requirement 5: Preference-based capping
+ * - Matching preference: no cap (100)
+ * - Non-matching: cap at 25
+ * - Future: family relationships cap at 0
+ *
+ * @param playerPreference - Player's sexual preference
+ * @param npcGender - NPC's gender
+ * @returns Maximum allowed desire value (0-100)
+ *
+ * @example
+ * calculateDesireCap('women', 'female')  // → 100 (matching)
+ * calculateDesireCap('women', 'male')    // → 25 (non-matching)
+ * calculateDesireCap('everyone', 'male') // → 100 (everyone matches)
+ * calculateDesireCap('no_one', 'female') // → 0 (aromantic/asexual)
+ */
+export function calculateDesireCap(
+  playerPreference: SexualPreference,
+  npcGender: Gender
+): number {
+  // No romantic/sexual interest
+  if (playerPreference === 'no_one') {
+    return 0;
+  }
+
+  // Interested in everyone
+  if (playerPreference === 'everyone') {
+    return 100;
+  }
+
+  // Check gender matching
+  const matches =
+    (playerPreference === 'women' && npcGender === 'female') ||
+    (playerPreference === 'men' && npcGender === 'male');
+
+  return matches ? 100 : 25;
 }
 
 // ===== Emotional State Functions =====
