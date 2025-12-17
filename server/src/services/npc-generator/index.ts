@@ -15,10 +15,19 @@ import {
   PersonalityTrait,
   RomanceTrait,
   InterestTrait,
-  NPCEmotionState
+  NPCEmotionState,
+  TimeSlot,
+  EmotionValues
 } from '../../../../shared/types';
 import { randomUUID } from 'crypto';
-import { initializeEmotions } from '../emotion';
+import { initializeEmotions, applyEmotionDelta } from '../emotion';
+import {
+  getArchetypeTraitWeights,
+  selectWeightedTraits,
+  selectRandomTraitsFromCategory,
+  removeConflictingTraits,
+  validateTraits
+} from '../trait';
 
 // ===== Generation Data Pools =====
 
@@ -266,18 +275,54 @@ function generateArchetype(): NPCArchetype {
 }
 
 /**
- * Generate random traits (2-3 personality + 1-2 romance + 2-3 interests)
+ * Generate random traits based on archetype (2-3 personality + 1-2 romance + 2-3 interests)
+ *
+ * Task 5 Implementation:
+ * - Uses archetype-based weighting for personality traits
+ * - Ensures no conflicting traits (e.g., not both 'outgoing' and 'reserved')
+ * - Romance and interest traits are random (not archetype-specific)
+ *
+ * @param archetype - NPC archetype (affects personality trait weights)
+ * @returns Array of traits with no conflicts
  */
-function generateTraits(): NPCTrait[] {
+function generateTraits(archetype: NPCArchetype): NPCTrait[] {
   const personalityCount = randomInt(2, 3);
   const romanceCount = randomInt(1, 2);
   const interestCount = randomInt(2, 3);
 
-  const personality = randomChoices(PERSONALITY_TRAITS, personalityCount);
-  const romance = randomChoices(ROMANCE_TRAITS, romanceCount);
-  const interests = randomChoices(INTEREST_TRAITS, interestCount);
+  // Get archetype-weighted personality traits
+  const archetypeWeights = getArchetypeTraitWeights(archetype);
 
-  return [...personality, ...romance, ...interests];
+  // Select personality traits using weighted selection
+  let personality: NPCTrait[];
+  if (Object.keys(archetypeWeights).length > 0) {
+    // Use weighted selection based on archetype
+    personality = selectWeightedTraits(archetypeWeights, personalityCount);
+  } else {
+    // Fallback to random if no weights defined (shouldn't happen)
+    personality = randomChoices(PERSONALITY_TRAITS, personalityCount);
+  }
+
+  // Select random romance traits (not archetype-specific)
+  const romance = randomChoices(ROMANCE_TRAITS, romanceCount) as NPCTrait[];
+
+  // Select random interest traits (not archetype-specific)
+  const interests = randomChoices(INTEREST_TRAITS, interestCount) as NPCTrait[];
+
+  // Combine all traits
+  const allTraits = [...personality, ...romance, ...interests];
+
+  // Remove any conflicting traits (safety check)
+  const validTraits = removeConflictingTraits(allTraits);
+
+  // Validate final result (should always pass, but check for safety)
+  const validation = validateTraits(validTraits);
+  if (!validation.valid) {
+    console.warn('Trait generation produced conflicts:', validation.conflicts);
+    // This shouldn't happen, but log it if it does
+  }
+
+  return validTraits;
 }
 
 /**
@@ -291,6 +336,172 @@ function generateEmotionState(traits: NPCTrait[]): NPCEmotionState {
   return initializeEmotions('temp_id', traits);
 }
 
+/**
+ * Initialize daily emotion state for an NPC based on time of day
+ *
+ * Task 5 Implementation:
+ * Creates varied starting emotions for daily NPC encounters based on:
+ * - Time of day (morning = calmer, evening = more varied)
+ * - NPC traits (affect baseline emotions)
+ * - Relationship level (optional - friends start happier)
+ *
+ * This should be called when:
+ * - A new day starts (reset NPC emotions)
+ * - First encounter with NPC on a given day
+ * - Loading saved NPC state for a new gameplay session
+ *
+ * @param npc - The NPC (or just traits if initializing)
+ * @param timeOfDay - Current time slot
+ * @param relationshipLevel - Optional relationship state (affects starting disposition)
+ * @returns New emotion state for the day
+ *
+ * @example
+ * // Morning encounter with a friend
+ * const emotions = initializeDailyEmotion(npc, 'morning', 'friend');
+ * // Result: Higher calm, positive emotions, lower anxiety
+ *
+ * // Evening encounter with a stranger
+ * const emotions = initializeDailyEmotion(npc, 'evening');
+ * // Result: More varied emotions, higher excitement potential
+ */
+export function initializeDailyEmotion(
+  npc: Pick<NPC, 'traits'> | NPCTrait[],
+  timeOfDay: TimeSlot,
+  relationshipLevel?: string
+): NPCEmotionState {
+  // Extract traits array
+  const traits = Array.isArray(npc) ? npc : npc.traits;
+
+  // Start with trait-based baseline emotions
+  const baseEmotions = initializeEmotions('temp_id', traits);
+
+  // Time-of-day modifiers
+  const timeModifiers: Partial<EmotionValues> = {};
+
+  switch (timeOfDay) {
+    case 'morning':
+      // Morning: calmer, more neutral, lower extremes
+      timeModifiers.calm = randomInt(5, 15);      // Boost calm
+      timeModifiers.joy = randomInt(-5, 10);      // Slight joy variance
+      timeModifiers.excitement = randomInt(-10, 0); // Lower excitement
+      timeModifiers.anxiety = randomInt(-5, 0);    // Lower anxiety
+      break;
+
+    case 'afternoon':
+      // Afternoon: moderate variance, generally balanced
+      timeModifiers.joy = randomInt(-5, 10);
+      timeModifiers.calm = randomInt(-5, 5);
+      timeModifiers.excitement = randomInt(-5, 10);
+      break;
+
+    case 'evening':
+      // Evening: more varied, higher excitement potential
+      timeModifiers.excitement = randomInt(0, 15); // Higher excitement
+      timeModifiers.joy = randomInt(-5, 15);       // More joy variance
+      timeModifiers.calm = randomInt(-10, 5);      // Lower calm
+      timeModifiers.romantic = randomInt(0, 10);   // Slight romantic boost
+      break;
+
+    case 'night':
+      // Night: calmer but can be more romantic/intimate
+      timeModifiers.calm = randomInt(0, 10);
+      timeModifiers.excitement = randomInt(-10, 5);
+      timeModifiers.romantic = randomInt(0, 15);   // Higher romantic potential
+      timeModifiers.anxiety = randomInt(-5, 10);   // Slight anxiety variance
+      break;
+  }
+
+  // Relationship-based modifiers
+  if (relationshipLevel) {
+    const relationshipModifiers: Partial<EmotionValues> = {};
+
+    switch (relationshipLevel) {
+      case 'partner':
+      case 'lover':
+        // Very positive, romantic
+        relationshipModifiers.joy = randomInt(10, 20);
+        relationshipModifiers.affection = randomInt(10, 20);
+        relationshipModifiers.romantic = randomInt(15, 25);
+        relationshipModifiers.anxiety = randomInt(-15, -5);
+        relationshipModifiers.sadness = randomInt(-10, -5);
+        break;
+
+      case 'close_friend':
+        // Very positive, comfortable
+        relationshipModifiers.joy = randomInt(10, 15);
+        relationshipModifiers.affection = randomInt(10, 15);
+        relationshipModifiers.calm = randomInt(5, 10);
+        relationshipModifiers.anxiety = randomInt(-10, -5);
+        break;
+
+      case 'friend':
+        // Positive, friendly
+        relationshipModifiers.joy = randomInt(5, 15);
+        relationshipModifiers.affection = randomInt(5, 10);
+        relationshipModifiers.anxiety = randomInt(-5, 0);
+        break;
+
+      case 'crush':
+        // Excited, nervous, romantic
+        relationshipModifiers.excitement = randomInt(10, 15);
+        relationshipModifiers.romantic = randomInt(10, 20);
+        relationshipModifiers.anxiety = randomInt(5, 15);
+        relationshipModifiers.joy = randomInt(5, 10);
+        break;
+
+      case 'acquaintance':
+        // Slightly positive
+        relationshipModifiers.joy = randomInt(0, 10);
+        relationshipModifiers.calm = randomInt(0, 5);
+        break;
+
+      case 'rival':
+        // Negative, competitive
+        relationshipModifiers.anger = randomInt(5, 15);
+        relationshipModifiers.anxiety = randomInt(5, 10);
+        relationshipModifiers.joy = randomInt(-10, -5);
+        break;
+
+      case 'enemy':
+        // Very negative
+        relationshipModifiers.anger = randomInt(15, 25);
+        relationshipModifiers.sadness = randomInt(5, 15);
+        relationshipModifiers.joy = randomInt(-15, -10);
+        relationshipModifiers.affection = randomInt(-20, -10);
+        break;
+
+      case 'complicated':
+        // Mixed emotions, high variance
+        relationshipModifiers.anxiety = randomInt(5, 15);
+        relationshipModifiers.joy = randomInt(-10, 10);
+        relationshipModifiers.romantic = randomInt(-5, 15);
+        break;
+
+      case 'stranger':
+      default:
+        // Neutral with slight variance
+        relationshipModifiers.anxiety = randomInt(0, 5);
+        relationshipModifiers.calm = randomInt(0, 5);
+        break;
+    }
+
+    // Apply relationship modifiers
+    Object.assign(timeModifiers, {
+      joy: (timeModifiers.joy ?? 0) + (relationshipModifiers.joy ?? 0),
+      affection: (timeModifiers.affection ?? 0) + (relationshipModifiers.affection ?? 0),
+      excitement: (timeModifiers.excitement ?? 0) + (relationshipModifiers.excitement ?? 0),
+      calm: (timeModifiers.calm ?? 0) + (relationshipModifiers.calm ?? 0),
+      sadness: (timeModifiers.sadness ?? 0) + (relationshipModifiers.sadness ?? 0),
+      anger: (timeModifiers.anger ?? 0) + (relationshipModifiers.anger ?? 0),
+      anxiety: (timeModifiers.anxiety ?? 0) + (relationshipModifiers.anxiety ?? 0),
+      romantic: (timeModifiers.romantic ?? 0) + (relationshipModifiers.romantic ?? 0),
+    });
+  }
+
+  // Apply all modifiers to base emotions
+  return applyEmotionDelta(baseEmotions, timeModifiers);
+}
+
 // ===== Main Generator =====
 
 /**
@@ -298,19 +509,24 @@ function generateEmotionState(traits: NPCTrait[]): NPCEmotionState {
  *
  * Note: currentLocation is set by the route based on player location (Phase 3)
  *
- * FUTURE: Replace this with rule-based or AI-powered generation
- * - Archetype should influence traits and appearance
- * - Traits should be coherent (not conflicting)
- * - Consider player's existing NPCs to ensure variety
+ * Task 5 Implementation:
+ * - Archetype influences personality trait selection (weighted probabilities)
+ * - Traits are validated for conflicts before assignment
+ * - Emotion state initialized based on traits
  */
 export function generateNPC(): Omit<NPC, 'id' | 'createdAt' | 'currentLocation'> {
-  // Generate gender first, then use it for name selection
+  // Generate archetype first (it influences trait selection)
+  const archetype = generateArchetype();
+
+  // Generate gender for name selection
   const gender = generateGender();
-  const traits = generateTraits();
+
+  // Generate traits based on archetype (with conflict detection)
+  const traits = generateTraits(archetype);
 
   return {
     name: generateName(gender),
-    archetype: generateArchetype(),
+    archetype,
     traits,
     revealedTraits: [],  // No traits revealed initially
     gender,
