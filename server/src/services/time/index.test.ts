@@ -194,6 +194,7 @@ describe('Time Service', () => {
       id: 'player1',
       userId: 'user1',
       archetype: 'balanced',
+      sexualPreference: 'everyone',
       currentEnergy: 50,
       maxEnergy: 100,
       money: 100,
