@@ -30,7 +30,8 @@ import {
 import {
   getTraitActivityBonus,
   getArchetypeBonus,
-  discoverTrait
+  discoverTrait,
+  getTraitCategory
 } from '../services/trait';
 import { rollOutcome } from '../services/outcome';
 import {
@@ -602,7 +603,27 @@ router.post(
         stateChanged,
         previousState,
         newState,
-        emotionalState: dominantEmotion.primary.label as any // Use new emotion display
+        emotionalState: dominantEmotion.primary.label as any,
+
+        // Enhanced response fields (Relationship Redesign)
+        discoveredTrait: discoveredTrait ? {
+          trait: discoveredTrait.trait as any,
+          isNew: discoveredTrait.isNew,
+          category: getTraitCategory(discoveredTrait.trait as any)
+        } : undefined,
+
+        outcome: {
+          tier: outcomeResult.tier,
+          description: getOutcomeDescription(outcomeResult.tier)
+        },
+
+        difficultyInfo: {
+          baseDifficulty: activity.difficulty || 50,
+          emotionModifier: difficultyCalc.emotionModifier,
+          relationshipModifier: difficultyCalc.relationshipModifier,
+          traitBonus: totalTraitBonus,
+          finalDifficulty: difficultyCalc.finalDifficulty
+        }
       });
     } catch (error) {
       await client.query('ROLLBACK');
@@ -635,6 +656,24 @@ function getDiscoveryMethod(activityId: string): string | null {
   };
 
   return discoveryMap[activityId] || 'conversation'; // Default to conversation
+}
+
+/**
+ * Helper: Get description for outcome tier
+ */
+function getOutcomeDescription(tier: string): string {
+  switch (tier) {
+    case 'best':
+      return 'Everything went perfectly!';
+    case 'okay':
+      return 'Things went well.';
+    case 'mixed':
+      return 'Some good, some not so good.';
+    case 'catastrophic':
+      return 'Things went wrong...';
+    default:
+      return 'Activity completed.';
+  }
 }
 
 export default router;

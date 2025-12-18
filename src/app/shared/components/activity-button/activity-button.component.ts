@@ -41,7 +41,7 @@ export class ActivityButtonComponent {
   @Input() disabled = false;
 
   // Input: Optional effects to display (for social activities)
-  @Input() effects?: { friendship?: number; romance?: number };
+  @Input() effects?: { trust?: number; affection?: number; desire?: number };
 
   // Input: Visual variant (for positive/negative coloring)
   @Input() variant: 'default' | 'positive' | 'negative' = 'default';

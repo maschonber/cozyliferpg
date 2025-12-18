@@ -64,6 +64,16 @@
           <mat-card-subtitle>{{ selectedNPC()!.archetype }}</mat-card-subtitle>
         </mat-card-header>
 
+        <!-- Current Emotion Display -->
+        @if (selectedNPC()?.dominantEmotion) {
+          <div class="emotion-display">
+            <mat-chip class="emotion-chip" [class]="'emotion-' + selectedNPC()!.dominantEmotion!.intensity">
+              <mat-icon>{{ getEmotionIcon(selectedNPC()!.dominantEmotion!.emotion) }}</mat-icon>
+              {{ selectedNPC()!.dominantEmotion!.label }}
+            </mat-chip>
+          </div>
+        }
+
         <mat-card-content>
           <!-- Appearance -->
           <div class="section">
@@ -75,13 +85,60 @@
           <mat-divider></mat-divider>
 
           <!-- Traits -->
-          <div class="section">
-            <h3>Personality</h3>
-            <div class="traits-container">
-              @for (trait of selectedNPC()!.traits; track trait) {
-                <mat-chip>{{ trait }}</mat-chip>
+          <div class="section traits-section">
+            <h3>Known Traits
+              @if (selectedNPC()!.revealedTraits.length > 0) {
+                <span class="trait-count">({{ selectedNPC()!.revealedTraits.length }})</span>
               }
-            </div>
+            </h3>
+
+            @if (selectedNPC()!.revealedTraits.length === 0) {
+              <p class="no-traits">No traits discovered yet. Spend time together to learn more!</p>
+            } @else {
+              <!-- Personality Traits -->
+              @if (getTraitsByCategory('personality').length > 0) {
+                <div class="trait-category">
+                  <h4><mat-icon>psychology</mat-icon> Personality</h4>
+                  <div class="traits-grid">
+                    @for (trait of getTraitsByCategory('personality'); track trait) {
+                      <mat-chip class="personality-trait">{{ formatTraitName(trait) }}</mat-chip>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Romance Traits -->
+              @if (getTraitsByCategory('romance').length > 0) {
+                <div class="trait-category">
+                  <h4><mat-icon>favorite</mat-icon> Romance Style</h4>
+                  <div class="traits-grid">
+                    @for (trait of getTraitsByCategory('romance'); track trait) {
+                      <mat-chip class="romance-trait">{{ formatTraitName(trait) }}</mat-chip>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Interest Traits -->
+              @if (getTraitsByCategory('interest').length > 0) {
+                <div class="trait-category">
+                  <h4><mat-icon>interests</mat-icon> Interests</h4>
+                  <div class="traits-grid">
+                    @for (trait of getTraitsByCategory('interest'); track trait) {
+                      <mat-chip class="interest-trait">{{ formatTraitName(trait) }}</mat-chip>
+                    }
+                  </div>
+                </div>
+              }
+            }
+
+            <!-- Hidden traits indicator -->
+            @if (hasHiddenTraits()) {
+              <div class="hidden-traits-hint">
+                <mat-icon>help_outline</mat-icon>
+                <span>More traits to discover through interactions</span>
+              </div>
+            }
           </div>
         </mat-card-content>
       </mat-card>
@@ -96,31 +153,45 @@
         </mat-card-header>
 
         <mat-card-content>
-          <!-- Friendship -->
+          <!-- Trust -->
           <div class="relationship-metric">
             <div class="metric-header">
-              <mat-icon color="primary">favorite</mat-icon>
-              <span class="metric-label">Friendship</span>
-              <span class="metric-value">{{ selectedRelationship()!.friendship }}</span>
+              <mat-icon color="primary">shield</mat-icon>
+              <span class="metric-label">Trust</span>
+              <span class="metric-value">{{ selectedRelationship()!.trust }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.friendship)"
-              [color]="getProgressColor(selectedRelationship()!.friendship)">
+              [value]="getProgressValue(selectedRelationship()!.trust)"
+              [color]="getProgressColor(selectedRelationship()!.trust)">
             </mat-progress-bar>
           </div>
 
-          <!-- Romance -->
+          <!-- Affection -->
           <div class="relationship-metric">
             <div class="metric-header">
-              <mat-icon color="accent">whatshot</mat-icon>
-              <span class="metric-label">Romance</span>
-              <span class="metric-value">{{ selectedRelationship()!.romance }}</span>
+              <mat-icon color="primary">favorite</mat-icon>
+              <span class="metric-label">Affection</span>
+              <span class="metric-value">{{ selectedRelationship()!.affection }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.romance)"
-              [color]="getProgressColor(selectedRelationship()!.romance)">
+              [value]="getProgressValue(selectedRelationship()!.affection)"
+              [color]="getProgressColor(selectedRelationship()!.affection)">
+            </mat-progress-bar>
+          </div>
+
+          <!-- Desire -->
+          <div class="relationship-metric">
+            <div class="metric-header">
+              <mat-icon color="accent">whatshot</mat-icon>
+              <span class="metric-label">Desire</span>
+              <span class="metric-value">{{ selectedRelationship()!.desire }}</span>
+            </div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="getProgressValue(selectedRelationship()!.desire)"
+              [color]="getProgressColor(selectedRelationship()!.desire)">
             </mat-progress-bar>
           </div>
 

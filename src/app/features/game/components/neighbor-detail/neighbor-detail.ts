@@ -148,6 +148,26 @@ export class NeighborDetail implements OnInit, OnDestroy {
     if (!npcId) return;
 
     this.facade.performActivity(npcId, activityId).subscribe({
+      next: (response) => {
+        // Show trait discovery notification
+        if (response.discoveredTrait?.isNew) {
+          const traitName = this.formatTraitName(response.discoveredTrait.trait);
+          const category = response.discoveredTrait.category;
+          console.log(`✨ Discovered new ${category} trait: ${traitName}!`);
+          // TODO: Replace with snackbar/toast notification system
+          alert(`✨ Discovered new ${category} trait: ${traitName}!`);
+        }
+
+        // Log outcome information for debugging
+        if (response.outcome) {
+          console.log(`Activity outcome: ${response.outcome.tier} - ${response.outcome.description}`);
+        }
+
+        // Log difficulty information for debugging
+        if (response.difficultyInfo) {
+          console.log('Difficulty breakdown:', response.difficultyInfo);
+        }
+      },
       error: (error) => {
         console.error('Failed to perform activity:', error);
       }
@@ -214,11 +234,73 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Get variant for activity button (positive/negative coloring)
    */
   getActivityVariant(activity: any): 'default' | 'positive' | 'negative' {
-    const friendship = activity.effects?.friendship || 0;
-    const romance = activity.effects?.romance || 0;
+    const trust = activity.effects?.trust || 0;
+    const affection = activity.effects?.affection || 0;
+    const desire = activity.effects?.desire || 0;
 
-    if (friendship > 0 || romance > 0) return 'positive';
-    if (friendship < 0 || romance < 0) return 'negative';
+    if (trust > 0 || affection > 0 || desire > 0) return 'positive';
+    if (trust < 0 || affection < 0 || desire < 0) return 'negative';
     return 'default';
+  }
+
+  /**
+   * Get icon for emotion type
+   */
+  getEmotionIcon(emotion: string): string {
+    const icons: Record<string, string> = {
+      joy: 'sentiment_very_satisfied',
+      affection: 'favorite',
+      excitement: 'star',
+      calm: 'spa',
+      sadness: 'sentiment_dissatisfied',
+      anger: 'mood_bad',
+      anxiety: 'psychology',
+      romantic: 'favorite_border'
+    };
+    return icons[emotion] || 'sentiment_neutral';
+  }
+
+  /**
+   * Format trait name for display
+   */
+  formatTraitName(trait: string): string {
+    return trait.split('_').map(word =>
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(' ');
+  }
+
+  /**
+   * Get traits by category
+   */
+  getTraitsByCategory(category: 'personality' | 'romance' | 'interest'): string[] {
+    const npc = this.selectedNPC();
+    if (!npc) return [];
+
+    // Category mappings based on trait definitions
+    const categoryMap = {
+      personality: ['outgoing', 'reserved', 'logical', 'creative', 'intuitive',
+                    'adventurous', 'cautious', 'spontaneous', 'optimistic',
+                    'melancholic', 'passionate', 'stoic', 'empathetic',
+                    'independent', 'nurturing', 'competitive'],
+      romance: ['flirtatious', 'romantic', 'physical', 'intellectual',
+                'slow_burn', 'intense', 'commitment_seeking', 'free_spirit'],
+      interest: ['coffee_lover', 'fitness_enthusiast', 'music_fan',
+                 'art_appreciator', 'foodie', 'reader', 'gamer', 'nature_lover']
+    };
+
+    return npc.revealedTraits.filter(trait =>
+      categoryMap[category].includes(trait as string)
+    );
+  }
+
+  /**
+   * Check if NPC has hidden traits
+   */
+  hasHiddenTraits(): boolean {
+    const npc = this.selectedNPC();
+    if (!npc) return false;
+    // If there are few revealed traits, hint that more exist
+    // NPCs typically have 5-8 traits total
+    return npc.revealedTraits.length < 7;
   }
 }

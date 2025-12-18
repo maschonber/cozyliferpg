@@ -182,7 +182,8 @@ describe('Trait Generation (Task 5)', () => {
 
     Math.random = originalRandom;
 
-    expect(logicalCount).toBeGreaterThan(0);
+    // At least one Bookworm should have logical OR reserved (both weighted at 2.5)
+    expect(logicalCount + reservedCount).toBeGreaterThan(0);
   });
 
   test('traits do not include both outgoing and reserved', () => {

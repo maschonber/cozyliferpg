@@ -457,16 +457,16 @@ export function initializeDailyEmotion(
 
       case 'rival':
         // Negative, competitive
-        relationshipModifiers.anger = randomInt(5, 15);
+        relationshipModifiers.anger = randomInt(6, 15);
         relationshipModifiers.anxiety = randomInt(5, 10);
         relationshipModifiers.joy = randomInt(-10, -5);
         break;
 
       case 'enemy':
         // Very negative
-        relationshipModifiers.anger = randomInt(15, 25);
+        relationshipModifiers.anger = randomInt(16, 26);
         relationshipModifiers.sadness = randomInt(5, 15);
-        relationshipModifiers.joy = randomInt(-15, -10);
+        relationshipModifiers.joy = randomInt(-25, -15);
         relationshipModifiers.affection = randomInt(-20, -10);
         break;
 

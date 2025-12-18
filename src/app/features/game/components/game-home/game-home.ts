@@ -168,10 +168,11 @@ export class GameHome {
    * Get color for relationship state
    */
   getStateColor(relationship: Relationship): string {
-    // Determine color based on friendship and romance values
-    if (relationship.friendship >= 50 || relationship.romance >= 50) {
+    // Determine color based on relationship axes (trust, affection, desire)
+    const avgPositive = (relationship.trust + relationship.affection + relationship.desire) / 3;
+    if (avgPositive >= 30) {
       return 'positive';
-    } else if (relationship.friendship <= -20 || relationship.romance <= -20) {
+    } else if (avgPositive <= -20) {
       return 'negative';
     }
     return 'neutral';
