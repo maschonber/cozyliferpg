@@ -796,6 +796,9 @@ export const PLAYER_NPC_ARCHETYPE_AFFINITY: Record<PlayerArchetype, Partial<Reco
     Musician: 3,
     Scientist: 3,
   },
+  // Debug archetypes have no special affinities (all default to 0)
+  debug_advanced: {},
+  debug_master: {},
 };
 
 // ===== Discovery Methods =====
