@@ -40,7 +40,7 @@ export class GameHome {
   private router = inject(Router);
   private dialog = inject(MatDialog);
 
-  // Track whether archetype selection has been shown
+  // Track whether archetype selection has been shown for the current player state
   private archetypeShown = signal(false);
 
   // Expose Math for template
@@ -59,15 +59,39 @@ export class GameHome {
   locations = this.facade.locations;
   relationships = this.facade.relationships;
 
+  // Computed signal to check if player is in "new" state (needs archetype selection)
+  private isPlayerNew = computed(() => {
+    const player = this.player();
+    if (!player) return false;
+
+    return (
+      player.currentDay === 1 &&
+      player.archetype === 'balanced' &&
+      player.stats.baseFitness === 15 &&
+      player.stats.baseKnowledge === 15
+    );
+  });
+
   constructor() {
-    // Watch for player loading to show archetype selection for new players
+    // Watch for player state changes to show archetype selection for new players
+    // Handles both initial load and player resets
     effect(() => {
       const player = this.player();
       const loading = this.facade.playerLoading();
+      const isNew = this.isPlayerNew();
 
-      // Only show archetype selection once, when player is loaded and not loading
-      if (!loading && player && !this.archetypeShown()) {
-        this.checkAndShowArchetypeSelection(player);
+      // When player is loaded and not loading
+      if (!loading && player) {
+        // If player is new and we haven't shown archetype selection yet, show it
+        if (isNew && !this.archetypeShown()) {
+          this.archetypeShown.set(true);
+          this.showArchetypeSelection();
+        }
+        // If player is no longer new (archetype was selected), reset the flag
+        // This allows showing the modal again if the player resets
+        else if (!isNew && this.archetypeShown()) {
+          this.archetypeShown.set(false);
+        }
       }
     });
   }
@@ -99,24 +123,6 @@ export class GameHome {
     if (!player || locations.length === 0) return undefined;
     return locations.find(loc => loc.id === player.currentLocation);
   });
-
-  /**
-   * Check if player needs archetype selection and show modal
-   * Shows for new players (Day 1, balanced archetype with default stats)
-   */
-  private checkAndShowArchetypeSelection(player: any): void {
-    // Check if player is new (Day 1, balanced archetype, all stats at 15)
-    const isNewPlayer =
-      player.currentDay === 1 &&
-      player.archetype === 'balanced' &&
-      player.stats.baseFitness === 15 &&
-      player.stats.baseKnowledge === 15;
-
-    if (isNewPlayer) {
-      this.archetypeShown.set(true);
-      this.showArchetypeSelection();
-    }
-  }
 
   /**
    * Show archetype selection modal
