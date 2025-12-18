@@ -11,6 +11,7 @@ import { Pool } from 'pg';
 import { PlayerCharacter, PlayerActivity, StatTracking, StatName, StatChangeComponent } from '../../../../shared/types';
 import { getActivitiesForDay } from '../activity-history';
 import { getCurrentStat } from '../stat';
+import { calculateRelationshipState } from '../relationship';
 import { BEDTIME_HOURS, VITALITY_CONFIG, AMBITION_CONFIG, EMPATHY_CONFIG } from './config';
 
 // ===== Helper Functions =====
@@ -424,53 +425,56 @@ export async function calculateEmpathyChange(
 
     // Get all relationships for pattern analysis
     const relationshipsResult = await client.query(
-      `SELECT npc_id, friendship, romance FROM relationships WHERE player_id = $1`,
+      `SELECT npc_id, trust, affection, desire FROM relationships WHERE player_id = $1`,
       [player.userId]
     );
     const relationships = relationshipsResult.rows;
 
-    // Define platonic friends and romantic interests
-    const platonicFriends = relationships.filter(r =>
-      r.friendship > cfg.thresholds.platonicFriend.minFriendship &&
-      r.romance < cfg.thresholds.platonicFriend.maxRomance
-    );
-    const romanticInterests = relationships.filter(r =>
-      r.romance > cfg.thresholds.romanticInterest.minRomance
-    );
+    // Calculate relationship states and categorize
+    // Friends = friend, close_friend, partner (deep relationships valued by empathy)
+    // Shallow romance = lover, crush (high desire, lower trust)
+    const friends = relationships.filter((r: any) => {
+      const state = calculateRelationshipState(r.trust, r.affection, r.desire);
+      return ['friend', 'close_friend', 'partner'].includes(state);
+    });
+    const shallowRomance = relationships.filter((r: any) => {
+      const state = calculateRelationshipState(r.trust, r.affection, r.desire);
+      return ['lover', 'crush'].includes(state);
+    });
 
     // Get NPCs interacted with today
     const npcsInteractedToday = new Set(
       activities.filter(a => a.npcId).map(a => a.npcId)
     );
 
-    // Check if interacted with platonic friend today
-    const interactedWithPlatonicFriend = platonicFriends.some(
-      r => npcsInteractedToday.has(r.npc_id)
+    // Check if interacted with friend today
+    const interactedWithFriend = friends.some(
+      (r: any) => npcsInteractedToday.has(r.npc_id)
     );
-    if (interactedWithPlatonicFriend) {
-      const value = cfg.bonuses.platonicInteraction.value;
+    if (interactedWithFriend) {
+      const value = cfg.bonuses.friendInteraction.value;
       change += value;
       components.push({
-        source: 'empathy_platonic_friend',
+        source: 'empathy_friend_interaction',
         category: 'Defensive Stats (Empathy)',
-        description: 'Spent time with platonic friend',
+        description: 'Spent time with friend',
         value
       });
     }
 
     // Pattern bonuses - friend circle size
-    if (platonicFriends.length >= cfg.bonuses.friendCircle.smallThreshold) {
+    if (friends.length >= cfg.bonuses.friendCircle.smallThreshold) {
       const value = cfg.bonuses.friendCircle.smallValue;
       change += value;
       components.push({
         source: 'empathy_friend_circle',
         category: 'Defensive Stats (Empathy)',
-        description: 'Have multiple platonic friends',
+        description: 'Have multiple friends',
         value,
-        details: `${platonicFriends.length} platonic friends`
+        details: `${friends.length} friends`
       });
     }
-    if (platonicFriends.length >= cfg.bonuses.friendCircle.largeThreshold) {
+    if (friends.length >= cfg.bonuses.friendCircle.largeThreshold) {
       const value = cfg.bonuses.friendCircle.largeValue;
       change += value;
       components.push({
@@ -478,7 +482,7 @@ export async function calculateEmpathyChange(
         category: 'Defensive Stats (Empathy)',
         description: 'Have large friend circle',
         value,
-        details: `${platonicFriends.length} platonic friends`
+        details: `${friends.length} friends`
       });
     }
 
@@ -488,7 +492,7 @@ export async function calculateEmpathyChange(
 
     const recentInteractionsResult = await client.query(
       `
-      SELECT DISTINCT r.npc_id, r.friendship, r.romance
+      SELECT DISTINCT r.npc_id, r.trust, r.affection, r.desire
       FROM interactions i
       JOIN relationships r ON i.relationship_id = r.id
       WHERE r.player_id = $1 AND i.created_at >= $2
@@ -510,15 +514,10 @@ export async function calculateEmpathyChange(
     }
 
     // Check if all friends were contacted this week
-    const friendsResult = await client.query(
-      `SELECT npc_id FROM relationships WHERE player_id = $1 AND friendship >= $2`,
-      [player.userId, cfg.thresholds.closeFriend.minFriendship]
-    );
-    const friends = friendsResult.rows;
-
+    // Use the friends array we already calculated (friend, close_friend, partner states)
     if (friends.length > 0) {
-      const recentNpcIds = new Set(recentInteractionsResult.rows.map(r => r.npc_id));
-      const allFriendsContacted = friends.every(f => recentNpcIds.has(f.npc_id));
+      const recentNpcIds = new Set(recentInteractionsResult.rows.map((r: any) => r.npc_id));
+      const allFriendsContacted = friends.every((f: any) => recentNpcIds.has(f.npc_id));
 
       if (allFriendsContacted) {
         const value = cfg.bonuses.maintainedFriendships.value;
@@ -528,89 +527,97 @@ export async function calculateEmpathyChange(
           category: 'Defensive Stats (Empathy)',
           description: 'Maintained all friendships',
           value,
-          details: `Contacted all ${friends.length} close friends this week`
+          details: `Contacted all ${friends.length} friends this week`
         });
       }
     }
 
     // === Negative factors ===
 
-    // Only interacted with romantic interests today
+    // Only interacted with shallow romance (lovers/crushes) today
     if (npcsInteractedToday.size > 0) {
-      const onlyRomanticToday = Array.from(npcsInteractedToday).every(npcId =>
-        romanticInterests.some(r => r.npc_id === npcId)
+      const onlyShallowRomanceToday = Array.from(npcsInteractedToday).every(npcId =>
+        shallowRomance.some((r: any) => r.npc_id === npcId)
       );
-      if (onlyRomanticToday && romanticInterests.length > 0) {
-        const value = cfg.penalties.onlyRomantic.value;
+      if (onlyShallowRomanceToday && shallowRomance.length > 0) {
+        const value = cfg.penalties.onlyShallowRomance.value;
         change += value;
         components.push({
-          source: 'empathy_only_romantic',
+          source: 'empathy_only_shallow_romance',
           category: 'Defensive Stats (Empathy)',
-          description: 'Only interacted with romantic interests',
+          description: 'Only interacted with crushes/lovers',
           value,
-          details: 'No platonic interactions today'
+          details: 'No meaningful friend interactions today'
         });
       }
     }
 
-    // Count platonic vs romantic interactions this week
+    // Count friend vs shallow romance interactions this week
     const weekInteractionsResult = await client.query(
       `
-      SELECT r.npc_id, r.friendship, r.romance, COUNT(*) as interaction_count
+      SELECT r.npc_id, r.trust, r.affection, r.desire, COUNT(*) as interaction_count
       FROM interactions i
       JOIN relationships r ON i.relationship_id = r.id
       WHERE r.player_id = $1 AND i.created_at >= $2
-      GROUP BY r.npc_id, r.friendship, r.romance
+      GROUP BY r.npc_id, r.trust, r.affection, r.desire
       `,
       [player.userId, recentDaysAgo]
     );
 
-    let platonicInteractions = 0;
-    let romanticInteractionsCount = 0;
+    let friendInteractions = 0;
+    let shallowRomanceInteractions = 0;
 
     for (const row of weekInteractionsResult.rows) {
       const count = parseInt(row.interaction_count);
-      if (row.friendship > cfg.thresholds.platonicFriend.minFriendship &&
-          row.romance < cfg.thresholds.platonicFriend.maxRomance) {
-        platonicInteractions += count;
-      } else if (row.romance > cfg.thresholds.romanticInterest.minRomance) {
-        romanticInteractionsCount += count;
+      const state = calculateRelationshipState(row.trust, row.affection, row.desire);
+
+      if (['friend', 'close_friend', 'partner'].includes(state)) {
+        friendInteractions += count;
+      } else if (['lover', 'crush'].includes(state)) {
+        shallowRomanceInteractions += count;
       }
     }
 
-    if (romanticInteractionsCount > cfg.penalties.romanceImbalance.ratio * platonicInteractions &&
-        platonicInteractions > 0) {
-      const value = cfg.penalties.romanceImbalance.value;
+    if (shallowRomanceInteractions > cfg.penalties.shallowRomanceImbalance.ratio * friendInteractions &&
+        friendInteractions > 0) {
+      const value = cfg.penalties.shallowRomanceImbalance.value;
       change += value;
       components.push({
-        source: 'empathy_romance_imbalance',
+        source: 'empathy_shallow_romance_imbalance',
         category: 'Defensive Stats (Empathy)',
-        description: 'Too focused on romance',
+        description: 'Too focused on shallow romance',
         value,
-        details: `${romanticInteractionsCount} romantic vs ${platonicInteractions} platonic interactions this week`
+        details: `${shallowRomanceInteractions} crush/lover interactions vs ${friendInteractions} friend interactions this week`
       });
     }
 
     // Check for neglected friends
+    // Query all relationships with their interaction history
     const allInteractionsResult = await client.query(
       `
-      SELECT r.npc_id, MAX(i.created_at) as last_contact
+      SELECT r.npc_id, r.trust, r.affection, r.desire, MAX(i.created_at) as last_contact
       FROM relationships r
       LEFT JOIN interactions i ON i.relationship_id = r.id
-      WHERE r.player_id = $1 AND r.friendship > $2
-      GROUP BY r.npc_id
+      WHERE r.player_id = $1
+      GROUP BY r.npc_id, r.trust, r.affection, r.desire
       `,
-      [player.userId, cfg.thresholds.neglectedFriend.minFriendship]
+      [player.userId]
     );
 
     let neglectedCount = 0;
     for (const row of allInteractionsResult.rows) {
+      // Only check friends (friend, close_friend, partner states)
+      const state = calculateRelationshipState(row.trust, row.affection, row.desire);
+      if (!['friend', 'close_friend', 'partner'].includes(state)) {
+        continue; // Skip non-friends
+      }
+
       if (!row.last_contact) {
         neglectedCount++; // Never contacted
       } else {
         const lastContact = new Date(row.last_contact);
         const daysSince = (Date.now() - lastContact.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSince > cfg.thresholds.neglectedFriend.daysSinceContact) {
+        if (daysSince > cfg.penalties.neglectedFriend.daysSinceContact) {
           neglectedCount++;
         }
       }
@@ -624,7 +631,7 @@ export async function calculateEmpathyChange(
         category: 'Defensive Stats (Empathy)',
         description: 'Neglected friends',
         value,
-        details: `${neglectedCount} ${neglectedCount === 1 ? 'friend' : 'friends'} not contacted in ${cfg.thresholds.neglectedFriend.daysSinceContact}+ days`
+        details: `${neglectedCount} ${neglectedCount === 1 ? 'friend' : 'friends'} not contacted in ${cfg.penalties.neglectedFriend.daysSinceContact}+ days`
       });
     }
 

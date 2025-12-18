@@ -122,61 +122,47 @@ export const AMBITION_CONFIG = {
 
 /**
  * Empathy rewards genuine connections and diverse relationships
+ *
+ * Uses relationship states (friend, close_friend, partner) vs shallow romance (lover, crush)
+ * to evaluate social patterns. Values deep, trusted relationships over quick romantic flings.
  */
 export const EMPATHY_CONFIG = {
-  // Relationship thresholds
-  thresholds: {
-    platonicFriend: {
-      minFriendship: 30,
-      maxRomance: 10
-    },
-    romanticInterest: {
-      minRomance: 20
-    },
-    closeFriend: {
-      minFriendship: 50
-    },
-    neglectedFriend: {
-      minFriendship: 40,
-      daysSinceContact: 7
-    }
-  },
-
   // Positive factors
   bonuses: {
     meaningfulConversation: {
       minDuration: 60,  // Minutes
       value: 1.5
     },
-    platonicInteraction: {
-      value: 2.5  // Spent time with platonic friend
+    friendInteraction: {
+      value: 2.5  // Spent time with friend (friend, close_friend, or partner state)
     },
     friendCircle: {
-      smallThreshold: 2,
+      smallThreshold: 2,  // Have at least 2 friends
       smallValue: 1.0,
-      largeThreshold: 4,
+      largeThreshold: 4,  // Have at least 4 friends
       largeValue: 1.5
     },
     diversity: {
-      threshold: 5,     // Unique NPCs in 7 days
+      threshold: 5,     // Unique NPCs interacted with in last 7 days
       value: 1.0
     },
     maintainedFriendships: {
-      value: 1.0  // Contacted all close friends this week
+      value: 1.0  // Contacted all friends this week
     }
   },
 
   // Negative factors
   penalties: {
-    onlyRomantic: {
-      value: -2.0  // Only romantic interactions today
+    onlyShallowRomance: {
+      value: -2.0  // Only interacted with crushes/lovers today (no friends)
     },
-    romanceImbalance: {
-      ratio: 2,    // Romantic > 2x platonic this week
+    shallowRomanceImbalance: {
+      ratio: 2,    // Crush/lover interactions > 2x friend interactions this week
       value: -1.5
     },
     neglectedFriend: {
-      valuePerFriend: -1.5  // Per friend not contacted in 7+ days
+      valuePerFriend: -1.5,  // Per friend not contacted in 7+ days
+      daysSinceContact: 7
     },
     negativeInteraction: {
       value: -2.5  // Was dismissive or rude
