@@ -399,6 +399,8 @@ export interface PerformActivityResponse {
   // Trait discovery (Relationship Redesign)
   discoveredTrait?: {
     trait: NPCTrait;
+    traitName: string;        // Display name of the trait
+    traitDescription: string; // Description of the trait
     isNew: boolean;
     category: 'personality' | 'romance' | 'interest';
   };
@@ -814,6 +816,8 @@ export interface ActivitySummary {
   // Trait discovery (social activities only)
   discoveredTrait?: {
     trait: NPCTrait;
+    traitName: string;
+    traitDescription: string;
     isNew: boolean;
     category: 'personality' | 'romance' | 'interest';
   };
