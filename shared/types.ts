@@ -407,6 +407,13 @@ export interface PerformActivityResponse {
   outcome?: {
     tier: 'best' | 'okay' | 'mixed' | 'catastrophic';
     description: string;
+    // Roll details (added for consistency with solo activities)
+    roll?: number;              // The 2d100 roll (2-200)
+    adjustedRoll?: number;      // roll + statBonus
+    statBonus?: number;         // Average of relevant stats
+    dc?: number;                // The difficulty class
+    isCritSuccess?: boolean;    // Whether roll was in crit success range
+    isCritFail?: boolean;       // Whether roll was in crit fail range
   };
 
   // Difficulty breakdown for feedback

@@ -168,7 +168,14 @@ export class NeighborDetail implements OnInit, OnDestroy {
             tier: response.outcome.tier,
             description: response.outcome.description
           } : undefined,
-          // Social activities don't have detailed roll info yet, but include if available
+          // Include roll details from the outcome
+          rollDetails: response.outcome ? {
+            roll: response.outcome.roll || 0,
+            adjustedRoll: response.outcome.adjustedRoll || 0,
+            statBonus: response.outcome.statBonus,
+            difficultyPenalty: undefined, // Not used in social activities
+            difficultyClass: response.outcome.dc || 100
+          } : undefined,
           actualEnergyCost: activity.energyCost,
           actualMoneyCost: activity.moneyCost,
           actualTimeCost: activity.timeCost,
