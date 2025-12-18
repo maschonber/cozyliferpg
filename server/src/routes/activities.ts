@@ -22,7 +22,9 @@ import {
   OutcomeTier,
   StatName,
   StatChange,
-  PlayerStats
+  PlayerStats,
+  DifficultyBreakdown,
+  StatContribution
 } from '../../../shared/types';
 
 const router = Router();
@@ -38,6 +40,7 @@ interface ActivityResult {
     adjustedRoll: number;
     statBonus: number;
     difficultyPenalty: number;
+    statsUsed?: StatContribution[];
   };
   statChanges?: StatChange[];
   statsTrainedThisActivity?: StatName[];
@@ -45,6 +48,7 @@ interface ActivityResult {
   actualEnergyCost?: number;
   actualMoneyCost?: number;
   actualTimeCost?: number;
+  difficultyBreakdown?: DifficultyBreakdown;
 }
 
 /**
@@ -157,6 +161,7 @@ router.post(
 
       // Phase 2.5 & 2.5.3: Roll for outcome if activity has difficulty
       let outcome: ActivityResult['outcome'];
+      let difficultyBreakdown: DifficultyBreakdown | undefined;
       let statChanges: StatChange[] = [];
       let statsTrainedThisActivity: StatName[] = [];
       let newStats = player.stats;
@@ -177,7 +182,15 @@ router.post(
           roll: rollResult.roll,
           adjustedRoll: rollResult.adjustedRoll,
           statBonus: rollResult.statBonus,
-          difficultyPenalty: rollResult.difficultyPenalty
+          difficultyPenalty: rollResult.difficultyPenalty,
+          statsUsed: rollResult.statsUsed
+        };
+
+        // Create difficulty breakdown for solo activities
+        difficultyBreakdown = {
+          baseDifficulty: 100,  // BASE_DC constant
+          activityModifier: activity.difficulty,
+          finalDifficulty: 100 + activity.difficulty
         };
 
         // Phase 2.5.3: Use outcome profile if available, otherwise fallback to old system
@@ -363,7 +376,8 @@ router.post(
           // Include actual resource costs (base + additional from outcome)
           actualEnergyCost: activity.energyCost + additionalEnergyCost,
           actualMoneyCost: activity.moneyCost + additionalMoneyCost,
-          actualTimeCost: activity.timeCost + additionalTimeCost
+          actualTimeCost: activity.timeCost + additionalTimeCost,
+          difficultyBreakdown
         }
       });
     } catch (error) {

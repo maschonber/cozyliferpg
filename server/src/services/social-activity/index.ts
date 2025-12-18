@@ -21,6 +21,7 @@ import {
   NPCArchetype,
   PlayerArchetype,
   ActivityCategory,
+  DifficultyBreakdown,
 } from '../../../../shared/types';
 import {
   ACTIVITY_EMOTION_EFFECTS,
@@ -46,17 +47,8 @@ export interface InteractionStreak {
   lastDay: number;               // Day number of last interaction
 }
 
-/**
- * Complete difficulty calculation breakdown
- */
-export interface DifficultyCalculation {
-  baseDifficulty: number;
-  emotionModifier: number;
-  relationshipModifier: number;
-  traitBonus: number;
-  streakModifier: number;
-  finalDifficulty: number;
-}
+// Note: DifficultyCalculation interface moved to shared/types.ts as DifficultyBreakdown
+// for consistency across solo and social activities
 
 // ===== Emotion-Based Difficulty Modifiers =====
 
@@ -136,14 +128,18 @@ export function calculateDynamicDifficulty(
   relationshipAxes: RelationshipAxes,
   relationshipState: RelationshipState,
   relationshipDifficultyMod: number,
-  traitBonus: number,
+  npcTraitBonus: number,
+  archetypeBonus: number,
   streak?: InteractionStreak
-): DifficultyCalculation {
+): DifficultyBreakdown {
   // Calculate emotion modifier
   const emotionModifier = getEmotionDifficultyModifier(emotionState);
 
   // Relationship modifier (already calculated by relationship service)
   const relationshipModifier = relationshipDifficultyMod;
+
+  // Combined trait bonus
+  const traitBonus = npcTraitBonus + archetypeBonus;
 
   // Streak modifier
   const streakModifier = streak ? getStreakModifier(streak) : 0;
@@ -163,6 +159,10 @@ export function calculateDynamicDifficulty(
     emotionModifier,
     relationshipModifier,
     traitBonus,
+    traitBreakdown: {
+      npcTraitBonus,
+      archetypeBonus,
+    },
     streakModifier,
     finalDifficulty,
   };
@@ -415,7 +415,7 @@ export function getActivityEffects(
  * @param calculation - Difficulty calculation
  * @returns Array of modifier descriptions
  */
-export function getDifficultyBreakdown(calculation: DifficultyCalculation): Array<{
+export function getDifficultyBreakdown(calculation: DifficultyBreakdown): Array<{
   source: string;
   modifier: number;
   description: string;
@@ -428,7 +428,7 @@ export function getDifficultyBreakdown(calculation: DifficultyCalculation): Arra
     description: 'Activity base difficulty',
   });
 
-  if (calculation.emotionModifier !== 0) {
+  if (calculation.emotionModifier !== undefined && calculation.emotionModifier !== 0) {
     breakdown.push({
       source: 'Emotion',
       modifier: calculation.emotionModifier,
@@ -439,7 +439,7 @@ export function getDifficultyBreakdown(calculation: DifficultyCalculation): Arra
     });
   }
 
-  if (calculation.relationshipModifier !== 0) {
+  if (calculation.relationshipModifier !== undefined && calculation.relationshipModifier !== 0) {
     breakdown.push({
       source: 'Relationship',
       modifier: calculation.relationshipModifier,
@@ -450,7 +450,7 @@ export function getDifficultyBreakdown(calculation: DifficultyCalculation): Arra
     });
   }
 
-  if (calculation.traitBonus !== 0) {
+  if (calculation.traitBonus !== undefined && calculation.traitBonus !== 0) {
     breakdown.push({
       source: 'Traits',
       modifier: calculation.traitBonus,
@@ -461,7 +461,7 @@ export function getDifficultyBreakdown(calculation: DifficultyCalculation): Arra
     });
   }
 
-  if (calculation.streakModifier !== 0) {
+  if (calculation.streakModifier !== undefined && calculation.streakModifier !== 0) {
     breakdown.push({
       source: 'Streak',
       modifier: calculation.streakModifier,

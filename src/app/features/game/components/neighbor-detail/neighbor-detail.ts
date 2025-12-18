@@ -174,7 +174,8 @@ export class NeighborDetail implements OnInit, OnDestroy {
             adjustedRoll: response.outcome.adjustedRoll || 0,
             statBonus: response.outcome.statBonus,
             difficultyPenalty: undefined, // Not used in social activities
-            difficultyClass: response.outcome.dc || 100
+            difficultyClass: response.outcome.dc || 100,
+            statsUsed: response.outcome.statsUsed
           } : undefined,
           actualEnergyCost: activity.energyCost,
           actualMoneyCost: activity.moneyCost,
@@ -202,7 +203,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
           } : undefined,
           emotionalState: response.emotionalState,
           discoveredTrait: response.discoveredTrait,
-          difficultyInfo: response.difficultyInfo
+          difficultyBreakdown: response.difficultyBreakdown
         };
 
         // Show result modal with unified summary

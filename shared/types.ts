@@ -416,16 +416,11 @@ export interface PerformActivityResponse {
     dc?: number;                // The difficulty class
     isCritSuccess?: boolean;    // Whether roll was in crit success range
     isCritFail?: boolean;       // Whether roll was in crit fail range
+    statsUsed?: StatContribution[];  // Detailed breakdown of stats
   };
 
-  // Difficulty breakdown for feedback
-  difficultyInfo?: {
-    baseDifficulty: number;
-    emotionModifier: number;
-    relationshipModifier: number;
-    traitBonus: number;
-    finalDifficulty: number;
-  };
+  // Difficulty breakdown for feedback (replaces old difficultyInfo)
+  difficultyBreakdown?: DifficultyBreakdown;
 
   error?: string;
 }
@@ -738,6 +733,42 @@ export interface SleepResultWithStats extends SleepResult {
 }
 
 /**
+ * Stat contribution to roll bonus (detailed breakdown)
+ */
+export interface StatContribution {
+  statName: StatName;
+  displayName: string;
+  currentValue: number;
+}
+
+/**
+ * Difficulty calculation breakdown
+ * Applicable to both solo and social activities
+ */
+export interface DifficultyBreakdown {
+  // Base difficulty
+  baseDifficulty: number;
+
+  // Solo activity modifiers
+  activityModifier?: number;  // Activity's difficulty value (0-100)
+
+  // Social activity modifiers
+  emotionModifier?: number;      // -20 to +30 (emotion-based adjustment)
+  relationshipModifier?: number; // -15 to +30 (relationship state adjustment)
+  traitBonus?: number;           // -20 to +20 (combined trait + archetype)
+  streakModifier?: number;       // -10 to +10 (performance streak)
+
+  // Trait bonus breakdown (social only)
+  traitBreakdown?: {
+    npcTraitBonus: number;       // Bonus from NPC's specific traits
+    archetypeBonus: number;      // Bonus from archetype compatibility
+  };
+
+  // Final calculated difficulty
+  finalDifficulty: number;
+}
+
+/**
  * Solo activity outcome from roll system (Phase 2.5)
  * Different from NPC ActivityOutcome - includes roll details
  */
@@ -747,6 +778,7 @@ export interface SoloActivityOutcome {
   adjustedRoll: number;     // Roll after stat bonus and difficulty
   statBonus: number;        // Bonus from relevant stats
   difficultyPenalty: number; // Penalty from difficulty
+  statsUsed?: StatContribution[];  // Detailed breakdown of stats used
 }
 
 /**
@@ -762,6 +794,8 @@ export interface SoloActivityResult {
   actualEnergyCost?: number;
   actualMoneyCost?: number;
   actualTimeCost?: number;
+  // Difficulty calculation breakdown
+  difficultyBreakdown?: DifficultyBreakdown;
 }
 
 /**
@@ -789,6 +823,7 @@ export interface ActivitySummary {
     statBonus?: number;
     difficultyPenalty?: number;
     difficultyClass: number;
+    statsUsed?: StatContribution[];  // Detailed stat breakdown
   };
 
   // Resource costs (both types can have these)
@@ -822,14 +857,8 @@ export interface ActivitySummary {
     category: 'personality' | 'romance' | 'interest';
   };
 
-  // Difficulty breakdown (social activities have this)
-  difficultyInfo?: {
-    baseDifficulty: number;
-    emotionModifier: number;
-    relationshipModifier: number;
-    traitBonus: number;
-    finalDifficulty: number;
-  };
+  // Difficulty breakdown (both activity types now have this)
+  difficultyBreakdown?: DifficultyBreakdown;
 
   // Updated player state
   player: PlayerCharacter;
