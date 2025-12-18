@@ -756,6 +756,75 @@ export interface SoloActivityResult {
 }
 
 /**
+ * Unified activity summary for displaying results in the frontend
+ * Used by ActivityResultModal to show both solo and social activity outcomes
+ */
+export interface ActivitySummary {
+  // Activity context
+  activity: Activity;
+  activityType: 'solo' | 'social';
+
+  // NPC context (for social activities)
+  npc?: NPC;
+
+  // Outcome (both types may have this)
+  outcome?: {
+    tier: 'best' | 'okay' | 'mixed' | 'catastrophic';
+    description: string;
+  };
+
+  // Roll details (solo activities have more detail)
+  rollDetails?: {
+    roll: number;
+    adjustedRoll: number;
+    statBonus?: number;
+    difficultyPenalty?: number;
+    difficultyClass: number;
+  };
+
+  // Resource costs (both types can have these)
+  actualEnergyCost?: number;
+  actualMoneyCost?: number;
+  actualTimeCost?: number;
+
+  // Stat changes (both types may have these - optional)
+  statChanges?: StatChange[];
+  statsTrainedThisActivity?: StatName[];
+
+  // Relationship changes (social activities only)
+  relationshipChanges?: {
+    previousValues: { trust: number; affection: number; desire: number };
+    newValues: { trust: number; affection: number; desire: number };
+    deltas: { trust: number; affection: number; desire: number };
+    stateChanged?: boolean;
+    previousState?: RelationshipState;
+    newState?: RelationshipState;
+  };
+
+  // Emotional state (social activities only)
+  emotionalState?: EmotionalState;
+
+  // Trait discovery (social activities only)
+  discoveredTrait?: {
+    trait: NPCTrait;
+    isNew: boolean;
+    category: 'personality' | 'romance' | 'interest';
+  };
+
+  // Difficulty breakdown (social activities have this)
+  difficultyInfo?: {
+    baseDifficulty: number;
+    emotionModifier: number;
+    relationshipModifier: number;
+    traitBonus: number;
+    finalDifficulty: number;
+  };
+
+  // Updated player state
+  player: PlayerCharacter;
+}
+
+/**
  * Player activity history record (Phase 2.5.1)
  * Stores complete history of player activities for defensive stat calculations
  */

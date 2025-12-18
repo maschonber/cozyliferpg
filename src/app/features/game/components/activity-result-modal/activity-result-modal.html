@@ -1,16 +1,19 @@
 <div class="activity-result-modal">
   <h2 mat-dialog-title>
-    <mat-icon>{{ data.activity.category === 'work' ? 'work' :
-                 data.activity.category === 'social' ? 'groups' :
-                 data.activity.category === 'self_improvement' ? 'school' : 'local_activity' }}</mat-icon>
-    {{ data.activity.name }}
+    <mat-icon>{{ data.summary.activity.category === 'work' ? 'work' :
+                 data.summary.activity.category === 'social' ? 'groups' :
+                 data.summary.activity.category === 'self_improvement' ? 'school' : 'local_activity' }}</mat-icon>
+    {{ data.summary.activity.name }}
+    @if (isSocialActivity && data.summary.npc) {
+      <span class="npc-context">with {{ data.summary.npc.name }}</span>
+    }
   </h2>
 
   <mat-dialog-content>
     <div class="result-content">
       <!-- Outcome Section (for activities with rolls) -->
       @if (hasOutcome) {
-        @let outcome = data.result.outcome!;
+        @let outcome = data.summary.outcome!;
         @let tierInfo = getTierInfo(outcome.tier);
 
         <div class="outcome-section" [style.--tier-color]="tierInfo.color">
@@ -25,79 +28,161 @@
             }
           </div>
 
-          <p class="tier-description">{{ tierInfo.description }}</p>
+          <p class="tier-description">{{ outcome.description }}</p>
 
-          <!-- Collapsible Roll Details -->
-          <mat-expansion-panel class="roll-details-panel">
-            <mat-expansion-panel-header>
-              <mat-panel-title>
-                <mat-icon>casino</mat-icon>
-                Roll Details
-              </mat-panel-title>
-            </mat-expansion-panel-header>
+          <!-- Collapsible Roll Details (for solo activities with detailed roll info) -->
+          @if (data.summary.rollDetails) {
+            @let rollDetails = data.summary.rollDetails;
+            <mat-expansion-panel class="roll-details-panel">
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon>casino</mat-icon>
+                  Roll Details
+                </mat-panel-title>
+              </mat-expansion-panel-header>
 
-            <div class="roll-details">
-              <div class="roll-item">
-                <span class="roll-label">2d100 Roll</span>
-                <span class="roll-value">{{ outcome.roll }}</span>
-              </div>
-              <div class="roll-item">
-                <span class="roll-label">Stat Bonus</span>
-                <span class="roll-value positive">+{{ outcome.statBonus | number:'1.0-0' }}</span>
-              </div>
-              <div class="roll-item total">
-                <span class="roll-label">Total</span>
-                <span class="roll-value">{{ outcome.adjustedRoll | number:'1.0-0' }}</span>
-              </div>
-              <div class="roll-item">
-                <span class="roll-label">vs DC</span>
-                <span class="roll-value">{{ dc }}</span>
-              </div>
-            </div>
-
-            <mat-divider></mat-divider>
-
-            <!-- Probability Breakdown -->
-            <div class="probability-section">
-              <h4>Outcome Probabilities</h4>
-              <div class="probability-bars">
-                <div class="probability-item">
-                  <span class="prob-label">Catastrophic</span>
-                  <div class="prob-bar-container">
-                    <div class="prob-bar catastrophic" [style.width.%]="outcomeProbabilities.catastrophic"></div>
-                  </div>
-                  <span class="prob-value">{{ outcomeProbabilities.catastrophic }}%</span>
+              <div class="roll-details">
+                <div class="roll-item">
+                  <span class="roll-label">2d100 Roll</span>
+                  <span class="roll-value">{{ rollDetails.roll }}</span>
                 </div>
-                <div class="probability-item">
-                  <span class="prob-label">Mixed</span>
-                  <div class="prob-bar-container">
-                    <div class="prob-bar mixed" [style.width.%]="outcomeProbabilities.mixed"></div>
+                @if (rollDetails.statBonus !== undefined) {
+                  <div class="roll-item">
+                    <span class="roll-label">Stat Bonus</span>
+                    <span class="roll-value positive">+{{ rollDetails.statBonus | number:'1.0-0' }}</span>
                   </div>
-                  <span class="prob-value">{{ outcomeProbabilities.mixed }}%</span>
+                }
+                <div class="roll-item total">
+                  <span class="roll-label">Total</span>
+                  <span class="roll-value">{{ rollDetails.adjustedRoll | number:'1.0-0' }}</span>
                 </div>
-                <div class="probability-item">
-                  <span class="prob-label">Okay</span>
-                  <div class="prob-bar-container">
-                    <div class="prob-bar okay" [style.width.%]="outcomeProbabilities.okay"></div>
-                  </div>
-                  <span class="prob-value">{{ outcomeProbabilities.okay }}%</span>
-                </div>
-                <div class="probability-item">
-                  <span class="prob-label">Best</span>
-                  <div class="prob-bar-container">
-                    <div class="prob-bar best" [style.width.%]="outcomeProbabilities.best"></div>
-                  </div>
-                  <span class="prob-value">{{ outcomeProbabilities.best }}%</span>
+                <div class="roll-item">
+                  <span class="roll-label">vs DC</span>
+                  <span class="roll-value">{{ rollDetails.difficultyClass }}</span>
                 </div>
               </div>
-              <p class="probability-note">These probabilities are based on your current stat ({{ outcome.statBonus }}) and activity difficulty ({{ data.activity.difficulty }}).</p>
-            </div>
-          </mat-expansion-panel>
+
+              <mat-divider></mat-divider>
+
+              <!-- Probability Breakdown -->
+              <div class="probability-section">
+                <h4>Outcome Probabilities</h4>
+                <div class="probability-bars">
+                  <div class="probability-item">
+                    <span class="prob-label">Catastrophic</span>
+                    <div class="prob-bar-container">
+                      <div class="prob-bar catastrophic" [style.width.%]="outcomeProbabilities.catastrophic"></div>
+                    </div>
+                    <span class="prob-value">{{ outcomeProbabilities.catastrophic }}%</span>
+                  </div>
+                  <div class="probability-item">
+                    <span class="prob-label">Mixed</span>
+                    <div class="prob-bar-container">
+                      <div class="prob-bar mixed" [style.width.%]="outcomeProbabilities.mixed"></div>
+                    </div>
+                    <span class="prob-value">{{ outcomeProbabilities.mixed }}%</span>
+                  </div>
+                  <div class="probability-item">
+                    <span class="prob-label">Okay</span>
+                    <div class="prob-bar-container">
+                      <div class="prob-bar okay" [style.width.%]="outcomeProbabilities.okay"></div>
+                    </div>
+                    <span class="prob-value">{{ outcomeProbabilities.okay }}%</span>
+                  </div>
+                  <div class="probability-item">
+                    <span class="prob-label">Best</span>
+                    <div class="prob-bar-container">
+                      <div class="prob-bar best" [style.width.%]="outcomeProbabilities.best"></div>
+                    </div>
+                    <span class="prob-value">{{ outcomeProbabilities.best }}%</span>
+                  </div>
+                </div>
+                @if (rollDetails.statBonus !== undefined) {
+                  <p class="probability-note">These probabilities are based on your current stat ({{ rollDetails.statBonus }}) and activity difficulty ({{ data.summary.activity.difficulty }}).</p>
+                }
+              </div>
+            </mat-expansion-panel>
+          }
         </div>
 
-        @if (hasStatChanges) {
+        @if (hasStatChanges || hasRelationshipChanges) {
           <mat-divider></mat-divider>
         }
+      }
+
+      <!-- Relationship Changes Section (social activities) -->
+      @if (isSocialActivity && hasRelationshipChanges) {
+        @let relChanges = data.summary.relationshipChanges!;
+        <div class="relationship-changes-section">
+          <h3>Relationship Changes</h3>
+
+          <!-- Relationship Axes -->
+          <div class="relationship-axes">
+            @for (axisChange of relationshipAxisChanges; track axisChange.axis) {
+              <div class="relationship-axis-item" [class.positive]="axisChange.delta > 0" [class.negative]="axisChange.delta < 0">
+                <mat-icon class="axis-icon">{{ axisChange.icon }}</mat-icon>
+                <span class="axis-name">{{ axisChange.axis }}</span>
+                <span class="axis-delta" [class.positive]="axisChange.delta > 0" [class.negative]="axisChange.delta < 0">
+                  {{ axisChange.delta > 0 ? '+' : '' }}{{ axisChange.delta }}
+                </span>
+                <span class="axis-new-value">({{
+                  axisChange.axis === 'Trust' ? relChanges.newValues.trust :
+                  axisChange.axis === 'Affection' ? relChanges.newValues.affection :
+                  relChanges.newValues.desire
+                }})</span>
+              </div>
+            }
+          </div>
+
+          <!-- State Change -->
+          @if (relChanges.stateChanged) {
+            <div class="state-change">
+              <mat-icon>upgrade</mat-icon>
+              <span class="state-label">Relationship Status:</span>
+              <span class="state-previous">{{ formatRelationshipState(relChanges.previousState!) }}</span>
+              <mat-icon class="arrow">arrow_forward</mat-icon>
+              <span class="state-new">{{ formatRelationshipState(relChanges.newState!) }}</span>
+            </div>
+          }
+        </div>
+
+        <mat-divider></mat-divider>
+      }
+
+      <!-- Emotion State Section (social activities) -->
+      @if (isSocialActivity && data.summary.emotionalState) {
+        @let emotionInfo = getEmotionInfo();
+        @if (emotionInfo) {
+          <div class="emotion-section">
+            <h3>{{ data.summary.npc?.name }}'s Emotional State</h3>
+            <div class="emotion-display">
+              <mat-icon class="emotion-icon">{{ emotionInfo.icon }}</mat-icon>
+              <span class="emotion-primary">{{ emotionInfo.primary }}</span>
+              <span class="emotion-label">with some</span>
+              <span class="emotion-secondary">{{ emotionInfo.secondary }}</span>
+            </div>
+          </div>
+
+          <mat-divider></mat-divider>
+        }
+      }
+
+      <!-- Trait Discovery Section (social activities) -->
+      @if (isSocialActivity && data.summary.discoveredTrait) {
+        @let trait = data.summary.discoveredTrait;
+        <div class="trait-discovery-section" [class.new-trait]="trait.isNew">
+          <div class="trait-header">
+            <mat-icon>{{ trait.isNew ? 'new_releases' : 'lightbulb' }}</mat-icon>
+            <h3>{{ trait.isNew ? 'Trait Discovered!' : 'Trait Observed' }}</h3>
+          </div>
+          <div class="trait-info">
+            <span class="trait-name">{{ trait.trait.name }}</span>
+            <span class="trait-category">({{ trait.category }})</span>
+          </div>
+          <p class="trait-description">{{ trait.trait.description }}</p>
+        </div>
+
+        <mat-divider></mat-divider>
       }
 
       <!-- Stat Changes Section -->
@@ -149,7 +234,7 @@
           <mat-icon>bolt</mat-icon>
           <span>{{ actualEnergyCost > 0 ? '+' : '' }}{{ actualEnergyCost }} Energy</span>
           @if (hasAdditionalEnergyCost) {
-            <span class="additional-cost">({{ actualEnergyCost - data.activity.energyCost }} extra)</span>
+            <span class="additional-cost">({{ actualEnergyCost - data.summary.activity.energyCost }} extra)</span>
           }
         </div>
         @if (actualMoneyCost !== 0) {
@@ -157,7 +242,7 @@
             <mat-icon>payments</mat-icon>
             <span>{{ actualMoneyCost > 0 ? '+' : '' }}${{ actualMoneyCost }}</span>
             @if (hasAdditionalMoneyCost) {
-              <span class="additional-cost">(${{ actualMoneyCost - data.activity.moneyCost }} extra)</span>
+              <span class="additional-cost">(${{ actualMoneyCost - data.summary.activity.moneyCost }} extra)</span>
             }
           </div>
         }
@@ -165,7 +250,7 @@
           <mat-icon>schedule</mat-icon>
           <span>{{ actualTimeCost }} min</span>
           @if (hasAdditionalTimeCost) {
-            <span class="additional-cost">(+{{ actualTimeCost - data.activity.timeCost }} min)</span>
+            <span class="additional-cost">(+{{ actualTimeCost - data.summary.activity.timeCost }} min)</span>
           }
         </div>
       </div>

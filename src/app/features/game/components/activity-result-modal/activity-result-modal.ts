@@ -1,6 +1,8 @@
 /**
- * Activity Result Modal (Phase 2.5)
- * Shows outcome of performing an activity with stat changes
+ * Activity Result Modal (Phase 2.5 + Social Activities)
+ * Shows unified outcome summary for both solo and social activities
+ * - Solo: stat changes, resource costs, outcome tier
+ * - Social: relationship changes (trust/affection/desire), emotion state, trait discovery
  */
 
 import { Component, inject } from '@angular/core';
@@ -10,11 +12,10 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { Activity, SoloActivityResult, StatChange, OutcomeTier } from '../../../../../../shared/types';
+import { ActivitySummary, StatChange, OutcomeTier } from '../../../../../../shared/types';
 
 export interface ActivityResultModalData {
-  activity: Activity;
-  result: SoloActivityResult;
+  summary: ActivitySummary;
 }
 
 @Component({
@@ -104,103 +105,201 @@ export class ActivityResultModal {
   }
 
   /**
+   * Check if this is a solo or social activity
+   */
+  get isSoloActivity(): boolean {
+    return this.data.summary.activityType === 'solo';
+  }
+
+  get isSocialActivity(): boolean {
+    return this.data.summary.activityType === 'social';
+  }
+
+  /**
    * Get stat changes that increased current
    */
   get positiveChanges(): StatChange[] {
-    return (this.data.result.statChanges || []).filter(c => c.currentDelta > 0);
+    return (this.data.summary.statChanges || []).filter(c => c.currentDelta > 0);
   }
 
   /**
    * Get stat changes that decreased current
    */
   get negativeChanges(): StatChange[] {
-    return (this.data.result.statChanges || []).filter(c => c.currentDelta < 0);
+    return (this.data.summary.statChanges || []).filter(c => c.currentDelta < 0);
   }
 
   /**
    * Check if activity had a roll outcome
    */
   get hasOutcome(): boolean {
-    return !!this.data.result.outcome;
+    return !!this.data.summary.outcome;
   }
 
   /**
    * Check if there are any stat changes
    */
   get hasStatChanges(): boolean {
-    return (this.data.result.statChanges?.length || 0) > 0;
+    return (this.data.summary.statChanges?.length || 0) > 0;
   }
 
   /**
    * Get actual energy cost (including outcome effects)
    */
   get actualEnergyCost(): number {
-    return this.data.result.actualEnergyCost ?? this.data.activity.energyCost;
+    return this.data.summary.actualEnergyCost ?? this.data.summary.activity.energyCost;
   }
 
   /**
    * Get actual money cost (including outcome effects)
    */
   get actualMoneyCost(): number {
-    return this.data.result.actualMoneyCost ?? this.data.activity.moneyCost;
+    return this.data.summary.actualMoneyCost ?? this.data.summary.activity.moneyCost;
   }
 
   /**
    * Get actual time cost (including outcome effects)
    */
   get actualTimeCost(): number {
-    return this.data.result.actualTimeCost ?? this.data.activity.timeCost;
+    return this.data.summary.actualTimeCost ?? this.data.summary.activity.timeCost;
   }
 
   /**
    * Check if energy cost was increased by outcome
    */
   get hasAdditionalEnergyCost(): boolean {
-    return this.actualEnergyCost < this.data.activity.energyCost;
+    return this.actualEnergyCost < this.data.summary.activity.energyCost;
   }
 
   /**
    * Check if money cost was increased by outcome
    */
   get hasAdditionalMoneyCost(): boolean {
-    return this.actualMoneyCost < this.data.activity.moneyCost;
+    return this.actualMoneyCost < this.data.summary.activity.moneyCost;
   }
 
   /**
    * Check if time cost was increased by outcome
    */
   get hasAdditionalTimeCost(): boolean {
-    return this.actualTimeCost > this.data.activity.timeCost;
+    return this.actualTimeCost > this.data.summary.activity.timeCost;
   }
 
   /**
    * Check if outcome was a critical success
    */
   get isCritSuccess(): boolean {
-    const outcome = this.data.result.outcome;
-    if (!outcome || !('isCritSuccess' in outcome)) return false;
-    return (outcome as any).isCritSuccess;
+    const rollDetails = this.data.summary.rollDetails;
+    if (!rollDetails) return false;
+    // Check if the roll was in the crit success range (152-200)
+    return rollDetails.roll >= 152 && rollDetails.roll <= 200;
   }
 
   /**
    * Check if outcome was a critical failure
    */
   get isCritFail(): boolean {
-    const outcome = this.data.result.outcome;
-    if (!outcome || !('isCritFail' in outcome)) return false;
-    return (outcome as any).isCritFail;
+    const rollDetails = this.data.summary.rollDetails;
+    if (!rollDetails) return false;
+    // Check if the roll was in the crit fail range (2-50)
+    return rollDetails.roll >= 2 && rollDetails.roll <= 50;
   }
 
   /**
    * Get DC value for display
    */
   get dc(): number {
-    const outcome = this.data.result.outcome;
-    if (!outcome || !('dc' in outcome)) {
-      // Fallback to old calculation for backwards compatibility
-      return 100 + (this.data.activity.difficulty || 0);
+    const rollDetails = this.data.summary.rollDetails;
+    if (rollDetails) {
+      return rollDetails.difficultyClass;
     }
-    return (outcome as any).dc;
+    // Fallback to old calculation for backwards compatibility
+    return 100 + (this.data.summary.activity.difficulty || 0);
+  }
+
+  /**
+   * Check if there are relationship changes to display
+   */
+  get hasRelationshipChanges(): boolean {
+    return !!this.data.summary.relationshipChanges;
+  }
+
+  /**
+   * Get relationship axis changes with non-zero deltas
+   */
+  get relationshipAxisChanges(): Array<{ axis: string; delta: number; icon: string }> {
+    if (!this.data.summary.relationshipChanges) return [];
+
+    const changes = this.data.summary.relationshipChanges.deltas;
+    const result = [];
+
+    if (changes.trust !== 0) {
+      result.push({ axis: 'Trust', delta: changes.trust, icon: 'security' });
+    }
+    if (changes.affection !== 0) {
+      result.push({ axis: 'Affection', delta: changes.affection, icon: 'favorite' });
+    }
+    if (changes.desire !== 0) {
+      result.push({ axis: 'Desire', delta: changes.desire, icon: 'local_fire_department' });
+    }
+
+    return result;
+  }
+
+  /**
+   * Get icon for relationship axis
+   */
+  getRelationshipIcon(axis: string): string {
+    const icons: Record<string, string> = {
+      trust: 'security',
+      affection: 'favorite',
+      desire: 'local_fire_department'
+    };
+    return icons[axis.toLowerCase()] || 'favorite';
+  }
+
+  /**
+   * Format relationship state for display
+   */
+  formatRelationshipState(state: string): string {
+    return state
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+  }
+
+  /**
+   * Get emotion display info
+   */
+  getEmotionInfo(): { primary: string; secondary: string; icon: string } | null {
+    const emotion = this.data.summary.emotionalState;
+    if (!emotion) return null;
+
+    const emotionIcons: Record<string, string> = {
+      joy: 'sentiment_very_satisfied',
+      sadness: 'sentiment_dissatisfied',
+      anger: 'sentiment_very_dissatisfied',
+      fear: 'sentiment_neutral',
+      surprise: 'sentiment_satisfied',
+      neutral: 'sentiment_neutral'
+    };
+
+    // Find the dominant emotion
+    const emotions = [
+      { name: 'joy', value: emotion.joy },
+      { name: 'sadness', value: emotion.sadness },
+      { name: 'anger', value: emotion.anger },
+      { name: 'fear', value: emotion.fear },
+      { name: 'surprise', value: emotion.surprise }
+    ];
+
+    emotions.sort((a, b) => b.value - a.value);
+
+    return {
+      primary: emotions[0].name.charAt(0).toUpperCase() + emotions[0].name.slice(1),
+      secondary: emotions[1].name.charAt(0).toUpperCase() + emotions[1].name.slice(1),
+      icon: emotionIcons[emotions[0].name] || 'sentiment_neutral'
+    };
   }
 
   /**
@@ -208,8 +307,9 @@ export class ActivityResultModal {
    * Replicates backend logic for client-side display
    */
   calculateProbabilities(): Record<OutcomeTier, number> {
-    const statValue = this.data.result.outcome?.statBonus || 0;
-    const difficulty = this.data.activity.difficulty || 0;
+    const rollDetails = this.data.summary.rollDetails;
+    const statValue = rollDetails?.statBonus || 0;
+    const difficulty = this.data.summary.activity.difficulty || 0;
     const dc = 100 + difficulty;
 
     const BASE_DC = 100;

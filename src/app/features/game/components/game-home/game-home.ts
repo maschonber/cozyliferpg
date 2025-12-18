@@ -202,13 +202,33 @@ export class GameHome {
 
     this.facade.performSoloActivity(activityId).subscribe({
       next: (result) => {
-        // Show result modal with stat changes (Phase 2.5)
+        // Transform result into ActivitySummary for unified modal
+        const summary = {
+          activity,
+          activityType: 'solo' as const,
+          player: result.player,
+          outcome: result.outcome ? {
+            tier: result.outcome.tier,
+            description: result.outcome.description
+          } : undefined,
+          rollDetails: result.outcome ? {
+            roll: result.outcome.roll,
+            adjustedRoll: result.outcome.adjustedRoll,
+            statBonus: result.outcome.statBonus,
+            difficultyPenalty: result.outcome.difficultyPenalty,
+            difficultyClass: result.outcome.dc
+          } : undefined,
+          statChanges: result.statChanges,
+          statsTrainedThisActivity: result.statsTrainedThisActivity,
+          actualEnergyCost: result.actualEnergyCost,
+          actualMoneyCost: result.actualMoneyCost,
+          actualTimeCost: result.actualTimeCost
+        };
+
+        // Show result modal with unified summary
         this.dialog.open(ActivityResultModal, {
           width: '450px',
-          data: {
-            activity,
-            result
-          }
+          data: { summary }
         });
       },
       error: (error) => {

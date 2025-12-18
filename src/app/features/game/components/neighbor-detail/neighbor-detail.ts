@@ -8,9 +8,11 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
 import { Subscription } from 'rxjs';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
+import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
 
 @Component({
   selector: 'app-neighbor-detail',
@@ -32,6 +34,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
   private facade = inject(GameFacade);
   private route = inject(ActivatedRoute);
   private router = inject(Router);
+  private dialog = inject(MatDialog);
   private subscriptions = new Subscription();
 
   // Expose Math for template
@@ -144,29 +147,62 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Perform an activity
    */
   onPerformActivity(activityId: string): void {
-    const npcId = this.selectedNPC()?.id;
-    if (!npcId) return;
+    const npc = this.selectedNPC();
+    const npcId = npc?.id;
+    if (!npcId || !npc) return;
+
+    const activity = this.activities().find(a => a.id === activityId);
+    if (!activity) return;
+
+    const previousRelationship = this.selectedRelationship();
 
     this.facade.performActivity(npcId, activityId).subscribe({
       next: (response) => {
-        // Show trait discovery notification
-        if (response.discoveredTrait?.isNew) {
-          const traitName = this.formatTraitName(response.discoveredTrait.trait);
-          const category = response.discoveredTrait.category;
-          console.log(`✨ Discovered new ${category} trait: ${traitName}!`);
-          // TODO: Replace with snackbar/toast notification system
-          alert(`✨ Discovered new ${category} trait: ${traitName}!`);
-        }
+        // Transform response into ActivitySummary for unified modal
+        const summary = {
+          activity,
+          activityType: 'social' as const,
+          npc: npc,
+          player: this.player()!,
+          outcome: response.outcome ? {
+            tier: response.outcome.tier,
+            description: response.outcome.description
+          } : undefined,
+          // Social activities don't have detailed roll info yet, but include if available
+          actualEnergyCost: activity.energyCost,
+          actualMoneyCost: activity.moneyCost,
+          actualTimeCost: activity.timeCost,
+          // Relationship changes
+          relationshipChanges: response.relationship && previousRelationship ? {
+            previousValues: {
+              trust: previousRelationship.trust,
+              affection: previousRelationship.affection,
+              desire: previousRelationship.desire
+            },
+            newValues: {
+              trust: response.relationship.trust,
+              affection: response.relationship.affection,
+              desire: response.relationship.desire
+            },
+            deltas: {
+              trust: response.relationship.trust - previousRelationship.trust,
+              affection: response.relationship.affection - previousRelationship.affection,
+              desire: response.relationship.desire - previousRelationship.desire
+            },
+            stateChanged: response.stateChanged,
+            previousState: response.previousState,
+            newState: response.newState
+          } : undefined,
+          emotionalState: response.emotionalState,
+          discoveredTrait: response.discoveredTrait,
+          difficultyInfo: response.difficultyInfo
+        };
 
-        // Log outcome information for debugging
-        if (response.outcome) {
-          console.log(`Activity outcome: ${response.outcome.tier} - ${response.outcome.description}`);
-        }
-
-        // Log difficulty information for debugging
-        if (response.difficultyInfo) {
-          console.log('Difficulty breakdown:', response.difficultyInfo);
-        }
+        // Show result modal with unified summary
+        this.dialog.open(ActivityResultModal, {
+          width: '450px',
+          data: { summary }
+        });
       },
       error: (error) => {
         console.error('Failed to perform activity:', error);
