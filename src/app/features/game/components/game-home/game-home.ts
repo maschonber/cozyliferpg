@@ -202,6 +202,17 @@ export class GameHome {
 
     this.facade.performSoloActivity(activityId).subscribe({
       next: (result) => {
+        // Helper to get outcome description
+        const getOutcomeDescription = (tier: string): string => {
+          switch (tier) {
+            case 'best': return 'Everything went perfectly!';
+            case 'okay': return 'Things went well.';
+            case 'mixed': return 'Some good, some not so good.';
+            case 'catastrophic': return 'Things went wrong...';
+            default: return 'Activity completed.';
+          }
+        };
+
         // Transform result into ActivitySummary for unified modal
         const summary = {
           activity,
@@ -209,14 +220,14 @@ export class GameHome {
           player: result.player,
           outcome: result.outcome ? {
             tier: result.outcome.tier,
-            description: result.outcome.description
+            description: getOutcomeDescription(result.outcome.tier)
           } : undefined,
           rollDetails: result.outcome ? {
             roll: result.outcome.roll,
             adjustedRoll: result.outcome.adjustedRoll,
             statBonus: result.outcome.statBonus,
             difficultyPenalty: result.outcome.difficultyPenalty,
-            difficultyClass: result.outcome.dc
+            difficultyClass: 100 + (activity.difficulty || 0)
           } : undefined,
           statChanges: result.statChanges,
           statsTrainedThisActivity: result.statsTrainedThisActivity,

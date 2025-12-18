@@ -271,34 +271,21 @@ export class ActivityResultModal {
   /**
    * Get emotion display info
    */
-  getEmotionInfo(): { primary: string; secondary: string; icon: string } | null {
+  getEmotionInfo(): { emotion: string; icon: string } | null {
     const emotion = this.data.summary.emotionalState;
     if (!emotion) return null;
 
     const emotionIcons: Record<string, string> = {
-      joy: 'sentiment_very_satisfied',
-      sadness: 'sentiment_dissatisfied',
-      anger: 'sentiment_very_dissatisfied',
-      fear: 'sentiment_neutral',
-      surprise: 'sentiment_satisfied',
-      neutral: 'sentiment_neutral'
+      neutral: 'sentiment_neutral',
+      happy: 'sentiment_very_satisfied',
+      sad: 'sentiment_dissatisfied',
+      flirty: 'favorite',
+      angry: 'sentiment_very_dissatisfied'
     };
 
-    // Find the dominant emotion
-    const emotions = [
-      { name: 'joy', value: emotion.joy },
-      { name: 'sadness', value: emotion.sadness },
-      { name: 'anger', value: emotion.anger },
-      { name: 'fear', value: emotion.fear },
-      { name: 'surprise', value: emotion.surprise }
-    ];
-
-    emotions.sort((a, b) => b.value - a.value);
-
     return {
-      primary: emotions[0].name.charAt(0).toUpperCase() + emotions[0].name.slice(1),
-      secondary: emotions[1].name.charAt(0).toUpperCase() + emotions[1].name.slice(1),
-      icon: emotionIcons[emotions[0].name] || 'sentiment_neutral'
+      emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
+      icon: emotionIcons[emotion] || 'sentiment_neutral'
     };
   }
 

@@ -157,9 +157,7 @@
             <h3>{{ data.summary.npc?.name }}'s Emotional State</h3>
             <div class="emotion-display">
               <mat-icon class="emotion-icon">{{ emotionInfo.icon }}</mat-icon>
-              <span class="emotion-primary">{{ emotionInfo.primary }}</span>
-              <span class="emotion-label">with some</span>
-              <span class="emotion-secondary">{{ emotionInfo.secondary }}</span>
+              <span class="emotion-primary">{{ emotionInfo.emotion }}</span>
             </div>
           </div>
 
@@ -176,10 +174,10 @@
             <h3>{{ trait.isNew ? 'Trait Discovered!' : 'Trait Observed' }}</h3>
           </div>
           <div class="trait-info">
-            <span class="trait-name">{{ trait.trait.name }}</span>
+            <span class="trait-name">{{ trait.traitName }}</span>
             <span class="trait-category">({{ trait.category }})</span>
           </div>
-          <p class="trait-description">{{ trait.trait.description }}</p>
+          <p class="trait-description">{{ trait.traitDescription }}</p>
         </div>
 
         <mat-divider></mat-divider>

@@ -31,7 +31,8 @@ import {
   getTraitActivityBonus,
   getArchetypeBonus,
   discoverTrait,
-  getTraitCategory
+  getTraitCategory,
+  getTraitDefinition
 } from '../services/trait';
 import { rollOutcome } from '../services/outcome';
 import {
@@ -608,6 +609,8 @@ router.post(
         // Enhanced response fields (Relationship Redesign)
         discoveredTrait: discoveredTrait ? {
           trait: discoveredTrait.trait as any,
+          traitName: getTraitDefinition(discoveredTrait.trait as any).name,
+          traitDescription: getTraitDefinition(discoveredTrait.trait as any).description,
           isNew: discoveredTrait.isNew,
           category: getTraitCategory(discoveredTrait.trait as any)
         } : undefined,
