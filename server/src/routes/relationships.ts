@@ -614,7 +614,13 @@ router.post(
 
         outcome: {
           tier: outcomeResult.tier,
-          description: getOutcomeDescription(outcomeResult.tier)
+          description: getOutcomeDescription(outcomeResult.tier),
+          roll: outcomeResult.roll,
+          adjustedRoll: outcomeResult.adjustedRoll,
+          statBonus: outcomeResult.statBonus,
+          dc: outcomeResult.dc,
+          isCritSuccess: outcomeResult.isCritSuccess,
+          isCritFail: outcomeResult.isCritFail
         },
 
         difficultyInfo: {

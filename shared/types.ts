@@ -407,6 +407,13 @@ export interface PerformActivityResponse {
   outcome?: {
     tier: 'best' | 'okay' | 'mixed' | 'catastrophic';
     description: string;
+    // Roll details (added for consistency with solo activities)
+    roll?: number;              // The 2d100 roll (2-200)
+    adjustedRoll?: number;      // roll + statBonus
+    statBonus?: number;         // Average of relevant stats
+    dc?: number;                // The difficulty class
+    isCritSuccess?: boolean;    // Whether roll was in crit success range
+    isCritFail?: boolean;       // Whether roll was in crit fail range
   };
 
   // Difficulty breakdown for feedback
@@ -753,6 +760,75 @@ export interface SoloActivityResult {
   actualEnergyCost?: number;
   actualMoneyCost?: number;
   actualTimeCost?: number;
+}
+
+/**
+ * Unified activity summary for displaying results in the frontend
+ * Used by ActivityResultModal to show both solo and social activity outcomes
+ */
+export interface ActivitySummary {
+  // Activity context
+  activity: Activity;
+  activityType: 'solo' | 'social';
+
+  // NPC context (for social activities)
+  npc?: NPC;
+
+  // Outcome (both types may have this)
+  outcome?: {
+    tier: 'best' | 'okay' | 'mixed' | 'catastrophic';
+    description: string;
+  };
+
+  // Roll details (solo activities have more detail)
+  rollDetails?: {
+    roll: number;
+    adjustedRoll: number;
+    statBonus?: number;
+    difficultyPenalty?: number;
+    difficultyClass: number;
+  };
+
+  // Resource costs (both types can have these)
+  actualEnergyCost?: number;
+  actualMoneyCost?: number;
+  actualTimeCost?: number;
+
+  // Stat changes (both types may have these - optional)
+  statChanges?: StatChange[];
+  statsTrainedThisActivity?: StatName[];
+
+  // Relationship changes (social activities only)
+  relationshipChanges?: {
+    previousValues: { trust: number; affection: number; desire: number };
+    newValues: { trust: number; affection: number; desire: number };
+    deltas: { trust: number; affection: number; desire: number };
+    stateChanged?: boolean;
+    previousState?: RelationshipState;
+    newState?: RelationshipState;
+  };
+
+  // Emotional state (social activities only)
+  emotionalState?: EmotionalState;
+
+  // Trait discovery (social activities only)
+  discoveredTrait?: {
+    trait: NPCTrait;
+    isNew: boolean;
+    category: 'personality' | 'romance' | 'interest';
+  };
+
+  // Difficulty breakdown (social activities have this)
+  difficultyInfo?: {
+    baseDifficulty: number;
+    emotionModifier: number;
+    relationshipModifier: number;
+    traitBonus: number;
+    finalDifficulty: number;
+  };
+
+  // Updated player state
+  player: PlayerCharacter;
 }
 
 /**
