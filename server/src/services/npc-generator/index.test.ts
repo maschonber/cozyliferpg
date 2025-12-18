@@ -381,11 +381,21 @@ describe('Daily Emotion Initialization (Task 5)', () => {
   });
 
   test('relationship level affects emotions more than time of day', () => {
-    const strangerMorning = initializeDailyEmotion(testTraits, 'morning', 'stranger');
-    const friendMorning = initializeDailyEmotion(testTraits, 'morning', 'friend');
+    // Mock Math.random to return 0.5 for deterministic middle-range values
+    // This makes the test reliable and non-flaky
+    const mockRandom = jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
-    // Friend should have noticeably higher positive emotions
-    expect(friendMorning.joy).toBeGreaterThan(strangerMorning.joy + 3);
+    try {
+      const strangerMorning = initializeDailyEmotion(testTraits, 'morning', 'stranger');
+      const friendMorning = initializeDailyEmotion(testTraits, 'morning', 'friend');
+
+      // Friend should have noticeably higher positive emotions
+      // With mocked random = 0.5, the difference should be consistent
+      expect(friendMorning.joy).toBeGreaterThan(strangerMorning.joy + 3);
+    } finally {
+      // Always restore Math.random, even if test fails
+      mockRandom.mockRestore();
+    }
   });
 });
 
