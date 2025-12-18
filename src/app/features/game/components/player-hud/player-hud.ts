@@ -11,10 +11,8 @@ import { MatProgressBarModule } from '@angular/material/progress-bar';
 import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatMenuModule } from '@angular/material/menu';
-import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
 import { LocationId } from '../../../../../../shared/types';
-import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-selection-modal';
 
 @Component({
   selector: 'app-player-hud',
@@ -32,7 +30,6 @@ import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-
 })
 export class PlayerHud {
   private facade = inject(GameFacade);
-  private dialog = inject(MatDialog);
 
   // Expose player signal
   player = this.facade.player;
@@ -67,49 +64,21 @@ export class PlayerHud {
 
   /**
    * Reset player progress (for debugging)
+   * After reset, the game-home component will automatically detect the new player
+   * and show the archetype selection modal via its effect.
    */
   onResetPlayer(): void {
     if (confirm('Are you sure you want to reset your progress? This will delete all NPCs and return you to Day 1.')) {
       this.facade.resetPlayer().subscribe({
         next: () => {
           console.log('Player reset successfully');
-          // Show archetype selection dialog after reset
-          this.showArchetypeSelection();
+          // The archetype selection modal will be shown automatically by game-home
         },
         error: (error) => {
           console.error('Failed to reset player:', error);
         }
       });
     }
-  }
-
-  /**
-   * Show archetype selection modal
-   */
-  private showArchetypeSelection(): void {
-    const dialogRef = this.dialog.open(ArchetypeSelectionModal, {
-      width: '900px',
-      maxWidth: '95vw',
-      disableClose: true  // Can't dismiss - must choose
-    });
-
-    dialogRef.afterClosed().subscribe((archetype: string | null) => {
-      if (archetype) {
-        console.log(`Selected archetype: ${archetype}`);
-        this.facade.setPlayerArchetype(archetype).subscribe({
-          next: () => {
-            console.log('✅ Archetype set successfully');
-          },
-          error: (error) => {
-            console.error('❌ Failed to set archetype:', error);
-            alert('Failed to set archetype. Please try again.');
-          }
-        });
-      } else {
-        // If user somehow closes without selecting, show again
-        setTimeout(() => this.showArchetypeSelection(), 100);
-      }
-    });
   }
 
   /**
