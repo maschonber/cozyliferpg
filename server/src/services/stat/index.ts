@@ -101,6 +101,16 @@ export const ARCHETYPE_STATS: Record<PlayerArchetype, Record<StatName, number>> 
     fitness: 15, vitality: 15, poise: 15,
     knowledge: 15, creativity: 15, ambition: 15,
     confidence: 15, wit: 15, empathy: 15
+  },
+  debug_advanced: {
+    fitness: 50, vitality: 50, poise: 50,
+    knowledge: 50, creativity: 50, ambition: 50,
+    confidence: 50, wit: 50, empathy: 50
+  },
+  debug_master: {
+    fitness: 80, vitality: 80, poise: 80,
+    knowledge: 80, creativity: 80, ambition: 80,
+    confidence: 80, wit: 80, empathy: 80
   }
 };
 

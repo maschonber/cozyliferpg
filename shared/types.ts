@@ -599,7 +599,9 @@ export type PlayerArchetype =
   | 'social_butterfly'
   | 'artist'
   | 'professional'
-  | 'balanced';
+  | 'balanced'
+  | 'debug_advanced'
+  | 'debug_master';
 
 /**
  * Activity outcome tier (Phase 2.5)

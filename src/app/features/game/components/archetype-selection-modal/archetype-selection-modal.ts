@@ -151,6 +151,44 @@ export class ArchetypeSelectionModal {
         { stat: 'empathy', value: 15 }
       ],
       lowStats: []
+    },
+    {
+      id: 'debug_advanced',
+      name: '🔧 Debug: Advanced',
+      description: '[DEBUG] Moderately high stats for testing intermediate gameplay without prolonged training.',
+      icon: '🔧',
+      highStats: [
+        { stat: 'fitness', value: 50 },
+        { stat: 'vitality', value: 50 },
+        { stat: 'poise', value: 50 },
+        { stat: 'knowledge', value: 50 },
+        { stat: 'creativity', value: 50 },
+        { stat: 'ambition', value: 50 },
+        { stat: 'confidence', value: 50 },
+        { stat: 'wit', value: 50 },
+        { stat: 'empathy', value: 50 }
+      ],
+      mediumStats: [],
+      lowStats: []
+    },
+    {
+      id: 'debug_master',
+      name: '🔧 Debug: Master',
+      description: '[DEBUG] Very high stats for testing advanced gameplay features without any training.',
+      icon: '⚡',
+      highStats: [
+        { stat: 'fitness', value: 80 },
+        { stat: 'vitality', value: 80 },
+        { stat: 'poise', value: 80 },
+        { stat: 'knowledge', value: 80 },
+        { stat: 'creativity', value: 80 },
+        { stat: 'ambition', value: 80 },
+        { stat: 'confidence', value: 80 },
+        { stat: 'wit', value: 80 },
+        { stat: 'empathy', value: 80 }
+      ],
+      mediumStats: [],
+      lowStats: []
     }
   ];
 

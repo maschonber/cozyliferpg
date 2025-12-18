@@ -40,15 +40,17 @@ describe('Stat Service', () => {
       expect(ALL_STATS).toContain('empathy');
     });
 
-    it('should have 6 archetypes', () => {
+    it('should have 8 archetypes (6 normal + 2 debug)', () => {
       const archetypes = Object.keys(ARCHETYPE_STATS);
-      expect(archetypes).toHaveLength(6);
+      expect(archetypes).toHaveLength(8);
       expect(archetypes).toContain('athlete');
       expect(archetypes).toContain('scholar');
       expect(archetypes).toContain('social_butterfly');
       expect(archetypes).toContain('artist');
       expect(archetypes).toContain('professional');
       expect(archetypes).toContain('balanced');
+      expect(archetypes).toContain('debug_advanced');
+      expect(archetypes).toContain('debug_master');
     });
   });
 
