@@ -193,6 +193,7 @@ export interface NPC {
 
   // Emotion system (Relationship Redesign)
   emotionState: NPCEmotionState;
+  dominantEmotion?: EmotionDisplay;  // Current dominant emotion for display
 
   // Appearance (for AI image generation)
   appearance: NPCAppearance;
@@ -394,6 +395,29 @@ export interface PerformActivityResponse {
   previousState?: RelationshipState;
   newState?: RelationshipState;
   emotionalState?: EmotionalState;
+
+  // Trait discovery (Relationship Redesign)
+  discoveredTrait?: {
+    trait: NPCTrait;
+    isNew: boolean;
+    category: 'personality' | 'romance' | 'interest';
+  };
+
+  // Outcome information
+  outcome?: {
+    tier: 'best' | 'okay' | 'mixed' | 'catastrophic';
+    description: string;
+  };
+
+  // Difficulty breakdown for feedback
+  difficultyInfo?: {
+    baseDifficulty: number;
+    emotionModifier: number;
+    relationshipModifier: number;
+    traitBonus: number;
+    finalDifficulty: number;
+  };
+
   error?: string;
 }
 
