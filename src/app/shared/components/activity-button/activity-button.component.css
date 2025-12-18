@@ -8,6 +8,10 @@
   display: flex !important;
   justify-content: flex-start !important;
   align-items: flex-start !important;
+  /* Mobile touch optimization */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .activity-button.positive {
