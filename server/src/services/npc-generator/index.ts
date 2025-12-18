@@ -466,7 +466,7 @@ export function initializeDailyEmotion(
         // Very negative
         relationshipModifiers.anger = randomInt(16, 26);
         relationshipModifiers.sadness = randomInt(5, 15);
-        relationshipModifiers.joy = randomInt(-25, -15);
+        relationshipModifiers.joy = randomInt(-35, -26);
         relationshipModifiers.affection = randomInt(-20, -10);
         break;
 
