@@ -368,6 +368,115 @@ export class ActivityResultModal {
     return this._probabilities || { catastrophic: 0, mixed: 0, okay: 0, best: 0 };
   }
 
+  /**
+   * Check if we have stat contribution data
+   */
+  get hasStatContributions(): boolean {
+    return !!(this.data.summary.rollDetails?.statsUsed && this.data.summary.rollDetails.statsUsed.length > 0);
+  }
+
+  /**
+   * Get formatted stat contributions for display
+   */
+  get statContributions(): Array<{ name: string; value: number; icon: string }> {
+    const statsUsed = this.data.summary.rollDetails?.statsUsed || [];
+    return statsUsed.map(stat => ({
+      name: stat.displayName,
+      value: stat.currentValue,
+      icon: this.getStatIcon(stat.statName)
+    }));
+  }
+
+  /**
+   * Check if we have difficulty breakdown data
+   */
+  get hasDifficultyBreakdown(): boolean {
+    return !!this.data.summary.difficultyBreakdown;
+  }
+
+  /**
+   * Get difficulty modifiers for display
+   */
+  get difficultyModifiers(): Array<{ label: string; value: number; description: string }> {
+    const breakdown = this.data.summary.difficultyBreakdown;
+    if (!breakdown) return [];
+
+    const modifiers: Array<{ label: string; value: number; description: string }> = [];
+
+    // Base difficulty (always present)
+    modifiers.push({
+      label: 'Base DC',
+      value: breakdown.baseDifficulty,
+      description: 'Base difficulty class'
+    });
+
+    // Activity modifier (solo activities)
+    if (breakdown.activityModifier !== undefined && breakdown.activityModifier !== 0) {
+      modifiers.push({
+        label: 'Activity',
+        value: breakdown.activityModifier,
+        description: 'Activity difficulty'
+      });
+    }
+
+    // Emotion modifier (social activities)
+    if (breakdown.emotionModifier !== undefined && breakdown.emotionModifier !== 0) {
+      modifiers.push({
+        label: 'Emotion',
+        value: breakdown.emotionModifier,
+        description: breakdown.emotionModifier > 0
+          ? 'NPC is in a negative emotional state'
+          : 'NPC is in a positive emotional state'
+      });
+    }
+
+    // Relationship modifier (social activities)
+    if (breakdown.relationshipModifier !== undefined && breakdown.relationshipModifier !== 0) {
+      modifiers.push({
+        label: 'Relationship',
+        value: breakdown.relationshipModifier,
+        description: breakdown.relationshipModifier > 0
+          ? 'Strained relationship'
+          : 'Good relationship'
+      });
+    }
+
+    // Trait bonus (social activities - combined)
+    if (breakdown.traitBonus !== undefined && breakdown.traitBonus !== 0) {
+      const parts: string[] = [];
+
+      if (breakdown.traitBreakdown) {
+        if (breakdown.traitBreakdown.npcTraitBonus !== 0) {
+          parts.push(`NPC traits: ${breakdown.traitBreakdown.npcTraitBonus > 0 ? '+' : ''}${breakdown.traitBreakdown.npcTraitBonus}`);
+        }
+        if (breakdown.traitBreakdown.archetypeBonus !== 0) {
+          parts.push(`Archetype: ${breakdown.traitBreakdown.archetypeBonus > 0 ? '+' : ''}${breakdown.traitBreakdown.archetypeBonus}`);
+        }
+      }
+
+      modifiers.push({
+        label: 'Traits',
+        value: breakdown.traitBonus,
+        description: parts.length > 0 ? parts.join(', ') : (breakdown.traitBonus > 0
+          ? 'NPC traits make this harder'
+          : 'NPC traits make this easier')
+      });
+    }
+
+    // Streak modifier (social activities)
+    if (breakdown.streakModifier !== undefined && breakdown.streakModifier !== 0) {
+      modifiers.push({
+        label: 'Streak',
+        value: breakdown.streakModifier,
+        description: breakdown.streakModifier > 0
+          ? 'Recent negative interactions'
+          : 'Recent positive interactions'
+      });
+    }
+
+    return modifiers;
+  }
+
   onContinue(): void {
     this.dialogRef.close();
   }

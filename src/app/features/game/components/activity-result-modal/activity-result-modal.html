@@ -62,6 +62,49 @@
                 </div>
               </div>
 
+              <!-- Stat Contributions -->
+              @if (hasStatContributions) {
+                <mat-divider></mat-divider>
+                <div class="stat-contributions-section">
+                  <h4>Stats Used</h4>
+                  <div class="stat-contributions">
+                    @for (stat of statContributions; track stat.name) {
+                      <div class="stat-contribution-item">
+                        <mat-icon class="stat-icon">{{ stat.icon }}</mat-icon>
+                        <span class="stat-name">{{ stat.name }}</span>
+                        <span class="stat-value">{{ stat.value | number:'1.0-0' }}</span>
+                      </div>
+                    }
+                  </div>
+                  @if (rollDetails.statBonus !== undefined) {
+                    <p class="stat-average">Average: {{ rollDetails.statBonus | number:'1.0-0' }}</p>
+                  }
+                </div>
+              }
+
+              <!-- Difficulty Breakdown -->
+              @if (hasDifficultyBreakdown) {
+                <mat-divider></mat-divider>
+                <div class="difficulty-breakdown-section">
+                  <h4>Difficulty Breakdown</h4>
+                  <div class="difficulty-modifiers">
+                    @for (modifier of difficultyModifiers; track modifier.label) {
+                      <div class="difficulty-modifier-item" [class.positive]="modifier.value > 0" [class.negative]="modifier.value < 0">
+                        <span class="modifier-label">{{ modifier.label }}</span>
+                        <span class="modifier-value">{{ modifier.value > 0 ? '+' : '' }}{{ modifier.value }}</span>
+                        <span class="modifier-description">{{ modifier.description }}</span>
+                      </div>
+                    }
+                  </div>
+                  @if (data.summary.difficultyBreakdown) {
+                    <div class="final-difficulty">
+                      <span class="final-label">Final DC:</span>
+                      <span class="final-value">{{ data.summary.difficultyBreakdown.finalDifficulty }}</span>
+                    </div>
+                  }
+                </div>
+              }
+
               <mat-divider></mat-divider>
 
               <!-- Probability Breakdown -->

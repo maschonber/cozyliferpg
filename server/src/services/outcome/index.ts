@@ -7,7 +7,8 @@ import {
   OutcomeTier,
   StatName,
   PlayerStats,
-  ActivityOutcome
+  ActivityOutcome,
+  StatContribution
 } from '../../../../shared/types';
 import { getCurrentStat } from '../stat';
 
@@ -45,6 +46,13 @@ function roll2d100(): number {
   const die1 = Math.floor(Math.random() * 100) + 1;
   const die2 = Math.floor(Math.random() * 100) + 1;
   return die1 + die2;
+}
+
+/**
+ * Format stat name for display
+ */
+function formatStatName(statName: StatName): string {
+  return statName.charAt(0).toUpperCase() + statName.slice(1);
 }
 
 /**
@@ -130,12 +138,20 @@ export function rollOutcome(
   dc: number;             // The difficulty class
   isCritSuccess: boolean; // Whether roll was in crit success range
   isCritFail: boolean;    // Whether roll was in crit fail range
+  statsUsed: StatContribution[];  // Detailed breakdown of stats used
 } {
   // Generate 2d100 roll if not provided (for testing, roll can be injected)
   const actualRoll = diceRoll ?? roll2d100();
 
   // Calculate stat bonus (full average of relevant stats)
   const statBonus = calculateStatBonus(stats, relevantStats);
+
+  // Capture detailed stat contributions
+  const statsUsed: StatContribution[] = relevantStats.map(statName => ({
+    statName,
+    displayName: formatStatName(statName),
+    currentValue: getCurrentStat(stats, statName)
+  }));
 
   // Calculate DC
   const dc = calculateDC(difficulty);
@@ -161,7 +177,8 @@ export function rollOutcome(
     difficultyPenalty: dc, // For backwards compatibility with existing code
     dc,
     isCritSuccess,
-    isCritFail
+    isCritFail,
+    statsUsed
   };
 }
 

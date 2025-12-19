@@ -449,7 +449,6 @@ router.post(
         npc.archetype,
         activity.category
       );
-      const totalTraitBonus = traitBonus + archetypeBonus;
 
       const relationshipModifier = getRelationshipDifficultyModifier(
         { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
@@ -459,13 +458,15 @@ router.post(
       // TODO: Load streak from database if we want to persist it
       const streak = undefined; // For now, no streak tracking
 
+      // Calculate difficulty with separate trait and archetype bonuses
       const difficultyCalc = calculateDynamicDifficulty(
         activity.difficulty || 50, // Default to medium difficulty if not specified
         currentEmotionState,
         { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
         relationship.currentState,
         relationshipModifier,
-        totalTraitBonus,
+        traitBonus,        // NPC trait bonus
+        archetypeBonus,    // Archetype compatibility bonus
         streak
       );
 
@@ -623,16 +624,12 @@ router.post(
           statBonus: outcomeResult.statBonus,
           dc: outcomeResult.dc,
           isCritSuccess: outcomeResult.isCritSuccess,
-          isCritFail: outcomeResult.isCritFail
+          isCritFail: outcomeResult.isCritFail,
+          statsUsed: outcomeResult.statsUsed
         },
 
-        difficultyInfo: {
-          baseDifficulty: activity.difficulty || 50,
-          emotionModifier: difficultyCalc.emotionModifier,
-          relationshipModifier: difficultyCalc.relationshipModifier,
-          traitBonus: totalTraitBonus,
-          finalDifficulty: difficultyCalc.finalDifficulty
-        }
+        // Difficulty breakdown with full details
+        difficultyBreakdown: difficultyCalc
       });
     } catch (error) {
       await client.query('ROLLBACK');

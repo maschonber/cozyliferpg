@@ -233,13 +233,15 @@ export class GameHome {
             adjustedRoll: result.outcome.adjustedRoll,
             statBonus: result.outcome.statBonus,
             difficultyPenalty: result.outcome.difficultyPenalty,
-            difficultyClass: 100 + (activity.difficulty || 0)
+            difficultyClass: 100 + (activity.difficulty || 0),
+            statsUsed: result.outcome.statsUsed
           } : undefined,
           statChanges: result.statChanges,
           statsTrainedThisActivity: result.statsTrainedThisActivity,
           actualEnergyCost: result.actualEnergyCost,
           actualMoneyCost: result.actualMoneyCost,
-          actualTimeCost: result.actualTimeCost
+          actualTimeCost: result.actualTimeCost,
+          difficultyBreakdown: result.difficultyBreakdown
         };
 
         // Show result modal with unified summary

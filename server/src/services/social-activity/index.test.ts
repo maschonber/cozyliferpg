@@ -141,14 +141,15 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         goodAxes,
         'friend',
         -8,              // relationship modifier (friend bonus)
-        -5,              // trait bonus
+        -3,              // NPC trait bonus
+        -2,              // archetype bonus
         undefined        // no streak
       );
 
       expect(result.baseDifficulty).toBe(50);
       expect(result.emotionModifier).toBeLessThan(0);      // Happy = easier
       expect(result.relationshipModifier).toBe(-8);         // Friend bonus
-      expect(result.traitBonus).toBe(-5);                  // Matching traits
+      expect(result.traitBonus).toBe(-5);                  // Matching traits (combined)
       expect(result.streakModifier).toBe(0);               // No streak
       expect(result.finalDifficulty).toBeLessThan(50);     // Overall easier
     });
@@ -160,13 +161,14 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         { trust: -40, affection: -30, desire: 0 },
         'rival',
         15,              // relationship penalty (rival)
-        5,               // trait penalty
+        3,               // NPC trait penalty
+        2,               // archetype penalty
         undefined
       );
 
       expect(result.emotionModifier).toBeGreaterThan(0);   // Angry = harder
       expect(result.relationshipModifier).toBe(15);        // Rival penalty
-      expect(result.traitBonus).toBe(5);                   // Trait penalty
+      expect(result.traitBonus).toBe(5);                   // Trait penalty (combined)
       expect(result.finalDifficulty).toBeGreaterThan(30);  // Overall harder
     });
 
@@ -177,7 +179,8 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         goodAxes,
         'partner',
         -15,             // big relationship bonus
-        -20,             // big trait bonus
+        -12,             // big NPC trait bonus
+        -8,              // big archetype bonus
         { consecutivePositive: 20, consecutiveNegative: 0, lastInteraction: new Date().toISOString(), lastDay: 1 }
       );
 
@@ -197,8 +200,9 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         neutralEmotions,
         neutralAxes,
         'stranger',
-        0,
-        0,
+        0,               // relationship modifier
+        0,               // NPC trait bonus
+        0,               // archetype bonus
         positiveStreak
       );
 
@@ -550,7 +554,8 @@ describe('Social Activity Service - Integration', () => {
     const axes = goodAxes;
     const state = 'friend';
     const relationshipMod = -8;
-    const traitBonus = -5;
+    const npcTraitBonus = -3;
+    const archetypeBonus = -2;
     const streak: InteractionStreak = {
       consecutivePositive: 4,
       consecutiveNegative: 0,
@@ -565,7 +570,8 @@ describe('Social Activity Service - Integration', () => {
       axes,
       state,
       relationshipMod,
-      traitBonus,
+      npcTraitBonus,
+      archetypeBonus,
       streak
     );
 
@@ -594,7 +600,8 @@ describe('Social Activity Service - Integration', () => {
     const axes = { trust: -40, affection: -30, desire: 0 };
     const state = 'rival';
     const relationshipMod = 15;  // Penalty
-    const traitBonus = 5;        // Penalty
+    const npcTraitBonus = 3;     // Penalty
+    const archetypeBonus = 2;    // Penalty
     const streak: InteractionStreak = {
       consecutivePositive: 0,
       consecutiveNegative: 6,
@@ -609,7 +616,8 @@ describe('Social Activity Service - Integration', () => {
       axes,
       state,
       relationshipMod,
-      traitBonus,
+      npcTraitBonus,
+      archetypeBonus,
       streak
     );
 
