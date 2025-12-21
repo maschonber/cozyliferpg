@@ -290,6 +290,59 @@ export class ActivityResultModal {
   }
 
   /**
+   * Check if there are emotion changes to display
+   */
+  get hasEmotionChanges(): boolean {
+    return !!this.data.summary.emotionChanges;
+  }
+
+  /**
+   * Get emotion changes with non-zero deltas
+   */
+  get emotionChangesList(): Array<{ emotion: string; delta: number; icon: string; newValue: number }> {
+    if (!this.data.summary.emotionChanges) return [];
+
+    const changes = this.data.summary.emotionChanges.deltas;
+    const newValues = this.data.summary.emotionChanges.newValues;
+    const result = [];
+
+    const emotionIcons: Record<string, string> = {
+      joy: 'sentiment_very_satisfied',
+      affection: 'favorite',
+      excitement: 'bolt',
+      calm: 'spa',
+      sadness: 'sentiment_dissatisfied',
+      anger: 'sentiment_very_dissatisfied',
+      anxiety: 'psychology_alt',
+      romantic: 'favorite_border'
+    };
+
+    const emotionNames: Record<string, string> = {
+      joy: 'Joy',
+      affection: 'Affection',
+      excitement: 'Excitement',
+      calm: 'Calm',
+      sadness: 'Sadness',
+      anger: 'Anger',
+      anxiety: 'Anxiety',
+      romantic: 'Romantic'
+    };
+
+    for (const [emotion, delta] of Object.entries(changes)) {
+      if (delta !== undefined && delta !== 0) {
+        result.push({
+          emotion: emotionNames[emotion] || emotion,
+          delta: delta,
+          icon: emotionIcons[emotion] || 'sentiment_neutral',
+          newValue: newValues[emotion as keyof typeof newValues]
+        });
+      }
+    }
+
+    return result.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)); // Sort by magnitude
+  }
+
+  /**
    * Calculate outcome probabilities based on current stat and difficulty
    * Replicates backend logic for client-side display
    */

@@ -422,6 +422,13 @@ export interface PerformActivityResponse {
   // Difficulty breakdown for feedback (replaces old difficultyInfo)
   difficultyBreakdown?: DifficultyBreakdown;
 
+  // Emotion changes for transparency (social activities only)
+  emotionChanges?: {
+    previousValues: EmotionValues;
+    newValues: EmotionValues;
+    deltas: Partial<EmotionValues>;
+  };
+
   error?: string;
 }
 
@@ -874,6 +881,13 @@ export interface ActivitySummary {
 
   // Emotional state (social activities only)
   emotionalState?: EmotionalState;
+
+  // Emotion changes (social activities only)
+  emotionChanges?: {
+    previousValues: EmotionValues;
+    newValues: EmotionValues;
+    deltas: Partial<EmotionValues>;  // Only emotions that changed
+  };
 
   // Trait discovery (social activities only)
   discoveredTrait?: {
