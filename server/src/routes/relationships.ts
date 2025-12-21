@@ -64,9 +64,10 @@ function mapRowToRelationship(row: any, npc?: NPC): Relationship {
     id: row.id,
     playerId: row.player_id,
     npcId: row.npc_id,
-    trust: row.trust,
-    affection: row.affection,
-    desire: row.desire,
+    // Defensive: ensure axis values are never null/undefined
+    trust: row.trust ?? 0,
+    affection: row.affection ?? 0,
+    desire: row.desire ?? 0,
     desireCap: row.desire_cap,
     currentState: row.current_state,
     unlockedStates: row.unlocked_states,
@@ -535,13 +536,18 @@ router.post(
         currentTime: newTime
       });
 
+      // Validate axis values before database update (defensive programming)
+      const trustValue = Number.isFinite(newAxes.trust) ? newAxes.trust : 0;
+      const affectionValue = Number.isFinite(newAxes.affection) ? newAxes.affection : 0;
+      const desireValue = Number.isFinite(newAxes.desire) ? newAxes.desire : 0;
+
       // Update relationship in database
       await client.query(
         `UPDATE relationships
          SET trust = $1, affection = $2, desire = $3, current_state = $4,
              unlocked_states = $5, last_interaction = $6
          WHERE id = $7`,
-        [newAxes.trust, newAxes.affection, newAxes.desire, newState, unlockedStates, new Date(), relationship.id]
+        [trustValue, affectionValue, desireValue, newState, unlockedStates, new Date(), relationship.id]
       );
 
       // Update NPC emotion state
@@ -572,12 +578,12 @@ router.post(
 
       await client.query('COMMIT');
 
-      // Build updated relationship object
+      // Build updated relationship object (use validated values)
       const updatedRelationship: Relationship = {
         ...relationship,
-        trust: newAxes.trust,
-        affection: newAxes.affection,
-        desire: newAxes.desire,
+        trust: trustValue,
+        affection: affectionValue,
+        desire: desireValue,
         currentState: newState,
         unlockedStates: unlockedStates as any,
         lastInteraction: new Date().toISOString(),
@@ -593,7 +599,7 @@ router.post(
       console.log(
         `✅ Interaction: ${activity.name} with ${npc.name} ` +
           `(Outcome: ${outcomeResult.tier}) ` +
-          `(T: ${relationship.trust} → ${newAxes.trust}, A: ${relationship.affection} → ${newAxes.affection}, D: ${relationship.desire} → ${newAxes.desire}) ` +
+          `(T: ${relationship.trust} → ${trustValue}, A: ${relationship.affection} → ${affectionValue}, D: ${relationship.desire} → ${desireValue}) ` +
           `State: ${previousState}${stateChanged ? ` → ${newState}` : ''} ` +
           `Emotion: ${dominantEmotion.primary.label}` +
           (discoveredTrait?.isNew ? ` [Discovered: ${discoveredTrait.trait}]` : '')
