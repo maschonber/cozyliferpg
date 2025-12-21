@@ -161,22 +161,32 @@ async function getOrCreateRelationship(
     throw new Error(`NPC with ID ${npcId} does not exist`);
   }
 
+  // Get NPC gender and player preference to calculate desire cap
+  const npcResult = await client.query('SELECT gender FROM npcs WHERE id = $1', [npcId]);
+  const npcGender = npcResult.rows[0].gender;
+
+  const playerResult = await client.query('SELECT sexual_preference FROM player_characters WHERE user_id = $1', [playerId]);
+  const playerPreference = playerResult.rows[0]?.sexual_preference || 'everyone';
+
+  // Calculate desire cap based on player preference and NPC gender
+  const desireCap = calculateDesireCap(playerPreference, npcGender);
+
   // Create new relationship
   const id = randomUUID();
   const now = new Date();
   const initialState = 'stranger';
 
-  console.log(`📝 Creating new relationship: Player ${playerId} <-> NPC ${npcId}`);
+  console.log(`📝 Creating new relationship: Player ${playerId} <-> NPC ${npcId} (desireCap: ${desireCap})`);
 
   const result = await client.query(
     `
     INSERT INTO relationships (
-      id, player_id, npc_id, trust, affection, desire,
+      id, player_id, npc_id, trust, affection, desire, desire_cap,
       current_state, unlocked_states, first_met, last_interaction
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
     RETURNING *
     `,
-    [id, playerId, npcId, 0, 0, 0, initialState, [initialState], now, now]
+    [id, playerId, npcId, 0, 0, 0, desireCap, initialState, [initialState], now, now]
   );
 
   console.log(`✅ Created new relationship with ID: ${id}`);
