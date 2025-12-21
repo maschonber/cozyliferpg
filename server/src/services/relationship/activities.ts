@@ -126,7 +126,7 @@ export const ACTIVITIES: Activity[] = [
     energyCost: -8,
     moneyCost: -5,
     effects: { affection: 10 },
-    difficulty: 20,
+    difficulty: 10,
     relevantStats: ['confidence'],
     outcomeProfile: {
       mainStats: ['confidence'],
@@ -151,7 +151,7 @@ export const ACTIVITIES: Activity[] = [
     energyCost: -5,
     moneyCost: 0,
     effects: { affection: 5 },
-    difficulty: 15,
+    difficulty: 5,
     relevantStats: ['confidence'],
     outcomeProfile: {
       mainStats: ['confidence'],
@@ -177,7 +177,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -30,
     allowedTimeSlots: ['evening', 'night'],
     effects: { desire: 15 },
-    difficulty: 40,
+    difficulty: 25,
     relevantStats: ['confidence', 'wit'],
     outcomeProfile: {
       mainStats: ['confidence'],
@@ -231,7 +231,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -20,
     allowedTimeSlots: ['evening', 'night'],
     effects: { affection: 10, desire: 5 },
-    difficulty: 15,
+    difficulty: 5,
     relevantStats: [],
     outcomeProfile: {
       mainStats: ['poise'],
@@ -255,7 +255,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
     effects: { affection: 10, trust: 5 },
-    difficulty: 35,
+    difficulty: 25,
     relevantStats: ['fitness'],
     outcomeProfile: {
       mainStats: ['fitness'],
@@ -282,7 +282,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -15,
     allowedTimeSlots: ['evening', 'night'],
     effects: { affection: 12, desire: 8 },
-    difficulty: 40,
+    difficulty: 30,
     relevantStats: ['creativity'],
     outcomeProfile: {
       mainStats: ['creativity'],
@@ -308,7 +308,7 @@ export const ACTIVITIES: Activity[] = [
     energyCost: -8,
     moneyCost: 0,
     effects: { desire: 12 },
-    difficulty: 45,
+    difficulty: 30,
     relevantStats: ['confidence', 'wit'],
     outcomeProfile: {
       mainStats: ['wit'],
@@ -335,7 +335,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -15,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
     effects: { affection: 15, desire: 8 },
-    difficulty: 25,
+    difficulty: 15,
     relevantStats: ['poise', 'confidence'],
     outcomeProfile: {
       mainStats: ['poise'],
@@ -363,7 +363,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -10,
     allowedTimeSlots: ['evening', 'night'],
     effects: { affection: 10, trust: 5 },
-    difficulty: 30,
+    difficulty: 20,
     relevantStats: ['poise', 'confidence'],
     outcomeProfile: {
       mainStats: ['poise'],
@@ -391,7 +391,7 @@ export const ACTIVITIES: Activity[] = [
     moneyCost: -5,
     allowedTimeSlots: ['evening', 'night'],
     effects: { affection: 8, desire: 10 },
-    difficulty: 15,
+    difficulty: 5,
     relevantStats: ['poise', 'confidence'],
     outcomeProfile: {
       mainStats: ['poise'],

@@ -399,20 +399,20 @@ describe('Social Activity Service - Outcome Effects', () => {
       expect(scaled.desire).toBe(8);
     });
 
-    it('should reverse effects by -0.4x for mixed outcome', () => {
+    it('should have no effect for mixed outcome (0.0x scaling)', () => {
       const scaled = scaleRelationshipEffects(baseEffects, 'mixed');
 
-      expect(scaled.affection).toBe(-4);  // 10 * -0.4
-      expect(scaled.trust).toBe(-2);      // 5 * -0.4 = -2
-      expect(scaled.desire).toBe(-3);     // 8 * -0.4 = -3.2 → -3 (rounded)
+      expect(scaled.affection).toBe(0);  // 10 * 0.0
+      expect(scaled.trust).toBe(0);      // 5 * 0.0
+      expect(scaled.desire).toBe(0);     // 8 * 0.0
     });
 
-    it('should reverse effects by -1.2x for catastrophic outcome', () => {
+    it('should reverse effects by -0.5x for catastrophic outcome', () => {
       const scaled = scaleRelationshipEffects(baseEffects, 'catastrophic');
 
-      expect(scaled.affection).toBe(-12); // 10 * -1.2
-      expect(scaled.trust).toBe(-6);      // 5 * -1.2
-      expect(scaled.desire).toBe(-10);    // 8 * -1.2 = -9.6 → -10 (rounded)
+      expect(scaled.affection).toBe(-5); // 10 * -0.5
+      expect(scaled.trust).toBe(-2);      // 5 * -0.5 = -2.5 → -2 (rounded)
+      expect(scaled.desire).toBe(-4);    // 8 * -0.5 = -4
     });
 
     it('should handle partial effects', () => {
@@ -623,9 +623,9 @@ describe('Social Activity Service - Integration', () => {
 
     expect(difficulty.finalDifficulty).toBeGreaterThan(30);  // Much harder
 
-    // Mixed outcome should damage the relationship
+    // Mixed outcome should have no relationship change (balanced update)
     const effects = getActivityEffects('flirt_playfully', { desire: 12 }, 'mixed');
 
-    expect(effects.relationshipEffects.desire).toBeLessThan(0);  // Negative for mixed outcome
+    expect(effects.relationshipEffects.desire).toBe(0);  // No change for mixed outcome
   });
 });
