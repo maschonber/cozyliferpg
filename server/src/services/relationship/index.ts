@@ -177,10 +177,15 @@ export function applyRelationshipDelta(
   deltas: Partial<RelationshipAxes>,
   desireCap?: number
 ): RelationshipAxes {
+  // Ensure current values are never null/undefined (defensive programming)
+  const currentTrust = current.trust ?? 0;
+  const currentAffection = current.affection ?? 0;
+  const currentDesire = current.desire ?? 0;
+
   // Apply deltas to each axis
-  const newTrust = clamp(current.trust + (deltas.trust ?? 0));
-  const newAffection = clamp(current.affection + (deltas.affection ?? 0));
-  let newDesire = clamp(current.desire + (deltas.desire ?? 0));
+  const newTrust = clamp(currentTrust + (deltas.trust ?? 0));
+  const newAffection = clamp(currentAffection + (deltas.affection ?? 0));
+  let newDesire = clamp(currentDesire + (deltas.desire ?? 0));
 
   // Apply desire cap if specified (sexual preference)
   if (desireCap !== undefined && newDesire > desireCap) {
