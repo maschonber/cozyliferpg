@@ -146,8 +146,8 @@ export function calculateDynamicDifficulty(
   // Relationship modifier (already calculated by relationship service)
   const relationshipModifier = relationshipDifficultyMod;
 
-  // Combined trait bonus
-  const traitBonus = npcTraitBonus + archetypeBonus;
+  // Combined trait bonus (negate because config uses positive = easier, but we add to difficulty)
+  const traitBonus = -(npcTraitBonus + archetypeBonus);
 
   // Streak modifier
   const streakModifier = streak ? getStreakModifier(streak) : 0;
@@ -162,16 +162,30 @@ export function calculateDynamicDifficulty(
       streakModifier
   );
 
+  // Negate individual trait contributions for display (positive = reduces difficulty)
+  const negatedIndividualTraits = individualTraits?.map(trait => ({
+    ...trait,
+    bonus: -trait.bonus
+  }));
+
+  // Negate archetype details for display (positive = reduces difficulty)
+  const negatedArchetypeDetails = archetypeDetails ? {
+    ...archetypeDetails,
+    matchBonus: -archetypeDetails.matchBonus,
+    activityAffinityBonus: -archetypeDetails.activityAffinityBonus,
+    totalBonus: -archetypeDetails.totalBonus
+  } : undefined;
+
   return {
     baseDifficulty,
     emotionModifier,
     relationshipModifier,
     traitBonus,
     traitBreakdown: {
-      npcTraitBonus,
-      archetypeBonus,
-      individualTraits,
-      archetypeDetails,
+      npcTraitBonus: -npcTraitBonus,  // Negate for display (positive = reduces difficulty)
+      archetypeBonus: -archetypeBonus, // Negate for display (positive = reduces difficulty)
+      individualTraits: negatedIndividualTraits,
+      archetypeDetails: negatedArchetypeDetails,
     },
     streakModifier,
     finalDifficulty,

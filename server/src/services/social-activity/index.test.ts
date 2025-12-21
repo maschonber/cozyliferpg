@@ -141,15 +141,15 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         goodAxes,
         'friend',
         -8,              // relationship modifier (friend bonus)
-        -3,              // NPC trait bonus
-        -2,              // archetype bonus
+        3,               // NPC trait bonus (positive in config = easier)
+        2,               // archetype bonus (positive in config = easier)
         undefined        // no streak
       );
 
       expect(result.baseDifficulty).toBe(50);
       expect(result.emotionModifier).toBeLessThan(0);      // Happy = easier
       expect(result.relationshipModifier).toBe(-8);         // Friend bonus
-      expect(result.traitBonus).toBe(-5);                  // Matching traits (combined)
+      expect(result.traitBonus).toBe(-5);                  // Negated bonuses reduce difficulty
       expect(result.streakModifier).toBe(0);               // No streak
       expect(result.finalDifficulty).toBeLessThan(50);     // Overall easier
     });
@@ -161,14 +161,14 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
         { trust: -40, affection: -30, desire: 0 },
         'rival',
         15,              // relationship penalty (rival)
-        3,               // NPC trait penalty
-        2,               // archetype penalty
+        -3,              // NPC trait penalty (negative in config = harder)
+        -2,              // archetype penalty (negative in config = harder)
         undefined
       );
 
       expect(result.emotionModifier).toBeGreaterThan(0);   // Angry = harder
       expect(result.relationshipModifier).toBe(15);        // Rival penalty
-      expect(result.traitBonus).toBe(5);                   // Trait penalty (combined)
+      expect(result.traitBonus).toBe(5);                   // Negated negative bonuses increase difficulty
       expect(result.finalDifficulty).toBeGreaterThan(30);  // Overall harder
     });
 
