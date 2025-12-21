@@ -516,6 +516,9 @@ router.post(
       // Update unlocked states
       const unlockedStates = updateUnlockedStates(relationship.unlockedStates, newState);
 
+      // Capture previous emotion state for transparency
+      const previousEmotionState = { ...currentEmotionState };
+
       // Apply emotion deltas
       currentEmotionState = applyEmotionDelta(currentEmotionState, effects.emotionEffects);
 
@@ -647,7 +650,14 @@ router.post(
         },
 
         // Difficulty breakdown with full details
-        difficultyBreakdown: difficultyCalc
+        difficultyBreakdown: difficultyCalc,
+
+        // Emotion changes for transparency
+        emotionChanges: {
+          previousValues: previousEmotionState,
+          newValues: currentEmotionState,
+          deltas: effects.emotionEffects  // Only emotions that changed
+        }
       });
     } catch (error) {
       await client.query('ROLLBACK');

@@ -244,6 +244,27 @@
         }
       }
 
+      <!-- Emotion Changes Section (social activities) -->
+      @if (isSocialActivity && hasEmotionChanges) {
+        <div class="emotion-changes-section">
+          <h3>Emotion Changes</h3>
+          <div class="emotion-changes">
+            @for (change of emotionChangesList; track change.emotion) {
+              <div class="emotion-change-item" [class.positive]="change.delta > 0" [class.negative]="change.delta < 0">
+                <mat-icon class="emotion-icon">{{ change.icon }}</mat-icon>
+                <span class="emotion-name">{{ change.emotion }}</span>
+                <span class="emotion-delta" [class.positive]="change.delta > 0" [class.negative]="change.delta < 0">
+                  {{ change.delta > 0 ? '+' : '' }}{{ change.delta }}
+                </span>
+                <span class="emotion-new-value">({{ change.newValue }})</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+      }
+
       <!-- Trait Discovery Section (social activities) -->
       @if (isSocialActivity && data.summary.discoveredTrait) {
         @let trait = data.summary.discoveredTrait;
