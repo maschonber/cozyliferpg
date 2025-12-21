@@ -96,6 +96,42 @@
                       </div>
                     }
                   </div>
+
+                  <!-- Individual Trait Contributions -->
+                  @if (hasIndividualTraits) {
+                    <div class="trait-contributions-section">
+                      <h5>Individual Trait Contributions</h5>
+                      <div class="trait-contributions">
+                        @for (trait of individualTraitContributions; track trait.name) {
+                          <div class="trait-contribution-item" [class.positive]="trait.bonus > 0" [class.negative]="trait.bonus < 0">
+                            <mat-icon>grade</mat-icon>
+                            <span class="trait-name">{{ trait.name }}</span>
+                            <span class="trait-bonus">{{ trait.bonus > 0 ? '+' : '' }}{{ trait.bonus }}</span>
+                          </div>
+                        }
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Archetype Details -->
+                  @if (hasArchetypeDetails && archetypeDetails) {
+                    <div class="archetype-details-section">
+                      <h5>Archetype Contributions</h5>
+                      <div class="archetype-contributions">
+                        <div class="archetype-contribution-item" [class.positive]="archetypeDetails.matchBonus > 0" [class.negative]="archetypeDetails.matchBonus < 0">
+                          <mat-icon>people</mat-icon>
+                          <span class="contribution-label">Archetype Match</span>
+                          <span class="contribution-value">{{ archetypeDetails.matchBonus > 0 ? '+' : '' }}{{ archetypeDetails.matchBonus }}</span>
+                        </div>
+                        <div class="archetype-contribution-item" [class.positive]="archetypeDetails.activityBonus > 0" [class.negative]="archetypeDetails.activityBonus < 0">
+                          <mat-icon>favorite</mat-icon>
+                          <span class="contribution-label">Activity Affinity</span>
+                          <span class="contribution-value">{{ archetypeDetails.activityBonus > 0 ? '+' : '' }}{{ archetypeDetails.activityBonus }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  }
+
                   @if (data.summary.difficultyBreakdown) {
                     <div class="final-difficulty">
                       <span class="final-label">Final DC:</span>

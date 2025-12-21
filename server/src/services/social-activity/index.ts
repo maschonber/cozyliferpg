@@ -22,6 +22,8 @@ import {
   PlayerArchetype,
   ActivityCategory,
   DifficultyBreakdown,
+  TraitContribution,
+  ArchetypeContribution,
 } from '../../../../shared/types';
 import {
   ACTIVITY_EMOTION_EFFECTS,
@@ -106,8 +108,11 @@ export function getEmotionDifficultyModifier(emotionState: NPCEmotionState): num
  * @param relationshipAxes - Relationship axes values
  * @param relationshipState - Current relationship state
  * @param relationshipDifficultyMod - Relationship difficulty modifier (from relationship service)
- * @param traitBonus - Combined trait/archetype bonus (from trait service)
+ * @param npcTraitBonus - Combined trait bonus (from trait service)
+ * @param archetypeBonus - Combined archetype bonus (from trait service)
  * @param streak - Interaction streak data
+ * @param individualTraits - Optional detailed trait contributions
+ * @param archetypeDetails - Optional detailed archetype breakdown
  * @returns Complete difficulty calculation with breakdown
  *
  * @example
@@ -118,6 +123,7 @@ export function getEmotionDifficultyModifier(emotionState: NPCEmotionState): num
  *   'friend',        // friendship state
  *   -8,              // friend bonus
  *   5,               // matching traits
+ *   10,              // archetype bonus
  *   { consecutivePositive: 4, ... } // on a roll
  * );
  * // Result: { finalDifficulty: 25, ... } (easier due to all positive factors)
@@ -130,7 +136,9 @@ export function calculateDynamicDifficulty(
   relationshipDifficultyMod: number,
   npcTraitBonus: number,
   archetypeBonus: number,
-  streak?: InteractionStreak
+  streak?: InteractionStreak,
+  individualTraits?: TraitContribution[],
+  archetypeDetails?: ArchetypeContribution
 ): DifficultyBreakdown {
   // Calculate emotion modifier
   const emotionModifier = getEmotionDifficultyModifier(emotionState);
@@ -162,6 +170,8 @@ export function calculateDynamicDifficulty(
     traitBreakdown: {
       npcTraitBonus,
       archetypeBonus,
+      individualTraits,
+      archetypeDetails,
     },
     streakModifier,
     finalDifficulty,
