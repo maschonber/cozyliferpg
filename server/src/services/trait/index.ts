@@ -21,6 +21,8 @@ import {
   ActivityCategory,
   EmotionType,
   EmotionValues,
+  TraitContribution,
+  ArchetypeContribution,
 } from '../../../../shared/types';
 import {
   TRAIT_DEFINITIONS,
@@ -133,6 +135,45 @@ export function getTraitActivityBonus(
   return totalBonus;
 }
 
+/**
+ * Get detailed breakdown of individual trait contributions to activity
+ *
+ * Returns each trait's individual contribution with metadata for transparency.
+ *
+ * @param npcTraits - NPC's traits
+ * @param activityId - The activity being performed
+ * @returns Array of individual trait contributions
+ *
+ * @example
+ * getTraitActivityBreakdown(['coffee_lover', 'outgoing'], 'have_coffee')
+ * // Returns: [
+ * //   { trait: 'coffee_lover', traitName: 'Coffee Lover', bonus: 20 },
+ * //   { trait: 'outgoing', traitName: 'Outgoing', bonus: 5 }
+ * // ]
+ */
+export function getTraitActivityBreakdown(
+  npcTraits: NPCTrait[],
+  activityId: string
+): TraitContribution[] {
+  const contributions: TraitContribution[] = [];
+
+  for (const trait of npcTraits) {
+    const traitAffinities = TRAIT_ACTIVITY_AFFINITY[trait];
+    if (traitAffinities) {
+      const bonus = traitAffinities[activityId];
+      if (bonus !== undefined && bonus !== 0) {
+        contributions.push({
+          trait,
+          traitName: TRAIT_DEFINITIONS[trait].name,
+          bonus,
+        });
+      }
+    }
+  }
+
+  return contributions;
+}
+
 // ===== Archetype Bonuses =====
 
 /**
@@ -207,6 +248,46 @@ export function getArchetypeBonus(
   const matchBonus = getArchetypeMatchBonus(playerArchetype, npcArchetype);
   const activityBonus = getArchetypeActivityBonus(npcArchetype, activityCategory);
   return matchBonus + activityBonus;
+}
+
+/**
+ * Get detailed breakdown of archetype contributions to activity
+ *
+ * Returns separated components: player-NPC match bonus and NPC activity affinity bonus.
+ * This provides full transparency into how archetypes affect difficulty.
+ *
+ * @param playerArchetype - Player's archetype
+ * @param npcArchetype - NPC's archetype
+ * @param activityCategory - Category of activity
+ * @returns Detailed archetype contribution breakdown
+ *
+ * @example
+ * getArchetypeBreakdown('athlete', 'Athlete', 'self_improvement')
+ * // Returns: {
+ * //   playerArchetype: 'athlete',
+ * //   npcArchetype: 'Athlete',
+ * //   activityCategory: 'self_improvement',
+ * //   matchBonus: 10,           // Same archetype bonus
+ * //   activityAffinityBonus: 10, // Athlete loves self-improvement
+ * //   totalBonus: 20
+ * // }
+ */
+export function getArchetypeBreakdown(
+  playerArchetype: PlayerArchetype,
+  npcArchetype: NPCArchetype,
+  activityCategory: ActivityCategory
+): ArchetypeContribution {
+  const matchBonus = getArchetypeMatchBonus(playerArchetype, npcArchetype);
+  const activityAffinityBonus = getArchetypeActivityBonus(npcArchetype, activityCategory);
+
+  return {
+    playerArchetype,
+    npcArchetype,
+    activityCategory,
+    matchBonus,
+    activityAffinityBonus,
+    totalBonus: matchBonus + activityAffinityBonus,
+  };
 }
 
 // ===== Trait Discovery =====

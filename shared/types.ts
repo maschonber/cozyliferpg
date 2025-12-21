@@ -744,6 +744,27 @@ export interface StatContribution {
 }
 
 /**
+ * Individual trait contribution to difficulty
+ */
+export interface TraitContribution {
+  trait: NPCTrait;
+  traitName: string;
+  bonus: number;
+}
+
+/**
+ * Archetype contribution breakdown
+ */
+export interface ArchetypeContribution {
+  playerArchetype: PlayerArchetype;
+  npcArchetype: NPCArchetype;
+  activityCategory?: ActivityCategory;
+  matchBonus: number;           // Bonus from player-NPC archetype compatibility
+  activityAffinityBonus: number; // Bonus from NPC archetype's activity preference
+  totalBonus: number;            // matchBonus + activityAffinityBonus
+}
+
+/**
  * Difficulty calculation breakdown
  * Applicable to both solo and social activities
  */
@@ -764,6 +785,10 @@ export interface DifficultyBreakdown {
   traitBreakdown?: {
     npcTraitBonus: number;       // Bonus from NPC's specific traits
     archetypeBonus: number;      // Bonus from archetype compatibility
+
+    // Detailed individual contributions
+    individualTraits?: TraitContribution[];  // Each NPC trait's contribution
+    archetypeDetails?: ArchetypeContribution; // Separated archetype bonuses
   };
 
   // Final calculated difficulty

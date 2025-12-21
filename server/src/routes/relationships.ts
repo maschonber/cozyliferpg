@@ -29,7 +29,9 @@ import {
 } from '../services/social-activity';
 import {
   getTraitActivityBonus,
+  getTraitActivityBreakdown,
   getArchetypeBonus,
+  getArchetypeBreakdown,
   discoverTrait,
   getTraitCategory,
   getTraitDefinition
@@ -451,6 +453,14 @@ router.post(
         activity.category
       );
 
+      // Get detailed breakdowns for transparency
+      const individualTraits = getTraitActivityBreakdown(npc.revealedTraits, activityId);
+      const archetypeDetails = getArchetypeBreakdown(
+        player.archetype,
+        npc.archetype,
+        activity.category
+      );
+
       const relationshipModifier = getRelationshipDifficultyModifier(
         { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
         relationship.currentState
@@ -468,7 +478,9 @@ router.post(
         relationshipModifier,
         traitBonus,        // NPC trait bonus
         archetypeBonus,    // Archetype compatibility bonus
-        streak
+        streak,
+        individualTraits,  // Detailed trait contributions
+        archetypeDetails   // Detailed archetype breakdown
       );
 
       // Roll for outcome

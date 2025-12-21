@@ -477,6 +477,50 @@ export class ActivityResultModal {
     return modifiers;
   }
 
+  /**
+   * Check if we have individual trait contributions
+   */
+  get hasIndividualTraits(): boolean {
+    const breakdown = this.data.summary.difficultyBreakdown;
+    return !!(breakdown?.traitBreakdown?.individualTraits && breakdown.traitBreakdown.individualTraits.length > 0);
+  }
+
+  /**
+   * Get individual trait contributions for display
+   */
+  get individualTraitContributions(): Array<{ name: string; bonus: number }> {
+    const breakdown = this.data.summary.difficultyBreakdown;
+    if (!breakdown?.traitBreakdown?.individualTraits) return [];
+
+    return breakdown.traitBreakdown.individualTraits.map(trait => ({
+      name: trait.traitName,
+      bonus: trait.bonus
+    }));
+  }
+
+  /**
+   * Check if we have archetype details
+   */
+  get hasArchetypeDetails(): boolean {
+    const breakdown = this.data.summary.difficultyBreakdown;
+    return !!breakdown?.traitBreakdown?.archetypeDetails;
+  }
+
+  /**
+   * Get archetype contribution details for display
+   */
+  get archetypeDetails(): { matchBonus: number; activityBonus: number; total: number } | null {
+    const breakdown = this.data.summary.difficultyBreakdown;
+    if (!breakdown?.traitBreakdown?.archetypeDetails) return null;
+
+    const details = breakdown.traitBreakdown.archetypeDetails;
+    return {
+      matchBonus: details.matchBonus,
+      activityBonus: details.activityAffinityBonus,
+      total: details.totalBonus
+    };
+  }
+
   onContinue(): void {
     this.dialogRef.close();
   }
