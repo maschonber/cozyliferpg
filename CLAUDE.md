@@ -1,5 +1,57 @@
 # Claude Code Instructions for CozyLifeRPG
 
+## ⚠️ CRITICAL: Production Environment
+
+**THIS APPLICATION IS PUBLICLY ACCESSIBLE IN PRODUCTION**
+
+- Frontend: Deployed at `https://maschonber.github.io/cozyliferpg/`
+- Backend: Deployed at `https://cozyliferpg-production.up.railway.app`
+- Database: PostgreSQL on Railway (production database with live data)
+
+### Security Requirements
+
+1. **Never add unauthenticated endpoints** that expose sensitive operations (password changes, admin functions, etc.)
+2. **All new endpoints** must be properly authenticated unless explicitly intended to be public (login, health check)
+3. **Assume production context** - do not suggest "temporary" or "quick" solutions that compromise security
+4. **No test data exposure** - do not add debug endpoints that leak information
+5. **Review all changes** for security implications before committing
+
+### Authentication System
+
+- JWT-based authentication with 24-hour token expiry
+- Bcrypt password hashing (10 salt rounds)
+- Protected routes require `authenticateToken` middleware
+- Initial user: `qurbl` (password managed securely)
+
+## Architecture
+
+### Monorepo Structure
+```
+/                       # Angular 20 frontend
+/server                 # Node.js + Express + TypeScript backend
+/shared                 # Shared TypeScript types
+```
+
+### Technology Stack
+
+**Frontend:**
+- Angular 20 (standalone components, signals)
+- TypeScript 5.9
+- RxJS 7.8
+
+**Backend:**
+- Node.js 18+
+- Express 4
+- PostgreSQL (via `pg` library)
+- JWT for authentication
+- Bcrypt for password hashing
+
+### Deployment
+
+- **Frontend**: GitHub Pages via GitHub Actions (automatic on push to main)
+- **Backend**: Railway (automatic deployment on push)
+- Deployments happen automatically when pushed to designated Claude branch
+
 ## Pre-Commit Checklist
 
 Before committing any changes, **ALWAYS** run the following commands to catch errors:
@@ -84,6 +136,15 @@ If you encounter TypeScript errors during build:
    - Update any local interfaces in route files
    - Update frontend components that consume the API
 
+## Development Workflow
+
+1. All changes are committed with clear, descriptive messages
+2. **Run tests before pushing** to ensure all tests pass (see Pre-Commit Checklist above)
+3. Push to the designated Claude branch
+4. Deployments happen automatically:
+   - GitHub Actions builds and deploys frontend
+   - Railway builds and deploys backend
+
 ## Why This Matters
 
 The Railway deployment runs `npm ci && npm test && npm run build` as part of the build process. If the build fails, the deployment will fail. Running these steps locally before pushing ensures:
@@ -100,3 +161,21 @@ If you missed the build step and pushed code that fails in CI:
 2. Run the build to verify the fix
 3. Commit the fix with a clear message
 4. Push the corrected code
+
+## Password Management
+
+- Use `server/scripts/hash-password.ts` locally to generate password hashes
+- Manual database updates required for password changes (via Railway CLI/interface)
+- **Never expose password management via public HTTP endpoints**
+
+## Current User
+
+- Username: `qurbl`
+- Stored with bcrypt hash in production database
+- Password managed manually via Railway database tools when needed
+
+## Notes
+
+- Application started as "simple demo" but is now in production
+- Security was added early specifically because of public accessibility
+- Always maintain production-level security standards
