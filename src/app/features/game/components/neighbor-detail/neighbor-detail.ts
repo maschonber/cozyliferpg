@@ -202,6 +202,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
             newState: response.newState
           } : undefined,
           emotionalState: response.emotionalState,
+          emotionChanges: response.emotionChanges,
           discoveredTrait: response.discoveredTrait,
           difficultyBreakdown: response.difficultyBreakdown
         };
