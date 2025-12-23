@@ -106,17 +106,22 @@ export class GameFacade {
     this.store.setNPCsLoading(true);
 
     return this.repository.createNPC().pipe(
-      tap({
-        next: (npc) => {
-          this.store.addNPC(npc);
-          this.store.setNPCsLoading(false);
-          console.log('✅ Created NPC:', npc.name);
-        },
-        error: (error) => {
-          const errorMessage = error.message || 'Failed to create NPC';
-          this.store.setNPCsError(errorMessage);
-          console.error('❌ Error creating NPC:', error);
-        }
+      switchMap((npc) => {
+        this.store.addNPC(npc);
+        this.store.setNPCsLoading(false);
+        console.log('✅ Created NPC:', npc.name);
+
+        // Reload locations to update NPC counts
+        return this.repository.getLocations(true).pipe(
+          tap((locations) => this.store.setLocations(locations)),
+          map(() => npc)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to create NPC';
+        this.store.setNPCsError(errorMessage);
+        console.error('❌ Error creating NPC:', error);
+        throw error;
       })
     );
   }
@@ -386,19 +391,24 @@ export class GameFacade {
     this.store.setPlayerLoading(true);
 
     return this.repository.resetPlayer().pipe(
-      tap({
-        next: (player) => {
-          this.store.setPlayer(player);
-          // Also reset NPCs and relationships since they're deleted
-          this.store.setNPCs([]);
-          this.store.setRelationships([]);
-          console.log('✅ Player reset to initial state');
-        },
-        error: (error) => {
-          const errorMessage = error.message || 'Failed to reset player';
-          this.store.setPlayerError(errorMessage);
-          console.error('❌ Error resetting player:', error);
-        }
+      switchMap((player) => {
+        this.store.setPlayer(player);
+        // Also reset NPCs and relationships since they're deleted
+        this.store.setNPCs([]);
+        this.store.setRelationships([]);
+        console.log('✅ Player reset to initial state');
+
+        // Reload locations to update NPC counts (should all be 0 now)
+        return this.repository.getLocations(true).pipe(
+          tap((locations) => this.store.setLocations(locations)),
+          map(() => player)
+        );
+      }),
+      catchError((error) => {
+        const errorMessage = error.message || 'Failed to reset player';
+        this.store.setPlayerError(errorMessage);
+        console.error('❌ Error resetting player:', error);
+        throw error;
       })
     );
   }

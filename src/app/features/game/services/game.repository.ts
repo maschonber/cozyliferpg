@@ -24,12 +24,13 @@ import {
   TravelRequest,
   TravelResult
 } from '../../../../../shared/types';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class GameRepository {
-  private readonly API_URL = 'https://cozyliferpg-production.up.railway.app/api';
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

@@ -9,6 +9,7 @@ import activitiesRouter from './routes/activities';
 import locationsRouter from './routes/locations';
 import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
+import emotionSandboxRouter from './routes/emotion-sandbox';
 import { authenticateToken } from './auth/auth.middleware';
 import { testConnection, initDatabase, seedDatabase, seedUsers, migratePhase3Locations, migratePhase25Stats, migratePhase251ActivityHistory, migratePhase254MixedStats, migrateRelationshipRedesign } from './db';
 
@@ -66,6 +67,9 @@ app.use('/api/auth', authRouter);
 
 // Admin routes (token-based auth, not JWT)
 app.use('/api/admin', adminRouter);
+
+// Emotion sandbox (no auth required - for testing)
+app.use('/api/emotion-sandbox', emotionSandboxRouter);
 
 // Protected routes (authentication required)
 // API Routes - all protected

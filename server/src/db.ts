@@ -2,8 +2,12 @@ import { Pool } from 'pg';
 import { PasswordService } from './auth/password.service';
 
 // Database connection pool
+// Use DATABASE_PUBLIC_URL for local development (via railway run)
+// Fall back to DATABASE_URL for production deployment
+const connectionString = process.env.DATABASE_PUBLIC_URL || process.env.DATABASE_URL;
+
 export const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString,
   ssl: process.env.NODE_ENV === 'production' ? {
     rejectUnauthorized: false
   } : false

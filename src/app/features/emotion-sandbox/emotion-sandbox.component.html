@@ -1,0 +1,129 @@
+<div class="emotion-sandbox">
+  <h1>Plutchik Emotion System Sandbox</h1>
+
+  <p class="description">
+    Test the emotion system by applying emotion pulls. Each button applies a single pull with the specified intensity.
+  </p>
+
+  <!-- Error message -->
+  @if (error()) {
+    <div class="error-message">
+      {{ error() }}
+    </div>
+  }
+
+  <!-- Current Emotion State -->
+  <div class="emotion-state">
+    <h2>Current Emotion Vector</h2>
+
+    <!-- Emotion Interpretation -->
+    @if (currentInterpretation()) {
+      <div class="emotion-interpretation">
+        <div class="interpretation-label">Interpreted Emotion:</div>
+        <div class="interpretation-main">
+          <span class="emotion-name">{{ currentInterpretation()!.emotion }}</span>
+          @if (currentInterpretation()!.intensity) {
+            <span class="emotion-intensity">({{ currentInterpretation()!.intensity }})</span>
+          }
+        </div>
+        @if (currentInterpretation()!.noun || currentInterpretation()!.adjective) {
+          <div class="interpretation-descriptors">
+            @if (currentInterpretation()!.noun) {
+              <span class="descriptor noun">{{ currentInterpretation()!.noun }}</span>
+            }
+            @if (currentInterpretation()!.adjective) {
+              <span class="descriptor adjective">{{ currentInterpretation()!.adjective }}</span>
+            }
+          </div>
+        }
+      </div>
+    }
+
+    <div class="emotion-axes">
+      @for (axis of axisKeys; track axis) {
+        <div class="emotion-axis">
+          <div class="axis-label">{{ getEmotionLabel(axis) }}</div>
+          <div class="axis-bar">
+            <div class="bar-background">
+              <div
+                class="bar-fill"
+                [style.width.%]="(getAbsoluteAxisValue(axis) * 100)"
+                [style.background-color]="getColorForAxis(axis)"
+                [style.margin-left]="isAxisNegative(axis) ? 'auto' : '0'"
+              ></div>
+            </div>
+            <div class="axis-value">{{ formatValue(getAxisValue(axis)) }}</div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <button class="reset-button" (click)="reset()" [disabled]="loading()">
+      Reset to Neutral
+    </button>
+  </div>
+
+  <!-- Emotion Pull Controls -->
+  <div class="pull-controls">
+    <div class="pull-header">
+      <h2>Apply Emotion Pull(s)</h2>
+      <div class="selection-info">
+        @if (secondaryPull()) {
+          <span class="selected-count">Secondary: {{ secondaryPull()!.emotion }} ({{ secondaryPull()!.intensity }})</span>
+        } @else {
+          <span class="hint-text">Left: Apply immediately | Right: Select secondary (optional)</span>
+        }
+      </div>
+    </div>
+
+    @for (emotion of emotions; track emotion) {
+      <div class="emotion-row">
+        <div class="emotion-name">{{ emotion }}</div>
+        <div class="button-columns">
+          <!-- Primary buttons (left column) -->
+          <div class="intensity-buttons primary-buttons">
+            @for (intensity of intensities; track intensity) {
+              <button
+                class="intensity-button primary-button"
+                [class.intensity-tiny]="intensity === 'tiny'"
+                [class.intensity-small]="intensity === 'small'"
+                [class.intensity-medium]="intensity === 'medium'"
+                [class.intensity-large]="intensity === 'large'"
+                [class.intensity-huge]="intensity === 'huge'"
+                (click)="applyPrimaryPull(emotion, intensity)"
+                [disabled]="loading()"
+                title="Apply {{ emotion }} {{ intensity }} immediately"
+              >
+                {{ intensity }}
+              </button>
+            }
+          </div>
+
+          <!-- Secondary buttons (right column) -->
+          <div class="intensity-buttons secondary-buttons">
+            @for (intensity of intensities; track intensity) {
+              <button
+                class="intensity-button secondary-button"
+                [class.intensity-tiny]="intensity === 'tiny'"
+                [class.intensity-small]="intensity === 'small'"
+                [class.intensity-medium]="intensity === 'medium'"
+                [class.intensity-large]="intensity === 'large'"
+                [class.intensity-huge]="intensity === 'huge'"
+                [class.selected]="isSecondaryPull(emotion, intensity)"
+                (click)="toggleSecondaryPull(emotion, intensity)"
+                [disabled]="loading()"
+                title="Select as secondary pull"
+              >
+                {{ intensity }}
+              </button>
+            }
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="loading-overlay">Processing...</div>
+  }
+</div>

@@ -21,7 +21,7 @@
 - JWT-based authentication with 24-hour token expiry
 - Bcrypt password hashing (10 salt rounds)
 - Protected routes require `authenticateToken` middleware
-- Initial user: `qurbl` (password managed securely)
+- User passwords encrypted and managed securely in database
 
 ## Architecture
 
@@ -99,6 +99,12 @@ This will:
 ### 3. Only Commit if Both Pass
 
 Only proceed with `git commit` if BOTH commands succeed with no errors.
+
+**CRITICAL: Test Quality**
+- **Fix failing tests immediately** - never leave tests in a failing state
+- If you encounter a failing test (even if pre-existing), fix it before proceeding
+- Flaky tests should be made deterministic or use appropriate assertions (e.g., `toBeLessThanOrEqual` instead of `toBeLessThan` when equality is acceptable)
+- Maintaining high test quality prevents degradation and ensures CI/CD reliability
 
 ### 4. Optional: Build Frontend (if frontend changes)
 

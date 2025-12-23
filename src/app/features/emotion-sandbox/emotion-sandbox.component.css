@@ -1,0 +1,394 @@
+.emotion-sandbox {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+h1 {
+  color: #1e293b;
+  margin-bottom: 0.5rem;
+}
+
+.description {
+  color: #64748b;
+  margin-bottom: 2rem;
+}
+
+.error-message {
+  background-color: #fee2e2;
+  border: 1px solid #ef4444;
+  color: #991b1b;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+/* Emotion State Display */
+.emotion-state {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  margin-bottom: 2rem;
+}
+
+.emotion-state h2 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: #475569;
+  font-size: 1.25rem;
+}
+
+/* Emotion Interpretation */
+.emotion-interpretation {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  border-radius: 0.75rem;
+  margin-bottom: 1.5rem;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.interpretation-label {
+  font-size: 0.875rem;
+  opacity: 0.9;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.interpretation-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.emotion-name {
+  font-size: 1rem;
+  font-weight: 700;
+  text-transform: capitalize;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.emotion-intensity {
+  font-size: 1.25rem;
+  opacity: 0.85;
+  font-weight: 500;
+}
+
+.interpretation-descriptors {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.descriptor {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.descriptor.noun::before {
+  content: '📝 ';
+}
+
+.descriptor.adjective::before {
+  content: '✨ ';
+}
+
+.emotion-axes {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.emotion-axis {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.axis-label {
+  min-width: 200px;
+  font-weight: 500;
+  color: #334155;
+}
+
+.axis-bar {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.bar-background {
+  flex: 1;
+  height: 24px;
+  background: #e2e8f0;
+  border-radius: 4px;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+}
+
+.bar-fill {
+  height: 100%;
+  transition: all 0.3s ease;
+  border-radius: 4px;
+}
+
+.axis-value {
+  min-width: 60px;
+  text-align: right;
+  font-family: monospace;
+  font-weight: 600;
+  color: #475569;
+}
+
+.reset-button {
+  background: #64748b;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.reset-button:hover:not(:disabled) {
+  background: #475569;
+}
+
+.reset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Pull Controls */
+.pull-controls {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.pull-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.pull-header h2 {
+  margin: 0;
+  color: #475569;
+  font-size: 1.25rem;
+}
+
+.selection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.selected-count {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.hint-text {
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.action-button {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: 500;
+}
+
+.action-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.clear-button {
+  background: #e2e8f0;
+  color: #475569;
+}
+
+.clear-button:hover:not(:disabled) {
+  background: #cbd5e1;
+}
+
+.apply-button {
+  background: #2563eb;
+  color: white;
+}
+
+.apply-button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.emotion-row {
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.emotion-row:last-child {
+  border-bottom: none;
+}
+
+.emotion-name {
+  min-width: 120px;
+  font-weight: 500;
+  color: #334155;
+  text-transform: capitalize;
+}
+
+.button-columns {
+  display: flex;
+  gap: 1rem;
+  flex: 1;
+}
+
+.intensity-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.primary-buttons {
+  flex: 1;
+}
+
+.secondary-buttons {
+  flex: 1;
+  opacity: 0.7;
+}
+
+.intensity-button {
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  text-transform: capitalize;
+  min-width: 70px;
+}
+
+.intensity-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.intensity-button:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.intensity-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.intensity-button.selected {
+  border: 3px solid #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  font-weight: 600;
+}
+
+.secondary-button {
+  position: relative;
+}
+
+.secondary-button::before {
+  content: '2';
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  opacity: 0.5;
+}
+
+.intensity-tiny {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.intensity-tiny:hover:not(:disabled) {
+  background: #bfdbfe;
+}
+
+.intensity-small {
+  background: #bfdbfe;
+  color: #1e3a8a;
+}
+
+.intensity-small:hover:not(:disabled) {
+  background: #93c5fd;
+}
+
+.intensity-medium {
+  background: #60a5fa;
+  color: white;
+}
+
+.intensity-medium:hover:not(:disabled) {
+  background: #3b82f6;
+}
+
+.intensity-large {
+  background: #2563eb;
+  color: white;
+}
+
+.intensity-large:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.intensity-huge {
+  background: #1e3a8a;
+  color: white;
+}
+
+.intensity-huge:hover:not(:disabled) {
+  background: #1e40af;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.5rem;
+  z-index: 1000;
+}

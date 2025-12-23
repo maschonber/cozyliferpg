@@ -4,6 +4,7 @@ import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User, LoginCredentials } from '../models/auth.model';
 import { LoginRequest, AuthResponse } from '../../../../../shared/types';
+import { environment } from '../../../../environments/environment';
 
 /**
  * Auth Repository
@@ -14,7 +15,7 @@ import { LoginRequest, AuthResponse } from '../../../../../shared/types';
   providedIn: 'root'
 })
 export class AuthRepository {
-  private readonly API_URL = 'https://cozyliferpg-production.up.railway.app/api';
+  private readonly API_URL = environment.apiUrl;
 
   constructor(private http: HttpClient) {}
 

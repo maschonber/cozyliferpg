@@ -9,6 +9,10 @@ export const routes: Routes = [
     component: LoginComponent
   },
   {
+    path: 'emotion-sandbox',
+    loadComponent: () => import('./features/emotion-sandbox/emotion-sandbox.component').then(m => m.EmotionSandboxComponent)
+  },
+  {
     path: 'game',
     canActivate: [authGuard],
     loadComponent: () => import('./features/game/components/game-layout/game-layout').then(m => m.GameLayout),
