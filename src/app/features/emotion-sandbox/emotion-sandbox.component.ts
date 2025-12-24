@@ -1,5 +1,6 @@
 import { Component, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 
@@ -44,13 +45,14 @@ interface EmotionInterpretation {
   intensity?: InterpretedIntensity;
   noun?: string;
   adjective?: string;
+  color?: string;
   contributingEmotions?: BaseEmotion[];
 }
 
 @Component({
   selector: 'app-emotion-sandbox',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './emotion-sandbox.component.html',
   styleUrls: ['./emotion-sandbox.component.css']
 })
@@ -84,6 +86,9 @@ export class EmotionSandboxComponent {
 
   // Secondary pull selection (optional)
   secondaryPull = signal<EmotionPull | null>(null);
+
+  // Decay time input (in minutes)
+  decayTimeMinutes = signal(60);
 
   // Expose Math for template
   Math = Math;
@@ -171,6 +176,49 @@ export class EmotionSandboxComponent {
   }
 
   /**
+   * Apply emotion decay over time
+   */
+  applyDecay(): void {
+    this.loading.set(true);
+    this.error.set(null);
+
+    // Convert minutes to hours
+    const hours = this.decayTimeMinutes() / 60;
+
+    this.http.post<any>(
+      `${this.apiUrl}/apply-decay`,
+      {
+        vector: this.currentVector(),
+        hours: hours
+      }
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.currentVector.set(response.output);
+          this.currentInterpretation.set(response.interpretation);
+        }
+        this.loading.set(false);
+      },
+      error: (err) => {
+        console.error('Error applying decay:', err);
+        this.error.set('Failed to apply emotion decay');
+        this.loading.set(false);
+      }
+    });
+  }
+
+  /**
+   * Update decay time from input
+   */
+  updateDecayTime(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const value = parseInt(input.value, 10);
+    if (!isNaN(value) && value >= 0) {
+      this.decayTimeMinutes.set(value);
+    }
+  }
+
+  /**
    * Get emotion label for display
    */
   getEmotionLabel(axis: keyof EmotionVector): string {
@@ -194,31 +242,17 @@ export class EmotionSandboxComponent {
   };
 
   /**
-   * Color constants
-   */
-  private readonly colors = {
-    gray: '#94a3b8',           // Non-contributing emotions
-    dyad: '#8b5cf6',           // Dyad contributing emotions (violet)
-    intensityLow: '#86efac',   // Single emotion - low intensity (green-300)
-    intensityMedium: '#22c55e', // Single emotion - medium intensity (green-500)
-    intensityHigh: '#15803d',  // Single emotion - high intensity (green-700)
-  };
-
-  /**
    * Get color for an emotion axis.
    *
-   * Coloring logic:
-   * - If the axis's active emotion is NOT in contributingEmotions → gray
-   * - If it IS contributing and there are 2 contributors (dyad) → dyad color
-   * - If it IS contributing and there is 1 contributor → intensity-based color
+   * Uses the color from the interpretation if available, otherwise gray
    */
   getColorForAxis(axis: keyof EmotionVector): string {
     const interp = this.currentInterpretation();
     const contributing = interp?.contributingEmotions ?? [];
 
     // No interpretation or no contributing emotions → gray
-    if (contributing.length === 0) {
-      return this.colors.gray;
+    if (contributing.length === 0 || !interp?.color) {
+      return '#94a3b8';
     }
 
     // Determine which emotion is active on this axis based on value sign
@@ -228,24 +262,11 @@ export class EmotionSandboxComponent {
 
     // If this emotion is not contributing to the result → gray
     if (!contributing.includes(activeEmotion)) {
-      return this.colors.gray;
+      return '#94a3b8';
     }
 
-    // This emotion IS contributing
-    if (contributing.length === 2) {
-      // Dyad: two emotions contributed
-      return this.colors.dyad;
-    }
-
-    // Single emotion: color by intensity
-    const intensity = interp?.intensity;
-    if (intensity === 'high') {
-      return this.colors.intensityHigh;
-    } else if (intensity === 'medium') {
-      return this.colors.intensityMedium;
-    } else {
-      return this.colors.intensityLow;
-    }
+    // This emotion IS contributing - use the interpretation color
+    return interp.color;
   }
 
   /**

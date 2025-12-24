@@ -134,8 +134,8 @@ function calculateAxisResistance(currentValue: number): number {
  */
 function calculateEnergyResistance(totalEnergy: number): number {
   // Total energy ranges from 0 (neutral) to ~4 (all axes maxed)
-  // We want resistance to kick in around 1.0+ and be strong by 2.0+
-  if (totalEnergy < 0.8) {
+  // We want resistance to kick in around 0.5+ and be strong by 2.0+
+  if (totalEnergy < 0.5) {
     return 1.0; // No resistance for low energy
   }
 
@@ -144,6 +144,30 @@ function calculateEnergyResistance(totalEnergy: number): number {
   // At energy = 1.5: ~0.47 (strong resistance)
   // At energy = 2.0: ~0.37 (very strong resistance)
   return Math.exp(-totalEnergy / 2);
+}
+
+/**
+ * Calculate dampening factor based on the highest current emotion
+ * Returns a multiplier that stabilizes high emotions by reducing pull/suppression base values
+ *
+ * Linear interpolation:
+ * - At max emotion = 0: dampening = 1.0 (no dampening)
+ * - At max emotion = 1 (or -1): dampening = 0.3 (strong dampening)
+ *
+ * This makes existing high emotions more resistant to change.
+ */
+function calculateHighEmotionDampening(vector: EmotionVector): number {
+  const maxEmotion = Math.max(
+    Math.abs(vector.joySadness),
+    Math.abs(vector.acceptanceDisgust),
+    Math.abs(vector.angerFear),
+    Math.abs(vector.anticipationSurprise)
+  );
+
+  // Linear interpolation: y = 1.0 - 0.7 * x
+  // At x = 0: y = 1.0
+  // At x = 1: y = 0.3
+  return 1.0 - 0.7 * maxEmotion;
 }
 
 /**
@@ -223,6 +247,9 @@ export function applyEmotionPulls(
   // Start with a copy of the current vector
   const result: EmotionVector = { ...currentVector };
 
+  // Calculate dampening based on highest current emotion
+  const highEmotionDampening = calculateHighEmotionDampening(currentVector);
+
   // Calculate total emotional energy for resistance
   const totalEnergy = getTotalEmotionalEnergy(currentVector);
   const energyResistance = calculateEnergyResistance(totalEnergy);
@@ -231,7 +258,7 @@ export function applyEmotionPulls(
   for (const pull of pulls) {
     const { axis, direction } = getAxisForEmotion(pull.emotion);
     const currentValue = result[axis];
-    const baseValue = BASE_INTENSITY_VALUES[pull.intensity];
+    const baseValue = BASE_INTENSITY_VALUES[pull.intensity] * highEmotionDampening;
 
     // Calculate resistance factors
     const axisResistance = calculateAxisResistance(currentValue);
@@ -249,7 +276,7 @@ export function applyEmotionPulls(
   const pulledEmotions = new Set(pulls.map(p => p.emotion));
 
   for (const pull of pulls) {
-    const pullStrength = BASE_INTENSITY_VALUES[pull.intensity];
+    const pullStrength = BASE_INTENSITY_VALUES[pull.intensity] * highEmotionDampening;
     const allEmotions = getAllEmotions(result);
 
     // For each emotion, calculate suppression based on distance from pulled emotion
@@ -302,6 +329,24 @@ export function applyEmotionPulls(
  * @returns Interpretation with emotion name, intensity, and descriptors
  */
 export { interpretEmotionVector } from './interpretation';
+
+/**
+ * Apply emotion decay to a vector over time
+ *
+ * Emotions naturally decay toward neutral (0) over time. Stronger emotions
+ * decay slower than weaker ones, creating realistic emotional persistence.
+ *
+ * Decay rates by quartile:
+ * - [0.75-1.00]: 32 hours to decay by 0.25
+ * - [0.50-0.75]: 16 hours to decay by 0.25
+ * - [0.25-0.50]: 8 hours to decay by 0.25
+ * - [0.00-0.25]: 4 hours to decay by 0.25
+ *
+ * @param vector - Current emotion state
+ * @param hours - Time elapsed in hours (should be >= 0)
+ * @returns New emotion vector after decay
+ */
+export { applyEmotionDecay } from './decay';
 
 // ===== Exported for Testing =====
 

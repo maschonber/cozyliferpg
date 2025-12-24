@@ -18,7 +18,7 @@
 
     <!-- Emotion Interpretation -->
     @if (currentInterpretation()) {
-      <div class="emotion-interpretation">
+      <div class="emotion-interpretation" [style.background-color]="currentInterpretation()!.color || '#94a3b8'">
         <div class="interpretation-label">Interpreted Emotion:</div>
         <div class="interpretation-main">
           <span class="emotion-name">{{ currentInterpretation()!.emotion }}</span>
@@ -58,9 +58,26 @@
       }
     </div>
 
-    <button class="reset-button" (click)="reset()" [disabled]="loading()">
-      Reset to Neutral
-    </button>
+    <div class="action-buttons">
+      <button class="reset-button" (click)="reset()" [disabled]="loading()">
+        Reset to Neutral
+      </button>
+
+      <div class="decay-controls">
+        <input
+          type="number"
+          class="decay-time-input"
+          [value]="decayTimeMinutes()"
+          (input)="updateDecayTime($event)"
+          min="0"
+          [disabled]="loading()"
+          placeholder="Minutes"
+        />
+        <button class="decay-button" (click)="applyDecay()" [disabled]="loading()">
+          Apply Decay
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- Emotion Pull Controls -->
@@ -122,8 +139,4 @@
       </div>
     }
   </div>
-
-  @if (loading()) {
-    <div class="loading-overlay">Processing...</div>
-  }
 </div>

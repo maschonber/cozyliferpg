@@ -427,9 +427,9 @@ describe('Phase 3: Emotion Suppression Based on Distance', () => {
 
       // Should move significantly toward joy, suppressing sadness strongly
       expect(result.joySadness).toBeGreaterThan(-0.6);
-      // The suppression should be substantial
+      // The suppression should be substantial (dampened due to high existing emotion)
       const change = result.joySadness - (-0.6);
-      expect(change).toBeGreaterThan(0.3);
+      expect(change).toBeGreaterThan(0.25);
     });
   });
 
@@ -627,38 +627,39 @@ describe('Emotion Interpretation', () => {
     });
   });
 
-  describe('Priority 2: Emotion dyad (two emotions >= 40)', () => {
-    it('interprets love (joy + acceptance) correctly', () => {
+  describe('Priority: Emotion dyads', () => {
+    it('interprets love (joy + acceptance) correctly at medium intensity (proximity + average)', () => {
       const vector: EmotionVector = {
-        joySadness: 0.5,
-        acceptanceDisgust: 0.45,
+        joySadness: 0.60,  // Leading emotion
+        acceptanceDisgust: 0.56,  // 0.56/0.60 = 0.933 >= 0.75 proximity, avg = 0.58 (medium)
         angerFear: 0,
         anticipationSurprise: 0,
       };
       const result = interpretEmotionVector(vector);
       expect(result.emotion).toBe('love');
-      expect(result.intensity).toBeDefined();
+      expect(result.intensity).toBe('medium');
       expect(result.noun).toBe('affection');
       expect(result.adjective).toBe('affectionate');
     });
 
-    it('interprets optimism (joy + anticipation) correctly', () => {
+    it('interprets optimism (joy + anticipation) correctly at low intensity', () => {
       const vector: EmotionVector = {
-        joySadness: 0.48,
+        joySadness: 0.40,  // Leading emotion
         acceptanceDisgust: 0,
         angerFear: 0,
-        anticipationSurprise: 0.43,
+        anticipationSurprise: 0.35,  // 0.35/0.40 = 0.875 >= 0.75 proximity, avg = 0.375 (low)
       };
       const result = interpretEmotionVector(vector);
       expect(result.emotion).toBe('optimism');
+      expect(result.intensity).toBe('low');
       expect(result.noun).toBe('optimism');
       expect(result.adjective).toBe('optimistic');
     });
 
-    it('high dyad average gets high intensity', () => {
+    it('high dyad requires proximity and high average', () => {
       const vector: EmotionVector = {
-        joySadness: 0.8,
-        acceptanceDisgust: 0.76,  // Both above 0.75 threshold
+        joySadness: 0.85,  // Leading emotion
+        acceptanceDisgust: 0.80,  // 0.80/0.85 = 0.941 >= 0.75 proximity, avg = 0.825 (high)
         angerFear: 0,
         anticipationSurprise: 0,
       };
@@ -668,7 +669,7 @@ describe('Emotion Interpretation', () => {
     });
   });
 
-  describe('Priority 3: Medium intensity single emotion (>= 50)', () => {
+  describe('Priority 4: Medium intensity single emotion (>= 50)', () => {
     it('interprets medium sadness correctly', () => {
       const vector: EmotionVector = {
         joySadness: -0.6,
@@ -684,7 +685,7 @@ describe('Emotion Interpretation', () => {
     });
   });
 
-  describe('Priority 4: Low intensity single emotion (>= 25)', () => {
+  describe('Priority 6: Low intensity single emotion (>= 20)', () => {
     it('interprets low anger correctly', () => {
       const vector: EmotionVector = {
         joySadness: 0,
@@ -700,12 +701,12 @@ describe('Emotion Interpretation', () => {
     });
   });
 
-  describe('Priority 5: Mixed (3+ emotions >= 40)', () => {
-    it('interprets mixed emotions correctly', () => {
+  describe('Priority: Mixed (3+ emotions in proximity)', () => {
+    it('interprets mixed emotions correctly (3 emotions in proximity)', () => {
       const vector: EmotionVector = {
-        joySadness: 0.45,
-        acceptanceDisgust: 0.42,
-        angerFear: 0.48,
+        joySadness: 0.50,   // First emotion
+        acceptanceDisgust: 0.40,  // 0.40/0.50 = 0.80 >= 0.75, in proximity with joy
+        angerFear: 0.32,    // 0.32/0.40 = 0.80 >= 0.75, in proximity with acceptance
         anticipationSurprise: 0,
       };
       const result = interpretEmotionVector(vector);
@@ -716,7 +717,7 @@ describe('Emotion Interpretation', () => {
     });
   });
 
-  describe('Priority 6: Neutral (no emotions >= 20)', () => {
+  describe('Priority 8: Neutral (no emotions >= 20)', () => {
     it('interprets neutral state correctly', () => {
       const vector: EmotionVector = {
         joySadness: 0,
@@ -744,10 +745,22 @@ describe('Emotion Interpretation', () => {
   });
 
   describe('Edge cases', () => {
-    it('prioritizes high intensity over dyad', () => {
+    it('prioritizes high dyad over high single emotion (proximity + high average)', () => {
       const vector: EmotionVector = {
-        joySadness: 0.8, // high
-        acceptanceDisgust: 0.45, // would make dyad
+        joySadness: 0.85, // Leading emotion
+        acceptanceDisgust: 0.80, // 0.80/0.85 = 0.941 >= 0.75, avg = 0.825 >= 0.80 (high dyad)
+        angerFear: 0,
+        anticipationSurprise: 0,
+      };
+      const result = interpretEmotionVector(vector);
+      expect(result.emotion).toBe('love');
+      expect(result.intensity).toBe('high');
+    });
+
+    it('prioritizes high single over low dyad when second emotion not in proximity', () => {
+      const vector: EmotionVector = {
+        joySadness: 0.85, // high single
+        acceptanceDisgust: 0.50, // 0.50/0.85 = 0.588 < 0.75, not in proximity
         angerFear: 0,
         anticipationSurprise: 0,
       };
@@ -756,26 +769,40 @@ describe('Emotion Interpretation', () => {
       expect(result.intensity).toBe('high');
     });
 
-    it('prioritizes dyad over medium intensity', () => {
+    it('prioritizes medium dyad over medium single emotion (proximity + medium average)', () => {
       const vector: EmotionVector = {
-        joySadness: 0.65, // below high threshold
-        acceptanceDisgust: 0.42, // both above dyad threshold
+        joySadness: 0.65, // Leading emotion
+        acceptanceDisgust: 0.60, // 0.60/0.65 = 0.923 >= 0.75, avg = 0.625 >= 0.55 (medium dyad)
         angerFear: 0,
         anticipationSurprise: 0,
       };
       const result = interpretEmotionVector(vector);
       expect(result.emotion).toBe('love');
+      expect(result.intensity).toBe('medium');
     });
 
-    it('handles exactly 2 emotions at dyad threshold', () => {
+    it('prioritizes medium single over low dyad when second emotion not in proximity', () => {
       const vector: EmotionVector = {
-        joySadness: 0.4,
+        joySadness: 0.60, // medium single
+        acceptanceDisgust: 0,
+        angerFear: 0.40, // 0.40/0.60 = 0.667 < 0.75, not in proximity
+        anticipationSurprise: 0,
+      };
+      const result = interpretEmotionVector(vector);
+      expect(result.emotion).toBe('joy');
+      expect(result.intensity).toBe('medium');
+    });
+
+    it('prioritizes low dyad over low single emotion (proximity + low average)', () => {
+      const vector: EmotionVector = {
+        joySadness: 0.40, // Leading emotion
         acceptanceDisgust: 0,
         angerFear: 0,
-        anticipationSurprise: 0.4,
+        anticipationSurprise: 0.35, // 0.35/0.40 = 0.875 >= 0.75, avg = 0.375 >= 0.20 (low dyad)
       };
       const result = interpretEmotionVector(vector);
       expect(result.emotion).toBe('optimism');
+      expect(result.intensity).toBe('low');
     });
   });
 });

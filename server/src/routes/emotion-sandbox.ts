@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import {
   applyEmotionPulls,
   interpretEmotionVector,
+  applyEmotionDecay,
 } from '../services/plutchik-emotion';
 import {
   EmotionVector,
@@ -14,7 +15,7 @@ import {
   HIGH_INTENSITY_THRESHOLD,
   MEDIUM_INTENSITY_THRESHOLD,
   LOW_INTENSITY_THRESHOLD,
-  DYAD_THRESHOLD,
+  DYAD_PROXIMITY_RATIO,
 } from '../services/plutchik-emotion/interpretation-config';
 
 const router = Router();
@@ -142,18 +143,82 @@ router.get('/reset', (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/emotion-sandbox/apply-decay
+ *
+ * Apply emotion decay to a vector over time
+ *
+ * Request body:
+ * {
+ *   vector?: EmotionVector,  // Optional, defaults to neutral
+ *   hours: number            // Time elapsed in hours (must be >= 0)
+ * }
+ *
+ * Response:
+ * {
+ *   input: EmotionVector,
+ *   output: EmotionVector,
+ *   hours: number,
+ *   interpretation: EmotionInterpretation
+ * }
+ */
+router.post('/apply-decay', (req: Request, res: Response) => {
+  try {
+    const { vector, hours } = req.body;
+
+    // Validate hours
+    if (typeof hours !== 'number') {
+      return res.status(400).json({
+        success: false,
+        error: 'hours is required and must be a number',
+      });
+    }
+
+    if (hours < 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'hours must be >= 0',
+      });
+    }
+
+    // Use provided vector or default to neutral
+    const inputVector: EmotionVector = vector || NEUTRAL_EMOTION_VECTOR;
+
+    // Apply decay
+    const outputVector = applyEmotionDecay(inputVector, hours);
+
+    // Interpret the result
+    const interpretation = interpretEmotionVector(outputVector);
+
+    return res.json({
+      success: true,
+      input: inputVector,
+      output: outputVector,
+      hours,
+      interpretation,
+    });
+  } catch (error) {
+    console.error('Emotion sandbox decay error:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Failed to apply emotion decay',
+      details: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+});
+
+/**
  * GET /api/emotion-sandbox/config
  *
- * Returns interpretation configuration (thresholds)
+ * Returns interpretation configuration (thresholds and proximity ratio)
  *
  * Response:
  * {
  *   thresholds: {
  *     high: number,
  *     medium: number,
- *     low: number,
- *     dyad: number
- *   }
+ *     low: number
+ *   },
+ *   proximityRatio: number
  * }
  */
 router.get('/config', (_req: Request, res: Response) => {
@@ -163,8 +228,8 @@ router.get('/config', (_req: Request, res: Response) => {
       high: HIGH_INTENSITY_THRESHOLD,
       medium: MEDIUM_INTENSITY_THRESHOLD,
       low: LOW_INTENSITY_THRESHOLD,
-      dyad: DYAD_THRESHOLD,
     },
+    proximityRatio: DYAD_PROXIMITY_RATIO,
   });
 });
 

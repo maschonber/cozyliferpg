@@ -86,6 +86,9 @@ export interface EmotionInterpretation {
   /** Descriptive adjective associated with this emotion (e.g., "joyful", "sad") */
   adjective?: string;
 
+  /** RGB hex color code for this emotion */
+  color?: string;
+
   /** The base emotions contributing to this interpretation (1 for main emotions, 2 for dyads) */
   contributingEmotions?: BaseEmotion[];
 }

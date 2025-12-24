@@ -2,13 +2,17 @@
  * Plutchik Emotion System - Interpretation Logic
  *
  * Interprets emotion vectors into human-readable emotion states.
- * Uses a priority-based system:
- *  1. High intensity single emotion (>= 75)
- *  2. Emotion dyad (two emotions >= 40)
- *  3. Medium intensity single emotion (>= 50)
- *  4. Low intensity single emotion (>= 25)
- *  5. Mixed (3+ emotions >= 40)
- *  6. Neutral (no emotions >= 25)
+ *
+ * Intensity is determined by the HIGHEST emotion value:
+ *  - High: >= 80
+ *  - Medium: >= 55
+ *  - Low: >= 20
+ *  - Neutral: < 20
+ *
+ * Emotion type is determined by proximity (75% rule):
+ *  - Single: Only one significant emotion
+ *  - Dyad: 2 emotions in close proximity (second >= 75% of highest)
+ *  - Mixed: 3+ emotions in close proximity (third >= 75% of second)
  */
 
 import {
@@ -16,12 +20,13 @@ import {
   EmotionVector,
   EmotionInterpretation,
   InterpretedIntensity,
+  EmotionDyad,
 } from './types';
 import {
   HIGH_INTENSITY_THRESHOLD,
   MEDIUM_INTENSITY_THRESHOLD,
   LOW_INTENSITY_THRESHOLD,
-  DYAD_THRESHOLD,
+  DYAD_PROXIMITY_RATIO,
   getDyadName,
   getDyadEmotions,
   getDescriptors,
@@ -73,84 +78,53 @@ function getEmotionsAboveThreshold(
 /**
  * Interpret an emotion vector into a human-readable emotion state
  *
- * Priority system:
- *  1. High intensity single emotion (>= high threshold) → emotion at "high" intensity
- *  2. Emotion dyad (2 emotions >= dyad threshold) → dyad name
- *  3. Medium intensity single emotion (>= medium threshold) → emotion at "medium" intensity
- *  4. Low intensity single emotion (>= low threshold) → emotion at "low" intensity
- *  5. Mixed (3+ emotions >= dyad threshold) → "mixed"
- *  6. Neutral (no emotions >= low threshold) → "neutral"
+ * Algorithm:
+ *  1. Find the highest emotion value
+ *  2. Determine intensity based on highest value (high/medium/low/neutral)
+ *  3. Count emotions in proximity using 75% rule
+ *  4. Return single/dyad/mixed based on proximity count
  */
 export function interpretEmotionVector(vector: EmotionVector): EmotionInterpretation {
   const allEmotions = getAllEmotionValues(vector);
 
-  // Get emotions at various thresholds for priority checking
-  const dyadEmotions = getEmotionsAboveThreshold(allEmotions, DYAD_THRESHOLD);
-  const highEmotions = getEmotionsAboveThreshold(allEmotions, HIGH_INTENSITY_THRESHOLD);
-  const mediumEmotions = getEmotionsAboveThreshold(allEmotions, MEDIUM_INTENSITY_THRESHOLD);
+  // Sort all emotions by value (descending)
+  const sortedEmotions = [...allEmotions].sort((a, b) => b.value - a.value);
+  const [first, second, third] = sortedEmotions;
 
-  // Priority 1: High intensity single emotion (only if exactly one high emotion)
-  // But if there are 2 high emotions, check if they form a dyad first
-  if (highEmotions.length === 1) {
-    const strongest = highEmotions[0];
-    const descriptors = getDescriptors(strongest.emotion, 'high');
+  // Determine intensity based on highest emotion
+  let intensity: InterpretedIntensity | null = null;
+  if (first.value >= HIGH_INTENSITY_THRESHOLD) {
+    intensity = 'high';
+  } else if (first.value >= MEDIUM_INTENSITY_THRESHOLD) {
+    intensity = 'medium';
+  } else if (first.value >= LOW_INTENSITY_THRESHOLD) {
+    intensity = 'low';
+  }
+
+  // If no emotions reach low threshold, return neutral
+  if (!intensity) {
+    const descriptors = getSpecialDescriptors('neutral');
     return {
-      emotion: strongest.emotion,
-      intensity: 'high',
+      emotion: 'neutral',
       noun: descriptors.noun,
       adjective: descriptors.adjective,
-      contributingEmotions: [strongest.emotion],
     };
   }
 
-  // Priority 2: Emotion dyad (exactly 2 emotions above dyad threshold)
-  // This includes the case where 2 emotions are both high
-  if (dyadEmotions.length === 2) {
-    const [first, second] = dyadEmotions;
-    const dyadName = getDyadName(first.emotion, second.emotion);
+  // Count emotions in proximity using 75% rule
+  let emotionsInProximity = 1; // Always have at least the first emotion
 
-    if (dyadName) {
-      const descriptors = getDyadDescriptors(dyadName);
-      // Dyad intensity based on average of the two emotions
-      const avgValue = (first.value + second.value) / 2;
-      let intensity: InterpretedIntensity;
-      if (avgValue >= HIGH_INTENSITY_THRESHOLD) {
-        intensity = 'high';
-      } else if (avgValue >= MEDIUM_INTENSITY_THRESHOLD) {
-        intensity = 'medium';
-      } else {
-        intensity = 'low';
-      }
+  if (second && second.value >= first.value * DYAD_PROXIMITY_RATIO && second.value >= LOW_INTENSITY_THRESHOLD) {
+    emotionsInProximity = 2;
 
-      return {
-        emotion: dyadName,
-        intensity,
-        noun: descriptors.noun,
-        adjective: descriptors.adjective,
-        contributingEmotions: getDyadEmotions(dyadName),
-      };
+    // Check if third emotion is also in proximity (75% of second)
+    if (third && third.value >= second.value * DYAD_PROXIMITY_RATIO && third.value >= LOW_INTENSITY_THRESHOLD) {
+      emotionsInProximity = 3;
     }
   }
 
-  // Priority 3: Medium intensity single emotion (only if exactly one medium+ emotion)
-  if (mediumEmotions.length === 1) {
-    const strongest = mediumEmotions[0];
-    const descriptors = getDescriptors(strongest.emotion, 'medium');
-    return {
-      emotion: strongest.emotion,
-      intensity: 'medium',
-      noun: descriptors.noun,
-      adjective: descriptors.adjective,
-      contributingEmotions: [strongest.emotion],
-    };
-  }
-
-  // Priority 4: Low intensity single emotion (only if not mixed)
-  const lowEmotions = getEmotionsAboveThreshold(allEmotions, LOW_INTENSITY_THRESHOLD);
-
-  // Check for mixed before returning single low emotion
-  // Priority 5: Mixed (3+ emotions above dyad threshold)
-  if (dyadEmotions.length >= 3) {
+  // If 3+ emotions in proximity, return mixed
+  if (emotionsInProximity >= 3) {
     const descriptors = getSpecialDescriptors('mixed');
     return {
       emotion: 'mixed',
@@ -159,23 +133,30 @@ export function interpretEmotionVector(vector: EmotionVector): EmotionInterpreta
     };
   }
 
-  if (lowEmotions.length > 0) {
-    const strongest = lowEmotions[0];
-    const descriptors = getDescriptors(strongest.emotion, 'low');
-    return {
-      emotion: strongest.emotion,
-      intensity: 'low',
-      noun: descriptors.noun,
-      adjective: descriptors.adjective,
-      contributingEmotions: [strongest.emotion],
-    };
+  // If 2 emotions in proximity, try to form a dyad
+  if (emotionsInProximity === 2) {
+    const dyadName = getDyadName(first.emotion, second.emotion);
+    if (dyadName) {
+      const descriptors = getDyadDescriptors(dyadName);
+      return {
+        emotion: dyadName,
+        intensity,
+        noun: descriptors.noun,
+        adjective: descriptors.adjective,
+        color: descriptors.color,
+        contributingEmotions: getDyadEmotions(dyadName),
+      };
+    }
   }
 
-  // Priority 6: Neutral (no emotions above low threshold)
-  const descriptors = getSpecialDescriptors('neutral');
+  // Single emotion
+  const descriptors = getDescriptors(first.emotion, intensity);
   return {
-    emotion: 'neutral',
+    emotion: first.emotion,
+    intensity,
     noun: descriptors.noun,
     adjective: descriptors.adjective,
+    color: descriptors.color,
+    contributingEmotions: [first.emotion],
   };
 }

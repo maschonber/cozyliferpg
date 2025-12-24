@@ -220,12 +220,12 @@ describe('Dyad Mapping: Complete Coverage', () => {
 // ===== Interpretation Priority Tests =====
 
 describe('Interpretation: Priority System', () => {
-  it('interprets two high emotions as a dyad', () => {
+  it('interprets two high emotions as a dyad (proximity + high average)', () => {
     const vector: EmotionVector = {
       joySadness: 0,
       acceptanceDisgust: 0,
-      angerFear: 0.8,
-      anticipationSurprise: -0.78,
+      angerFear: 0.85,  // anger: 0.85
+      anticipationSurprise: -0.80,  // surprise: 0.80, ratio: 0.80/0.85 = 0.941 >= 0.75, avg = 0.825
     };
 
     const result = interpretEmotionVector(vector);
@@ -235,11 +235,11 @@ describe('Interpretation: Priority System', () => {
     expect(result.intensity).toBe('high');
   });
 
-  it('interprets two medium emotions as a dyad', () => {
+  it('interprets two medium emotions as a dyad (proximity + medium average)', () => {
     const vector: EmotionVector = {
-      joySadness: 0.60,
+      joySadness: 0.65,  // joy: 0.65
       acceptanceDisgust: 0,
-      angerFear: -0.55,
+      angerFear: -0.60,  // fear: 0.60, ratio: 0.60/0.65 = 0.923 >= 0.75, avg = 0.625
       anticipationSurprise: 0,
     };
 
@@ -250,17 +250,17 @@ describe('Interpretation: Priority System', () => {
     expect(result.intensity).toBe('medium');
   });
 
-  it('interprets low emotions below dyad threshold as single emotion', () => {
+  it('interprets emotions not in proximity as single emotion', () => {
     const vector: EmotionVector = {
-      joySadness: 0.30,
-      acceptanceDisgust: 0.28,
+      joySadness: 0.30,  // joy: 0.30
+      acceptanceDisgust: 0.20,  // acceptance: 0.20, ratio: 0.20/0.30 = 0.667 < 0.75, not in proximity
       angerFear: 0,
       anticipationSurprise: 0,
     };
 
     const result = interpretEmotionVector(vector);
 
-    // Both below dyad threshold (0.40), so strongest wins
+    // Not in proximity (ratio < 0.75), so strongest wins
     expect(result.emotion).toBe('joy');
     expect(result.intensity).toBe('low');
   });
@@ -308,8 +308,8 @@ describe('Edge Cases', () => {
 
     // Joy pull + suppression of sadness (distance=4) should move strongly toward joy
     expect(result.joySadness).toBeGreaterThan(-0.5);
-    // Should have moved significantly
-    expect(result.joySadness).toBeGreaterThan(-0.3);
+    // Should have moved significantly (dampened due to existing emotion at -0.5)
+    expect(result.joySadness).toBeGreaterThan(-0.35);
   });
 });
 

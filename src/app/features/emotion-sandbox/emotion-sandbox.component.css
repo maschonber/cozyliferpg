@@ -41,11 +41,10 @@ h1 {
 
 /* Emotion Interpretation */
 .emotion-interpretation {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   padding: 1.5rem;
   border-radius: 0.75rem;
   margin-bottom: 1.5rem;
-  color: white;
+  color: black;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
@@ -152,6 +151,13 @@ h1 {
   color: #475569;
 }
 
+.action-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
 .reset-button {
   background: #64748b;
   color: white;
@@ -168,6 +174,53 @@ h1 {
 }
 
 .reset-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.decay-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.decay-time-input {
+  width: 100px;
+  padding: 0.75rem;
+  border: 2px solid #e2e8f0;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  transition: border-color 0.2s;
+}
+
+.decay-time-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.decay-time-input:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f1f5f9;
+}
+
+.decay-button {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.decay-button:hover:not(:disabled) {
+  background: #059669;
+}
+
+.decay-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
