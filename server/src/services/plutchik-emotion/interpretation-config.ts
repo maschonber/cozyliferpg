@@ -125,7 +125,7 @@ export function getDyadEmotions(dyad: EmotionDyad): [BaseEmotion, BaseEmotion] {
 /**
  * Nouns and adjectives for each base emotion at different intensities
  */
-interface EmotionDescriptors {
+export interface EmotionDescriptors {
   low: { noun: string; adjective: string; color: string };
   medium: { noun: string; adjective: string; color: string };
   high: { noun: string; adjective: string; color: string };
@@ -133,7 +133,7 @@ interface EmotionDescriptors {
 
 export const BASE_EMOTION_DESCRIPTORS: Record<BaseEmotion, EmotionDescriptors> = {
   joy: {
-    low: { noun: 'contentment', adjective: 'pleased', color: '#FFF4CC' },
+    low: { noun: 'cheeriness', adjective: 'cheery', color: '#FFF4CC' },
     medium: { noun: 'joy', adjective: 'joyful', color: '#FFE66D' },
     high: { noun: 'ecstasy', adjective: 'ecstatic', color: '#FFD700' },
   },
@@ -143,65 +143,167 @@ export const BASE_EMOTION_DESCRIPTORS: Record<BaseEmotion, EmotionDescriptors> =
     high: { noun: 'grief', adjective: 'heartbroken', color: '#4A9EE0' },
   },
   acceptance: {
-    low: { noun: 'tolerance', adjective: 'tolerant', color: '#B8E8C5' },
-    medium: { noun: 'trust', adjective: 'accepting', color: '#7FD68A' },
-    high: { noun: 'admiration', adjective: 'devoted', color: '#5CB86A' },
+    low: { noun: 'openness', adjective: 'open', color: '#B8E8C5' },
+    medium: { noun: 'acceptance', adjective: 'accepting', color: '#7FD68A' },
+    high: { noun: 'admiration', adjective: 'admiring', color: '#5CB86A' },
   },
   disgust: {
-    low: { noun: 'aversion', adjective: 'averse', color: '#EDD6F5' },
+    low: { noun: 'boredom', adjective: 'bored', color: '#EDD6F5' },
     medium: { noun: 'disgust', adjective: 'disgusted', color: '#D9A5E8' },
-    high: { noun: 'loathing', adjective: 'revolted', color: '#C47FDB' },
+    high: { noun: 'loathing', adjective: 'loathing', color: '#C47FDB' },
   },
   anger: {
-    low: { noun: 'annoyance', adjective: 'irritated', color: '#FFCCCC' },
+    low: { noun: 'annoyance', adjective: 'annoyed', color: '#FFCCCC' },
     medium: { noun: 'anger', adjective: 'angry', color: '#FF9999' },
-    high: { noun: 'rage', adjective: 'furious', color: '#FF6B6B' },
+    high: { noun: 'fury', adjective: 'furious', color: '#FF6B6B' },
   },
   fear: {
-    low: { noun: 'apprehension', adjective: 'nervous', color: '#C8EDD4' },
+    low: { noun: 'nervosity', adjective: 'nervous', color: '#C8EDD4' },
     medium: { noun: 'fear', adjective: 'afraid', color: '#8FD9A8' },
     high: { noun: 'terror', adjective: 'terrified', color: '#66C287' },
   },
   anticipation: {
-    low: { noun: 'interest', adjective: 'curious', color: '#FFD9B3' },
-    medium: { noun: 'anticipation', adjective: 'eager', color: '#FFB86F' },
-    high: { noun: 'vigilance', adjective: 'obsessed', color: '#FF9F3D' },
+    low: { noun: 'interest', adjective: 'interested', color: '#FFD9B3' },
+    medium: { noun: 'focus', adjective: 'focused', color: '#FFB86F' },
+    high: { noun: 'vigilance', adjective: 'vigilant', color: '#FF9F3D' },
   },
   surprise: {
     low: { noun: 'distraction', adjective: 'distracted', color: '#D4EFFA' },
     medium: { noun: 'surprise', adjective: 'surprised', color: '#A0D8F1' },
-    high: { noun: 'amazement', adjective: 'astonished', color: '#6FC3E8' },
+    high: { noun: 'amazement', adjective: 'amazed', color: '#6FC3E8' },
   },
 };
 
 /**
- * Descriptors for emotion dyads
+ * Descriptors for emotion dyads at different intensities
+ * Low = mild form, Medium = standard dyad, High = intense form
  */
-export const DYAD_DESCRIPTORS: Record<EmotionDyad, { noun: string; adjective: string; color: string }> = {
-  love: { noun: 'affection', adjective: 'affectionate', color: '#B8E994' },
-  optimism: { noun: 'optimism', adjective: 'optimistic', color: '#FFD078' },
-  submission: { noun: 'submission', adjective: 'submissive', color: '#87C9A0' },
-  awe: { noun: 'awe', adjective: 'awestruck', color: '#98D3C7' },
-  disappointment: { noun: 'disappointment', adjective: 'disappointed', color: '#8BC4D8' },
-  remorse: { noun: 'remorse', adjective: 'remorseful', color: '#A098C8' },
-  contempt: { noun: 'contempt', adjective: 'contemptuous', color: '#E89FC3' },
-  aggression: { noun: 'aggression', adjective: 'aggressive', color: '#FFB080' },
-  guilt: { noun: 'guilt', adjective: 'guilty', color: '#C1D888' },
-  curiosity: { noun: 'curiosity', adjective: 'curious', color: '#8DCDB9' },
-  despair: { noun: 'despair', adjective: 'hopeless', color: '#7AA8C9' },
-  unbelief: { noun: 'disbelief', adjective: 'skeptical', color: '#B0AED1' },
-  envy: { noun: 'envy', adjective: 'jealous', color: '#B89AC3' },
-  cynicism: { noun: 'cynicism', adjective: 'cynical', color: '#D0A2B8' },
-  pride: { noun: 'pride', adjective: 'proud', color: '#FFC285' },
-  fatalism: { noun: 'fatalism', adjective: 'fatalistic', color: '#9AC48C' },
-  delight: { noun: 'delight', adjective: 'delighted', color: '#F5D685' },
-  sentimentality: { noun: 'nostalgia', adjective: 'nostalgic', color: '#93BBAE' },
-  shame: { noun: 'shame', adjective: 'ashamed', color: '#AF9FBA' },
-  outrage: { noun: 'outrage', adjective: 'outraged', color: '#D4A7B3' },
-  pessimism: { noun: 'pessimism', adjective: 'pessimistic', color: '#9BACB8' },
-  morbidness: { noun: 'morbidness', adjective: 'morbid', color: '#E3B5B8' },
-  dominance: { noun: 'dominance', adjective: 'dominant', color: '#BA9EA5' },
-  anxiety: { noun: 'anxiety', adjective: 'anxious', color: '#A3C6A8' },
+export const DYAD_DESCRIPTORS: Record<EmotionDyad, EmotionDescriptors> = {
+  // Primary dyads (adjacent emotions - 1 step apart)
+  love: {
+    low: { noun: 'care', adjective: 'caring', color: '#D4F4C4' },
+    medium: { noun: 'affection', adjective: 'affectionate', color: '#B8E994' },
+    high: { noun: 'adoration', adjective: 'adoring', color: '#8FD964' },
+  },
+  optimism: {
+    low: { noun: 'hopefulness', adjective: 'hopeful', color: '#FFE4A8' },
+    medium: { noun: 'optimism', adjective: 'optimistic', color: '#FFD078' },
+    high: { noun: 'exuberance', adjective: 'exuberant', color: '#FFBC48' },
+  },
+  submission: {
+    low: { noun: 'compliance', adjective: 'compliant', color: '#B3DCC0' },
+    medium: { noun: 'submission', adjective: 'submissive', color: '#87C9A0' },
+    high: { noun: 'servility', adjective: 'servile', color: '#5BB680' },
+  },
+  awe: {
+    low: { noun: 'wonder', adjective: 'wondering', color: '#C4E4DD' },
+    medium: { noun: 'awe', adjective: 'awestruck', color: '#98D3C7' },
+    high: { noun: 'reverence', adjective: 'reverent', color: '#6CC2B1' },
+  },
+  disappointment: {
+    low: { noun: 'letdown', adjective: 'let down', color: '#B7D8E8' },
+    medium: { noun: 'disappointment', adjective: 'disappointed', color: '#8BC4D8' },
+    high: { noun: 'dismay', adjective: 'dismayed', color: '#5FB0C8' },
+  },
+  remorse: {
+    low: { noun: 'regret', adjective: 'regretful', color: '#C8BFD8' },
+    medium: { noun: 'remorse', adjective: 'remorseful', color: '#A098C8' },
+    high: { noun: 'penitence', adjective: 'penitent', color: '#7871B8' },
+  },
+  contempt: {
+    low: { noun: 'disdain', adjective: 'disdainful', color: '#F4C7DB' },
+    medium: { noun: 'contempt', adjective: 'contemptuous', color: '#E89FC3' },
+    high: { noun: 'scorn', adjective: 'scornful', color: '#DC77AB' },
+  },
+  aggression: {
+    low: { noun: 'assertiveness', adjective: 'assertive', color: '#FFD0B0' },
+    medium: { noun: 'aggression', adjective: 'aggressive', color: '#FFB080' },
+    high: { noun: 'hostility', adjective: 'hostile', color: '#FF9050' },
+  },
+
+  // Secondary dyads (emotions 2 steps apart)
+  guilt: {
+    low: { noun: 'unease', adjective: 'uneasy', color: '#D8E8B0' },
+    medium: { noun: 'guilt', adjective: 'guilty', color: '#C1D888' },
+    high: { noun: 'torment', adjective: 'tormented', color: '#AAC860' },
+  },
+  curiosity: {
+    low: { noun: 'intrigue', adjective: 'intrigued', color: '#B9DED1' },
+    medium: { noun: 'curiosity', adjective: 'curious', color: '#8DCDB9' },
+    high: { noun: 'fascination', adjective: 'fascinated', color: '#61BCA1' },
+  },
+  despair: {
+    low: { noun: 'discouragement', adjective: 'discouraged', color: '#A8C4D9' },
+    medium: { noun: 'despair', adjective: 'despairing', color: '#7AA8C9' },
+    high: { noun: 'anguish', adjective: 'anguished', color: '#4C8CB9' },
+  },
+  unbelief: {
+    low: { noun: 'doubt', adjective: 'doubtful', color: '#CCC9E1' },
+    medium: { noun: 'disbelief', adjective: 'skeptical', color: '#B0AED1' },
+    high: { noun: 'incredulity', adjective: 'incredulous', color: '#9493C1' },
+  },
+  envy: {
+    low: { noun: 'bitterness', adjective: 'bitter', color: '#D4BBD3' },
+    medium: { noun: 'envy', adjective: 'envious', color: '#B89AC3' },
+    high: { noun: 'spite', adjective: 'spiteful', color: '#9C79B3' },
+  },
+  cynicism: {
+    low: { noun: 'wariness', adjective: 'wary', color: '#E0C2D0' },
+    medium: { noun: 'cynicism', adjective: 'cynical', color: '#D0A2B8' },
+    high: { noun: 'misanthropy', adjective: 'misanthropic', color: '#C082A0' },
+  },
+  pride: {
+    low: { noun: 'smugness', adjective: 'smug', color: '#FFD8AD' },
+    medium: { noun: 'pride', adjective: 'proud', color: '#FFC285' },
+    high: { noun: 'triumph', adjective: 'triumphant', color: '#FFAC5D' },
+  },
+  fatalism: {
+    low: { noun: 'resignation', adjective: 'resigned', color: '#BED8AE' },
+    medium: { noun: 'fatalism', adjective: 'fatalistic', color: '#9AC48C' },
+    high: { noun: 'doom', adjective: 'doomed', color: '#76B06A' },
+  },
+
+  // Tertiary dyads (emotions 3 steps apart)
+  delight: {
+    low: { noun: 'pleasure', adjective: 'pleased', color: '#FAE6AD' },
+    medium: { noun: 'delight', adjective: 'delighted', color: '#F5D685' },
+    high: { noun: 'elation', adjective: 'elated', color: '#F0C65D' },
+  },
+  sentimentality: {
+    low: { noun: 'wistfulness', adjective: 'wistful', color: '#B9D0C6' },
+    medium: { noun: 'nostalgia', adjective: 'nostalgic', color: '#93BBAE' },
+    high: { noun: 'longing', adjective: 'longing', color: '#6DA696' },
+  },
+  shame: {
+    low: { noun: 'embarrassment', adjective: 'embarrassed', color: '#CBBFD2' },
+    medium: { noun: 'shame', adjective: 'ashamed', color: '#AF9FBA' },
+    high: { noun: 'humiliation', adjective: 'humiliated', color: '#937FA2' },
+  },
+  outrage: {
+    low: { noun: 'indignation', adjective: 'indignant', color: '#E4C3CB' },
+    medium: { noun: 'outrage', adjective: 'outraged', color: '#D4A7B3' },
+    high: { noun: 'fury', adjective: 'furious', color: '#C48B9B' },
+  },
+  pessimism: {
+    low: { noun: 'uncertainty', adjective: 'uncertain', color: '#BBC8D0' },
+    medium: { noun: 'pessimism', adjective: 'pessimistic', color: '#9BACB8' },
+    high: { noun: 'hopelessness', adjective: 'hopeless', color: '#7B90A0' },
+  },
+  morbidness: {
+    low: { noun: 'wryness', adjective: 'wry', color: '#EED0D2' },
+    medium: { noun: 'morbidness', adjective: 'morbid', color: '#E3B5B8' },
+    high: { noun: 'macabreness', adjective: 'macabre', color: '#D89A9E' },
+  },
+  dominance: {
+    low: { noun: 'authority', adjective: 'authoritative', color: '#D0BBBF' },
+    medium: { noun: 'dominance', adjective: 'dominant', color: '#BA9EA5' },
+    high: { noun: 'tyranny', adjective: 'tyrannical', color: '#A4818B' },
+  },
+  anxiety: {
+    low: { noun: 'uneasiness', adjective: 'uneasy', color: '#C3D8C6' },
+    medium: { noun: 'anxiety', adjective: 'anxious', color: '#A3C6A8' },
+    high: { noun: 'dread', adjective: 'dreadful', color: '#83B48A' },
+  },
 };
 
 /**
@@ -223,10 +325,13 @@ export function getDescriptors(
 }
 
 /**
- * Get descriptors for a dyad
+ * Get descriptors for a dyad at a specific intensity
  */
-export function getDyadDescriptors(dyad: EmotionDyad): { noun: string; adjective: string; color: string } {
-  return DYAD_DESCRIPTORS[dyad];
+export function getDyadDescriptors(
+  dyad: EmotionDyad,
+  intensity: InterpretedIntensity = 'medium'
+): { noun: string; adjective: string; color: string } {
+  return DYAD_DESCRIPTORS[dyad][intensity];
 }
 
 /**

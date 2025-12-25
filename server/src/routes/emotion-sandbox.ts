@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import {
   applyEmotionPulls,
-  interpretEmotionVector,
+  interpretEmotionVectorSlim,
   applyEmotionDecay,
 } from '../services/plutchik-emotion';
 import {
@@ -16,6 +16,9 @@ import {
   MEDIUM_INTENSITY_THRESHOLD,
   LOW_INTENSITY_THRESHOLD,
   DYAD_PROXIMITY_RATIO,
+  BASE_EMOTION_DESCRIPTORS,
+  DYAD_DESCRIPTORS,
+  SPECIAL_EMOTION_DESCRIPTORS,
 } from '../services/plutchik-emotion/interpretation-config';
 
 const router = Router();
@@ -105,8 +108,8 @@ router.post('/apply-pulls', (req: Request, res: Response) => {
     // Apply the pulls
     const outputVector = applyEmotionPulls(inputVector, pulls);
 
-    // Interpret the result
-    const interpretation = interpretEmotionVector(outputVector);
+    // Interpret the result (slim response - frontend joins with config for descriptors)
+    const interpretation = interpretEmotionVectorSlim(outputVector);
 
     return res.json({
       success: true,
@@ -186,8 +189,8 @@ router.post('/apply-decay', (req: Request, res: Response) => {
     // Apply decay
     const outputVector = applyEmotionDecay(inputVector, hours);
 
-    // Interpret the result
-    const interpretation = interpretEmotionVector(outputVector);
+    // Interpret the result (slim response - frontend joins with config for descriptors)
+    const interpretation = interpretEmotionVectorSlim(outputVector);
 
     return res.json({
       success: true,
@@ -209,16 +212,19 @@ router.post('/apply-decay', (req: Request, res: Response) => {
 /**
  * GET /api/emotion-sandbox/config
  *
- * Returns interpretation configuration (thresholds and proximity ratio)
+ * Returns interpretation configuration and all emotion metadata.
+ * Frontend should call this once and cache the result to look up
+ * descriptors (noun, adjective, color) for emotion interpretations.
  *
  * Response:
  * {
- *   thresholds: {
- *     high: number,
- *     medium: number,
- *     low: number
- *   },
- *   proximityRatio: number
+ *   thresholds: { high, medium, low },
+ *   proximityRatio: number,
+ *   emotions: {
+ *     base: Record<BaseEmotion, EmotionDescriptors>,
+ *     dyads: Record<EmotionDyad, EmotionDescriptors>,
+ *     special: { neutral: {...}, mixed: {...} }
+ *   }
  * }
  */
 router.get('/config', (_req: Request, res: Response) => {
@@ -230,6 +236,11 @@ router.get('/config', (_req: Request, res: Response) => {
       low: LOW_INTENSITY_THRESHOLD,
     },
     proximityRatio: DYAD_PROXIMITY_RATIO,
+    emotions: {
+      base: BASE_EMOTION_DESCRIPTORS,
+      dyads: DYAD_DESCRIPTORS,
+      special: SPECIAL_EMOTION_DESCRIPTORS,
+    },
   });
 });
 

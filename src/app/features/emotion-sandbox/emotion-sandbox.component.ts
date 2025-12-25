@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -40,13 +40,50 @@ type SpecialEmotion = 'neutral' | 'mixed';
 
 type InterpretedEmotion = BaseEmotion | EmotionDyad | SpecialEmotion;
 
-interface EmotionInterpretation {
+/** Slim interpretation result from API (without descriptors) */
+interface EmotionInterpretationResult {
   emotion: InterpretedEmotion;
   intensity?: InterpretedIntensity;
+  contributingEmotions?: BaseEmotion[];
+}
+
+/** Full interpretation with descriptors (after joining with config) */
+interface EmotionInterpretation extends EmotionInterpretationResult {
   noun?: string;
   adjective?: string;
   color?: string;
-  contributingEmotions?: BaseEmotion[];
+}
+
+/** Descriptor data for an emotion at a specific intensity */
+interface EmotionDescriptor {
+  noun: string;
+  adjective: string;
+  color: string;
+}
+
+/** Descriptors for all intensity levels */
+interface EmotionDescriptors {
+  low: EmotionDescriptor;
+  medium: EmotionDescriptor;
+  high: EmotionDescriptor;
+}
+
+/** Config response from the API */
+interface EmotionConfig {
+  thresholds: {
+    high: number;
+    medium: number;
+    low: number;
+  };
+  proximityRatio: number;
+  emotions: {
+    base: Record<BaseEmotion, EmotionDescriptors>;
+    dyads: Record<EmotionDyad, EmotionDescriptors>;
+    special: {
+      neutral: { noun: string; adjective: string };
+      mixed: { noun: string; adjective: string };
+    };
+  };
 }
 
 @Component({
@@ -56,8 +93,11 @@ interface EmotionInterpretation {
   templateUrl: './emotion-sandbox.component.html',
   styleUrls: ['./emotion-sandbox.component.css']
 })
-export class EmotionSandboxComponent {
+export class EmotionSandboxComponent implements OnInit {
   private apiUrl = `${environment.apiUrl}/emotion-sandbox`;
+
+  // Cached emotion config (fetched once)
+  private emotionConfig = signal<EmotionConfig | null>(null);
 
   // Current emotion vector
   currentVector = signal<EmotionVector>({
@@ -67,8 +107,12 @@ export class EmotionSandboxComponent {
     anticipationSurprise: 0,
   });
 
-  // Current emotion interpretation
-  currentInterpretation = signal<EmotionInterpretation | null>(null);
+  // Current emotion interpretation (starts with neutral/calm)
+  currentInterpretation = signal<EmotionInterpretation>({
+    emotion: 'neutral',
+    adjective: 'calm',
+    noun: 'neutrality',
+  });
 
   // Available options
   emotions: BaseEmotion[] = [
@@ -95,6 +139,80 @@ export class EmotionSandboxComponent {
 
   constructor(private http: HttpClient) {}
 
+  ngOnInit(): void {
+    this.fetchConfig();
+  }
+
+  /**
+   * Fetch emotion config (descriptors, thresholds) - called once on init
+   */
+  private fetchConfig(): void {
+    this.http.get<{ success: boolean } & EmotionConfig>(
+      `${this.apiUrl}/config`
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.emotionConfig.set(response);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching emotion config:', err);
+        // Non-fatal - we can still function without descriptors
+      }
+    });
+  }
+
+  /**
+   * Join a slim interpretation result with config to get full descriptors
+   */
+  private enrichInterpretation(result: EmotionInterpretationResult): EmotionInterpretation {
+    const config = this.emotionConfig();
+    if (!config) {
+      // No config yet - return without descriptors
+      return result;
+    }
+
+    const { emotion, intensity } = result;
+
+    // Handle special emotions (neutral, mixed) - no color
+    if (emotion === 'neutral' || emotion === 'mixed') {
+      const special = config.emotions.special[emotion];
+      return {
+        ...result,
+        noun: special.noun,
+        adjective: special.adjective,
+      };
+    }
+
+    // For base emotions and dyads, we need an intensity level
+    const level = intensity || 'medium';
+
+    // Check if it's a base emotion
+    if (emotion in config.emotions.base) {
+      const descriptors = config.emotions.base[emotion as BaseEmotion][level];
+      return {
+        ...result,
+        noun: descriptors.noun,
+        adjective: descriptors.adjective,
+        color: descriptors.color,
+      };
+    }
+
+    // Must be a dyad
+    if (emotion in config.emotions.dyads) {
+      const descriptors = config.emotions.dyads[emotion as EmotionDyad][level];
+      return {
+        ...result,
+        noun: descriptors.noun,
+        adjective: descriptors.adjective,
+        color: descriptors.color,
+      };
+    }
+
+    // Fallback - return as-is
+    return result;
+  }
+
   /**
    * Apply primary pull (and secondary if selected)
    */
@@ -108,7 +226,7 @@ export class EmotionSandboxComponent {
       pulls.push(secondary);
     }
 
-    this.http.post<any>(
+    this.http.post<{ success: boolean; output: EmotionVector; interpretation: EmotionInterpretationResult }>(
       `${this.apiUrl}/apply-pulls`,
       {
         vector: this.currentVector(),
@@ -118,7 +236,8 @@ export class EmotionSandboxComponent {
       next: (response) => {
         if (response.success) {
           this.currentVector.set(response.output);
-          this.currentInterpretation.set(response.interpretation);
+          // Enrich slim interpretation with descriptors from cached config
+          this.currentInterpretation.set(this.enrichInterpretation(response.interpretation));
           this.secondaryPull.set(null); // Clear secondary after applying
         }
         this.loading.set(false);
@@ -171,7 +290,11 @@ export class EmotionSandboxComponent {
       angerFear: 0,
       anticipationSurprise: 0,
     });
-    this.currentInterpretation.set(null);
+    this.currentInterpretation.set({
+      emotion: 'neutral',
+      adjective: 'calm',
+      noun: 'neutrality',
+    });
     this.error.set(null);
   }
 
@@ -185,7 +308,7 @@ export class EmotionSandboxComponent {
     // Convert minutes to hours
     const hours = this.decayTimeMinutes() / 60;
 
-    this.http.post<any>(
+    this.http.post<{ success: boolean; output: EmotionVector; interpretation: EmotionInterpretationResult }>(
       `${this.apiUrl}/apply-decay`,
       {
         vector: this.currentVector(),
@@ -195,7 +318,8 @@ export class EmotionSandboxComponent {
       next: (response) => {
         if (response.success) {
           this.currentVector.set(response.output);
-          this.currentInterpretation.set(response.interpretation);
+          // Enrich slim interpretation with descriptors from cached config
+          this.currentInterpretation.set(this.enrichInterpretation(response.interpretation));
         }
         this.loading.set(false);
       },

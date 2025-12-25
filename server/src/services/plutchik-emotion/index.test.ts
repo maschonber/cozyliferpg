@@ -652,8 +652,8 @@ describe('Emotion Interpretation', () => {
       const result = interpretEmotionVector(vector);
       expect(result.emotion).toBe('optimism');
       expect(result.intensity).toBe('low');
-      expect(result.noun).toBe('optimism');
-      expect(result.adjective).toBe('optimistic');
+      expect(result.noun).toBe('hopefulness');
+      expect(result.adjective).toBe('hopeful');
     });
 
     it('high dyad requires proximity and high average', () => {

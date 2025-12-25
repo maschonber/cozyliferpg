@@ -19,8 +19,8 @@ import {
   BaseEmotion,
   EmotionVector,
   EmotionInterpretation,
+  EmotionInterpretationResult,
   InterpretedIntensity,
-  EmotionDyad,
 } from './types';
 import {
   HIGH_INTENSITY_THRESHOLD,
@@ -137,7 +137,7 @@ export function interpretEmotionVector(vector: EmotionVector): EmotionInterpreta
   if (emotionsInProximity === 2) {
     const dyadName = getDyadName(first.emotion, second.emotion);
     if (dyadName) {
-      const descriptors = getDyadDescriptors(dyadName);
+      const descriptors = getDyadDescriptors(dyadName, intensity);
       return {
         emotion: dyadName,
         intensity,
@@ -157,6 +157,68 @@ export function interpretEmotionVector(vector: EmotionVector): EmotionInterpreta
     noun: descriptors.noun,
     adjective: descriptors.adjective,
     color: descriptors.color,
+    contributingEmotions: [first.emotion],
+  };
+}
+
+/**
+ * Interpret an emotion vector into a slim result (without descriptor data)
+ * Use this with the config endpoint for efficient API responses
+ */
+export function interpretEmotionVectorSlim(vector: EmotionVector): EmotionInterpretationResult {
+  const allEmotions = getAllEmotionValues(vector);
+
+  // Sort all emotions by value (descending)
+  const sortedEmotions = [...allEmotions].sort((a, b) => b.value - a.value);
+  const [first, second, third] = sortedEmotions;
+
+  // Determine intensity based on highest emotion
+  let intensity: InterpretedIntensity | null = null;
+  if (first.value >= HIGH_INTENSITY_THRESHOLD) {
+    intensity = 'high';
+  } else if (first.value >= MEDIUM_INTENSITY_THRESHOLD) {
+    intensity = 'medium';
+  } else if (first.value >= LOW_INTENSITY_THRESHOLD) {
+    intensity = 'low';
+  }
+
+  // If no emotions reach low threshold, return neutral
+  if (!intensity) {
+    return { emotion: 'neutral' };
+  }
+
+  // Count emotions in proximity using 75% rule
+  let emotionsInProximity = 1;
+
+  if (second && second.value >= first.value * DYAD_PROXIMITY_RATIO && second.value >= LOW_INTENSITY_THRESHOLD) {
+    emotionsInProximity = 2;
+
+    if (third && third.value >= second.value * DYAD_PROXIMITY_RATIO && third.value >= LOW_INTENSITY_THRESHOLD) {
+      emotionsInProximity = 3;
+    }
+  }
+
+  // If 3+ emotions in proximity, return mixed
+  if (emotionsInProximity >= 3) {
+    return { emotion: 'mixed' };
+  }
+
+  // If 2 emotions in proximity, try to form a dyad
+  if (emotionsInProximity === 2) {
+    const dyadName = getDyadName(first.emotion, second.emotion);
+    if (dyadName) {
+      return {
+        emotion: dyadName,
+        intensity,
+        contributingEmotions: getDyadEmotions(dyadName),
+      };
+    }
+  }
+
+  // Single emotion
+  return {
+    emotion: first.emotion,
+    intensity,
     contributingEmotions: [first.emotion],
   };
 }

@@ -206,7 +206,7 @@ function calculateSuppressionPercentage(
 
   // Combine: percentage to suppress (0 to 1)
   // Scale up to make it more aggressive
-  const suppressionPercentage = distanceFactor * strengthFactor * 1.8;
+  const suppressionPercentage = distanceFactor * strengthFactor * 1.7;
 
   // Clamp to max 100% suppression
   return Math.min(1.0, suppressionPercentage);
@@ -328,7 +328,7 @@ export function applyEmotionPulls(
  * @param vector - Emotion vector to interpret
  * @returns Interpretation with emotion name, intensity, and descriptors
  */
-export { interpretEmotionVector } from './interpretation';
+export { interpretEmotionVector, interpretEmotionVectorSlim } from './interpretation';
 
 /**
  * Apply emotion decay to a vector over time

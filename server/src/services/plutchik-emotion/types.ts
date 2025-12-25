@@ -71,7 +71,8 @@ export type InterpretedEmotion =
   | SpecialEmotion;
 
 /**
- * Result of interpreting an emotion vector
+ * Result of interpreting an emotion vector (full response with descriptors)
+ * @deprecated Use EmotionInterpretationResult with config lookup instead
  */
 export interface EmotionInterpretation {
   /** The interpreted emotion name */
@@ -88,6 +89,21 @@ export interface EmotionInterpretation {
 
   /** RGB hex color code for this emotion */
   color?: string;
+
+  /** The base emotions contributing to this interpretation (1 for main emotions, 2 for dyads) */
+  contributingEmotions?: BaseEmotion[];
+}
+
+/**
+ * Slim result of interpreting an emotion vector
+ * Descriptive data (noun, adjective, color) should be looked up from config
+ */
+export interface EmotionInterpretationResult {
+  /** The interpreted emotion name - use this as key to look up descriptors from config */
+  emotion: InterpretedEmotion;
+
+  /** Intensity level (only for single emotions and dyads, not for special emotions) */
+  intensity?: InterpretedIntensity;
 
   /** The base emotions contributing to this interpretation (1 for main emotions, 2 for dyads) */
   contributingEmotions?: BaseEmotion[];
