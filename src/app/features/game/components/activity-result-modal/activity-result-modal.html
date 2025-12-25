@@ -1,8 +1,6 @@
 <div class="activity-result-modal">
   <h2 mat-dialog-title>
-    <mat-icon>{{ data.summary.activity.category === 'work' ? 'work' :
-                 data.summary.activity.category === 'social' ? 'groups' :
-                 data.summary.activity.category === 'self_improvement' ? 'school' : 'local_activity' }}</mat-icon>
+    <mat-icon>{{ activityIcon }}</mat-icon>
     {{ data.summary.activity.name }}
     @if (isSocialActivity && data.summary.npc) {
       <span class="npc-context">with {{ data.summary.npc.name }}</span>
@@ -177,7 +175,7 @@
                   </div>
                 </div>
                 @if (rollDetails.statBonus !== undefined) {
-                  <p class="probability-note">These probabilities are based on your current stat ({{ rollDetails.statBonus }}) and activity difficulty ({{ data.summary.activity.difficulty }}).</p>
+                  <p class="probability-note">These probabilities are based on your current stat ({{ rollDetails.statBonus }}) and activity difficulty ({{ activityDifficulty }}).</p>
                 }
               </div>
             </mat-expansion-panel>
@@ -242,27 +240,6 @@
 
           <mat-divider></mat-divider>
         }
-      }
-
-      <!-- Emotion Changes Section (social activities) -->
-      @if (isSocialActivity && hasEmotionChanges) {
-        <div class="emotion-changes-section">
-          <h3>Emotion Changes</h3>
-          <div class="emotion-changes">
-            @for (change of emotionChangesList; track change.emotion) {
-              <div class="emotion-change-item" [class.positive]="change.delta > 0" [class.negative]="change.delta < 0">
-                <mat-icon class="emotion-icon">{{ change.icon }}</mat-icon>
-                <span class="emotion-name">{{ change.emotion }}</span>
-                <span class="emotion-delta" [class.positive]="change.delta > 0" [class.negative]="change.delta < 0">
-                  {{ change.delta > 0 ? '+' : '' }}{{ change.delta }}
-                </span>
-                <span class="emotion-new-value">({{ change.newValue }})</span>
-              </div>
-            }
-          </div>
-        </div>
-
-        <mat-divider></mat-divider>
       }
 
       <!-- Trait Discovery Section (social activities) -->

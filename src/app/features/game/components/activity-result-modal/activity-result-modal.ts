@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { ActivitySummary, StatChange, OutcomeTier } from '../../../../../../shared/types';
+import { ActivitySummary, StatChange, OutcomeTier, getActivityCategory } from '../../../../../../shared/types';
 
 export interface ActivityResultModalData {
   summary: ActivitySummary;
@@ -116,6 +116,27 @@ export class ActivityResultModal {
   }
 
   /**
+   * Get icon for activity based on category
+   */
+  get activityIcon(): string {
+    const category = getActivityCategory(this.data.summary.activity);
+    switch (category) {
+      case 'work': return 'work';
+      case 'social': return 'groups';
+      case 'self_improvement': return 'school';
+      default: return 'local_activity';
+    }
+  }
+
+  /**
+   * Get activity difficulty (safely handles optional field)
+   */
+  get activityDifficulty(): number {
+    const activity = this.data.summary.activity;
+    return ('difficulty' in activity && activity.difficulty !== undefined) ? activity.difficulty : 0;
+  }
+
+  /**
    * Get stat changes that increased current
    */
   get positiveChanges(): StatChange[] {
@@ -214,7 +235,7 @@ export class ActivityResultModal {
       return rollDetails.difficultyClass;
     }
     // Fallback to old calculation for backwards compatibility
-    return 100 + (this.data.summary.activity.difficulty || 0);
+    return 100 + this.activityDifficulty;
   }
 
   /**
@@ -290,66 +311,13 @@ export class ActivityResultModal {
   }
 
   /**
-   * Check if there are emotion changes to display
-   */
-  get hasEmotionChanges(): boolean {
-    return !!this.data.summary.emotionChanges;
-  }
-
-  /**
-   * Get emotion changes with non-zero deltas
-   */
-  get emotionChangesList(): Array<{ emotion: string; delta: number; icon: string; newValue: number }> {
-    if (!this.data.summary.emotionChanges) return [];
-
-    const changes = this.data.summary.emotionChanges.deltas;
-    const newValues = this.data.summary.emotionChanges.newValues;
-    const result = [];
-
-    const emotionIcons: Record<string, string> = {
-      joy: 'sentiment_very_satisfied',
-      affection: 'favorite',
-      excitement: 'bolt',
-      calm: 'spa',
-      sadness: 'sentiment_dissatisfied',
-      anger: 'sentiment_very_dissatisfied',
-      anxiety: 'psychology_alt',
-      romantic: 'favorite_border'
-    };
-
-    const emotionNames: Record<string, string> = {
-      joy: 'Joy',
-      affection: 'Affection',
-      excitement: 'Excitement',
-      calm: 'Calm',
-      sadness: 'Sadness',
-      anger: 'Anger',
-      anxiety: 'Anxiety',
-      romantic: 'Romantic'
-    };
-
-    for (const [emotion, delta] of Object.entries(changes)) {
-      if (delta !== undefined && delta !== 0) {
-        result.push({
-          emotion: emotionNames[emotion] || emotion,
-          delta: delta,
-          icon: emotionIcons[emotion] || 'sentiment_neutral',
-          newValue: newValues[emotion as keyof typeof newValues]
-        });
-      }
-    }
-
-    return result.sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)); // Sort by magnitude
-  }
-
-  /**
    * Calculate outcome probabilities based on current stat and difficulty
    * Replicates backend logic for client-side display
    */
   calculateProbabilities(): Record<OutcomeTier, number> {
     const rollDetails = this.data.summary.rollDetails;
     const statValue = rollDetails?.statBonus || 0;
-    const difficulty = this.data.summary.activity.difficulty || 0;
+    const difficulty = this.activityDifficulty;
     const dc = 100 + difficulty;
 
     const BASE_DC = 100;
@@ -469,17 +437,6 @@ export class ActivityResultModal {
         label: 'Activity',
         value: breakdown.activityModifier,
         description: 'Activity difficulty'
-      });
-    }
-
-    // Emotion modifier (social activities)
-    if (breakdown.emotionModifier !== undefined && breakdown.emotionModifier !== 0) {
-      modifiers.push({
-        label: 'Emotion',
-        value: breakdown.emotionModifier,
-        description: breakdown.emotionModifier > 0
-          ? 'NPC is in a negative emotional state'
-          : 'NPC is in a positive emotional state'
       });
     }
 

@@ -1,135 +1,14 @@
 /**
  * Social Activity Service Configuration
  *
- * Configuration for activity-emotion mappings, outcome scaling, and streak tracking.
- * Design: Data-driven configuration to enable easy tuning and extension.
+ * Configuration for outcome scaling and streak tracking.
+ * Note: Activity-emotion mappings have been removed - will be re-implemented
+ * with the new Plutchik emotion system later.
  *
  * Task 6: Social Activity Integration
  */
 
-import { EmotionType, EmotionValues, OutcomeTier } from '../../../../shared/types';
-
-// ===== Activity-Emotion Mappings =====
-
-/**
- * Emotion effects for each activity
- *
- * Defines which emotions are affected by each activity and by how much.
- * Values are BASE effects that get scaled by outcome tier.
- *
- * Structure: { activityId: { emotion: baseChange } }
- */
-export const ACTIVITY_EMOTION_EFFECTS: Record<string, Partial<EmotionValues>> = {
-  // Social activities
-  have_coffee: {
-    joy: 10,
-    affection: 8,
-    calm: 5,
-    anxiety: -5
-  },
-
-  quick_chat: {
-    joy: 5,
-    affection: 5,
-    calm: 3
-  },
-
-  casual_date: {
-    excitement: 15,
-    romantic: 12,
-    joy: 8,
-    anxiety: 5  // Some nervousness is natural
-  },
-
-  deep_conversation: {
-    affection: 15,
-    calm: 10,
-    anxiety: -10,
-    joy: 5
-  },
-
-  go_to_movies: {
-    joy: 10,
-    excitement: 8,
-    calm: 5
-  },
-
-  exercise_together: {
-    excitement: 10,
-    joy: 8,
-    calm: 5
-  },
-
-  cook_dinner: {
-    affection: 12,
-    romantic: 10,
-    joy: 10,
-    calm: 5
-  },
-
-  flirt_playfully: {
-    romantic: 20,
-    excitement: 15,
-    joy: 10,
-    anxiety: 8  // Flirting can be nerve-wracking
-  },
-
-  beach_picnic: {
-    joy: 12,
-    affection: 10,
-    calm: 8,
-    romantic: 5
-  },
-
-  play_pool_darts: {
-    joy: 10,
-    excitement: 8,
-    affection: 5
-  },
-
-  boardwalk_stroll: {
-    romantic: 12,
-    calm: 10,
-    affection: 8,
-    joy: 5
-  }
-};
-
-// ===== Emotion-Based Difficulty Modifiers =====
-
-/**
- * Base difficulty modifiers for each emotion type
- *
- * Positive emotions make interactions easier (negative modifier)
- * Negative emotions make interactions harder (positive modifier)
- *
- * These are BASE values that get scaled by intensity tier.
- */
-export const EMOTION_DIFFICULTY_BASE: Record<EmotionType, number> = {
-  // Positive emotions (make things easier)
-  joy: -5,        // Happy NPCs are more receptive
-  affection: -6,  // Feeling affectionate makes interactions smoother
-  excitement: -4, // Excitement can be distracting but generally positive
-  calm: -3,       // Calm NPCs are easier to interact with
-  romantic: -5,   // Romantic feelings facilitate romantic activities
-
-  // Negative emotions (make things harder)
-  sadness: 8,     // Sad NPCs are withdrawn
-  anger: 15,      // Angry NPCs are difficult to interact with
-  anxiety: 10     // Anxious NPCs are on edge
-};
-
-/**
- * Intensity multipliers for emotion difficulty modifiers
- *
- * Scales the base emotion modifier based on intensity tier.
- */
-export const EMOTION_INTENSITY_MULTIPLIERS = {
-  mild: 0.5,      // 1-25: half effect
-  moderate: 1.0,  // 26-50: full effect
-  strong: 1.5,    // 51-75: 1.5x effect
-  intense: 2.0    // 76-100: double effect
-};
+import { OutcomeTier } from '../../../../shared/types';
 
 // ===== Outcome Tier Scaling =====
 
@@ -144,60 +23,6 @@ export const OUTCOME_RELATIONSHIP_SCALING: Record<OutcomeTier, number> = {
   okay: 1.0,         // Okay outcome: 100% of base effect
   mixed: 0.0,        // Mixed outcome: no relationship change (awkward but not harmful)
   catastrophic: -0.5 // Catastrophic: reverse 50% of base effect (setback but recoverable)
-};
-
-/**
- * Emotion effect scaling by outcome tier
- *
- * Scales the base emotion changes based on activity outcome.
- * More volatile system - okay outcomes are mixed, mixed/catastrophic are increasingly negative.
- */
-export const OUTCOME_EMOTION_SCALING: Record<OutcomeTier, Partial<EmotionValues>> = {
-  best: {
-    // Strong positive emotion shifts
-    joy: 15,
-    affection: 10,
-    excitement: 10,
-    calm: 5,
-    // Reduce negative emotions
-    sadness: -10,
-    anger: -10,
-    anxiety: -10,
-    romantic: 10
-  },
-
-  okay: {
-    // Mixed emotions - some positive, some negative
-    joy: 5,
-    calm: 3,
-    // Slight negative emotions (things went okay but not great)
-    anxiety: 3,
-    sadness: 2
-  },
-
-  mixed: {
-    // Negative emotional response
-    anxiety: 10,
-    sadness: 8,
-    anger: 5,
-    // Reduce positive emotions
-    joy: -8,
-    affection: -5,
-    excitement: -5
-  },
-
-  catastrophic: {
-    // Very strong negative emotion shifts
-    sadness: 20,
-    anger: 18,
-    anxiety: 20,
-    // Significantly reduce positive emotions
-    joy: -20,
-    affection: -15,
-    excitement: -15,
-    romantic: -15,
-    calm: -10
-  }
 };
 
 // ===== Streak System =====

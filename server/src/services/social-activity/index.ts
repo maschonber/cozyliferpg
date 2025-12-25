@@ -10,32 +10,17 @@
  */
 
 import {
-  EmotionType,
-  EmotionIntensity,
-  EmotionValues,
-  NPCEmotionState,
   RelationshipAxes,
-  RelationshipState,
   OutcomeTier,
-  NPCTrait,
-  NPCArchetype,
-  PlayerArchetype,
-  ActivityCategory,
   DifficultyBreakdown,
   TraitContribution,
   ArchetypeContribution,
 } from '../../../../shared/types';
 import {
-  ACTIVITY_EMOTION_EFFECTS,
-  EMOTION_DIFFICULTY_BASE,
-  EMOTION_INTENSITY_MULTIPLIERS,
   OUTCOME_RELATIONSHIP_SCALING,
-  OUTCOME_EMOTION_SCALING,
   STREAK_DIFFICULTY_MODIFIERS,
   POSITIVE_OUTCOME_TIERS,
-  NEGATIVE_OUTCOME_TIERS,
 } from './config';
-import { getDominantEmotions } from '../emotion';
 
 // ===== Types =====
 
@@ -52,61 +37,22 @@ export interface InteractionStreak {
 // Note: DifficultyCalculation interface moved to shared/types.ts as DifficultyBreakdown
 // for consistency across solo and social activities
 
-// ===== Emotion-Based Difficulty Modifiers =====
-
-/**
- * Get difficulty modifier based on NPC emotion state
- *
- * Task 6 Requirement 2: Emotion-based difficulty
- * - Positive dominant emotion → easier (negative modifier)
- * - Negative dominant emotion → harder (positive modifier)
- * - Intensity affects magnitude
- *
- * @param emotionState - Current NPC emotion state
- * @returns Difficulty modifier (-20 to +30)
- *
- * @example
- * // NPC is feeling intensely joyful
- * getEmotionDifficultyModifier(state) // → -10 (much easier)
- *
- * // NPC is feeling intensely angry
- * getEmotionDifficultyModifier(state) // → +30 (much harder)
- */
-export function getEmotionDifficultyModifier(emotionState: NPCEmotionState): number {
-  // Get dominant emotions
-  const { primary } = getDominantEmotions(emotionState);
-
-  // Get base modifier for this emotion type
-  const baseModifier = EMOTION_DIFFICULTY_BASE[primary.emotion];
-
-  // Get intensity multiplier
-  const intensityMultiplier = EMOTION_INTENSITY_MULTIPLIERS[primary.intensity];
-
-  // Calculate final modifier
-  const modifier = Math.round(baseModifier * intensityMultiplier);
-
-  // Clamp to range [-20, +30]
-  return Math.max(-20, Math.min(30, modifier));
-}
-
 // ===== Dynamic Difficulty Calculation =====
 
 /**
  * Calculate effective difficulty for an activity
  *
- * Task 6 Requirement 1: Dynamic difficulty calculation
+ * Dynamic difficulty calculation based on relationship, traits, and streaks.
+ * Note: Emotion-based difficulty has been removed - will be re-implemented
+ * with the new Plutchik emotion system later.
  *
  * Formula:
  * effectiveDifficulty = baseDifficulty
- *   + emotionModifier      // -20 to +30 based on NPC emotion
  *   + relationshipModifier // -15 to +15 based on relationship level
  *   + traitBonus           // -20 to +20 from trait/archetype matching
  *   + streakModifier       // -10 to +10 based on recent interaction history
  *
  * @param baseDifficulty - Activity base difficulty
- * @param emotionState - NPC current emotions
- * @param relationshipAxes - Relationship axes values
- * @param relationshipState - Current relationship state
  * @param relationshipDifficultyMod - Relationship difficulty modifier (from relationship service)
  * @param npcTraitBonus - Combined trait bonus (from trait service)
  * @param archetypeBonus - Combined archetype bonus (from trait service)
@@ -114,25 +60,9 @@ export function getEmotionDifficultyModifier(emotionState: NPCEmotionState): num
  * @param individualTraits - Optional detailed trait contributions
  * @param archetypeDetails - Optional detailed archetype breakdown
  * @returns Complete difficulty calculation with breakdown
- *
- * @example
- * const diff = calculateDynamicDifficulty(
- *   40,              // base difficulty
- *   emotionState,    // NPC is happy
- *   axes,            // good relationship
- *   'friend',        // friendship state
- *   -8,              // friend bonus
- *   5,               // matching traits
- *   10,              // archetype bonus
- *   { consecutivePositive: 4, ... } // on a roll
- * );
- * // Result: { finalDifficulty: 25, ... } (easier due to all positive factors)
  */
 export function calculateDynamicDifficulty(
   baseDifficulty: number,
-  emotionState: NPCEmotionState,
-  relationshipAxes: RelationshipAxes,
-  relationshipState: RelationshipState,
   relationshipDifficultyMod: number,
   npcTraitBonus: number,
   archetypeBonus: number,
@@ -140,9 +70,6 @@ export function calculateDynamicDifficulty(
   individualTraits?: TraitContribution[],
   archetypeDetails?: ArchetypeContribution
 ): DifficultyBreakdown {
-  // Calculate emotion modifier
-  const emotionModifier = getEmotionDifficultyModifier(emotionState);
-
   // Relationship modifier (already calculated by relationship service)
   const relationshipModifier = relationshipDifficultyMod;
 
@@ -156,7 +83,6 @@ export function calculateDynamicDifficulty(
   const finalDifficulty = Math.max(
     0,
     baseDifficulty +
-      emotionModifier +
       relationshipModifier +
       traitBonus +
       streakModifier
@@ -178,7 +104,6 @@ export function calculateDynamicDifficulty(
 
   return {
     baseDifficulty,
-    emotionModifier,
     relationshipModifier,
     traitBonus,
     traitBreakdown: {
@@ -353,81 +278,24 @@ export function scaleRelationshipEffects(
 }
 
 /**
- * Calculate emotion changes from activity and outcome
- *
- * Task 6 Requirement 4: Activity-emotion mapping
- * - Combines base activity emotion effects with outcome-based modifiers
- * - Activity-specific effects scaled by outcome
- * - General outcome emotion effects applied
- *
- * @param activityId - Activity identifier
- * @param outcome - Activity outcome tier
- * @returns Combined emotion effects
- *
- * @example
- * calculateEmotionEffects('flirt_playfully', 'best')
- * // → { romantic: 35, excitement: 25, joy: 25, anxiety: -2 }
- * // (base flirt effects + best outcome bonuses)
- */
-export function calculateEmotionEffects(
-  activityId: string,
-  outcome: OutcomeTier
-): Partial<EmotionValues> {
-  // Get base activity emotion effects
-  const baseEffects = ACTIVITY_EMOTION_EFFECTS[activityId] ?? {};
-
-  // Get outcome-based emotion modifiers
-  const outcomeEffects = OUTCOME_EMOTION_SCALING[outcome];
-
-  // Scale base activity effects by outcome
-  const scaledBaseEffects: Partial<EmotionValues> = {};
-  const outcomeScaling = OUTCOME_RELATIONSHIP_SCALING[outcome]; // Reuse relationship scaling
-
-  for (const [emotion, value] of Object.entries(baseEffects)) {
-    const emotionKey = emotion as EmotionType;
-    scaledBaseEffects[emotionKey] = Math.round(value * outcomeScaling);
-  }
-
-  // Combine scaled activity effects with outcome effects
-  const combined: Partial<EmotionValues> = { ...scaledBaseEffects };
-
-  for (const [emotion, value] of Object.entries(outcomeEffects)) {
-    const emotionKey = emotion as EmotionType;
-    combined[emotionKey] = (combined[emotionKey] ?? 0) + value;
-  }
-
-  return combined;
-}
-
-/**
  * Get complete activity effects package
  *
- * Combines relationship and emotion effects based on activity and outcome.
- * This is the main function to call when applying activity results.
+ * Returns scaled relationship effects based on activity and outcome.
+ * Note: Emotion effects have been removed - will be re-implemented
+ * with the new Plutchik emotion system later.
  *
- * @param activityId - Activity identifier
  * @param baseRelationshipEffects - Base relationship axis effects from activity definition
  * @param outcome - Activity outcome tier
- * @returns Complete effects package
- *
- * @example
- * const effects = getActivityEffects('have_coffee', { affection: 10 }, 'best');
- * // → {
- * //   relationshipEffects: { affection: 15 },
- * //   emotionEffects: { joy: 25, affection: 18, calm: 12, ... }
- * // }
+ * @returns Scaled relationship effects
  */
 export function getActivityEffects(
-  activityId: string,
   baseRelationshipEffects: Partial<RelationshipAxes>,
   outcome: OutcomeTier
 ): {
   relationshipEffects: Partial<RelationshipAxes>;
-  emotionEffects: Partial<EmotionValues>;
 } {
   return {
     relationshipEffects: scaleRelationshipEffects(baseRelationshipEffects, outcome),
-    emotionEffects: calculateEmotionEffects(activityId, outcome),
   };
 }
 
@@ -451,17 +319,6 @@ export function getDifficultyBreakdown(calculation: DifficultyBreakdown): Array<
     modifier: calculation.baseDifficulty,
     description: 'Activity base difficulty',
   });
-
-  if (calculation.emotionModifier !== undefined && calculation.emotionModifier !== 0) {
-    breakdown.push({
-      source: 'Emotion',
-      modifier: calculation.emotionModifier,
-      description:
-        calculation.emotionModifier > 0
-          ? 'NPC is in a negative emotional state'
-          : 'NPC is in a positive emotional state',
-    });
-  }
 
   if (calculation.relationshipModifier !== undefined && calculation.relationshipModifier !== 0) {
     breakdown.push({

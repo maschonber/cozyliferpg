@@ -14,14 +14,13 @@ import {
   getActivityById,
   calculateDesireCap
 } from '../services/relationship';
+import {
+  getActivityCategory,
+  isSocialActivity,
+  ActivityCategory
+} from '../../../shared/types';
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
-import {
-  applyEmotionDelta,
-  decayEmotions,
-  getDominantEmotions,
-  getHoursSinceUpdate
-} from '../services/emotion';
 import {
   calculateDynamicDifficulty,
   getActivityEffects,
@@ -37,14 +36,14 @@ import {
   getTraitDefinition
 } from '../services/trait';
 import { rollOutcome } from '../services/outcome';
+import { interpretEmotionVectorSlim } from '../services/plutchik-emotion';
 import {
   Relationship,
   ApiResponse,
   PerformActivityRequest,
   PerformActivityResponse,
   NPC,
-  NPCEmotionState,
-  EmotionDisplay
+  NEUTRAL_EMOTION_VECTOR
 } from '../../../shared/types';
 import { randomUUID } from 'crypto';
 
@@ -80,24 +79,16 @@ function mapRowToRelationship(row: any, npc?: NPC): Relationship {
 }
 
 /**
- * Helper: Build NPC object from database row with emotion decay applied
+ * Helper: Build NPC object from database row
  */
-function buildNPCFromRow(row: any, trustLevel: number): NPC {
-  // Parse emotion state
-  let emotionState: NPCEmotionState = typeof row.emotion_state === 'string'
-    ? JSON.parse(row.emotion_state)
-    : row.emotion_state;
+function buildNPCFromRow(row: any): NPC {
+  // Parse emotion vector (new Plutchik system)
+  const emotionVector = typeof row.emotion_vector === 'string'
+    ? JSON.parse(row.emotion_vector)
+    : (row.emotion_vector || NEUTRAL_EMOTION_VECTOR);
 
-  // Apply decay based on time since last update
-  const hoursSinceUpdate = getHoursSinceUpdate(emotionState.lastUpdated);
-  if (hoursSinceUpdate > 0) {
-    emotionState = decayEmotions(
-      emotionState,
-      hoursSinceUpdate,
-      trustLevel,
-      row.traits
-    );
-  }
+  // Get emotion interpretation for display
+  const emotionInterpretation = interpretEmotionVectorSlim(emotionVector);
 
   return {
     id: row.id,
@@ -106,7 +97,8 @@ function buildNPCFromRow(row: any, trustLevel: number): NPC {
     traits: row.traits,
     revealedTraits: row.revealed_traits || [],
     gender: row.gender,
-    emotionState,
+    emotionVector,
+    emotionInterpretation,
     appearance: {
       hairColor: row.hair_color,
       hairStyle: row.hair_style,
@@ -227,7 +219,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         n.traits as npc_traits,
         n.revealed_traits as npc_revealed_traits,
         n.gender as npc_gender,
-        n.emotion_state as npc_emotion_state,
+        n.emotion_vector as npc_emotion_vector,
         n.hair_color, n.hair_style, n.eye_color, n.face_details,
         n.body_type, n.torso_size, n.height, n.skin_tone,
         n.upper_trace, n.lower_trace, n.style, n.body_details,
@@ -243,7 +235,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
     );
 
     const relationships: Relationship[] = result.rows.map((row) => {
-      // Build NPC with emotion decay applied
+      // Build NPC from row
       const npc = buildNPCFromRow({
         id: row.npc_id,
         name: row.npc_name,
@@ -251,7 +243,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         traits: row.npc_traits,
         revealed_traits: row.npc_revealed_traits,
         gender: row.npc_gender,
-        emotion_state: row.npc_emotion_state,
+        emotion_vector: row.npc_emotion_vector,
         hair_color: row.hair_color,
         hair_style: row.hair_style,
         eye_color: row.eye_color,
@@ -267,7 +259,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         loras: row.npc_loras,
         current_location: row.current_location,
         created_at: row.npc_created_at
-      }, row.trust);
+      });
 
       return mapRowToRelationship(row, npc);
     });
@@ -323,9 +315,9 @@ router.get('/:npcId', async (req: AuthRequest, res: Response<ApiResponse<Relatio
     // Get or create relationship
     const { relationship, isNew } = await getOrCreateRelationship(client, userId, npcId);
 
-    // Populate NPC data with emotion decay applied
+    // Populate NPC data
     const npcRow = npcResult.rows[0];
-    const npc = buildNPCFromRow(npcRow, relationship.trust);
+    const npc = buildNPCFromRow(npcRow);
 
     relationship.npc = npc;
 
@@ -390,7 +382,7 @@ router.post(
       // Get player character
       const player = await getOrCreatePlayerCharacter(pool, userId);
 
-      // Fetch NPC data with emotion state
+      // Fetch NPC data
       const npcResult = await client.query(`SELECT * FROM npcs WHERE id = $1`, [npcId]);
       if (npcResult.rows.length === 0) {
         await client.query('ROLLBACK');
@@ -402,35 +394,8 @@ router.post(
       }
       const npcRow = npcResult.rows[0];
 
-      // Parse NPC data
-      const npc: NPC = {
-        id: npcRow.id,
-        name: npcRow.name,
-        archetype: npcRow.archetype,
-        traits: npcRow.traits,
-        revealedTraits: npcRow.revealed_traits || [],
-        gender: npcRow.gender,
-        emotionState: typeof npcRow.emotion_state === 'string'
-          ? JSON.parse(npcRow.emotion_state)
-          : npcRow.emotion_state,
-        appearance: {
-          hairColor: npcRow.hair_color,
-          hairStyle: npcRow.hair_style,
-          eyeColor: npcRow.eye_color,
-          faceDetails: npcRow.face_details,
-          bodyType: npcRow.body_type,
-          torsoSize: npcRow.torso_size,
-          height: npcRow.height,
-          skinTone: npcRow.skin_tone,
-          upperTrace: npcRow.upper_trace,
-          lowerTrace: npcRow.lower_trace,
-          style: npcRow.style,
-          bodyDetails: npcRow.body_details
-        },
-        loras: npcRow.loras,
-        currentLocation: npcRow.current_location,
-        createdAt: npcRow.created_at.toISOString()
-      };
+      // Build NPC from row (uses new Plutchik emotion system)
+      const npc = buildNPCFromRow(npcRow);
 
       // Validate activity can be performed (location, time, energy checks)
       const availability = canPerformActivity(activity, player, npc.currentLocation);
@@ -446,21 +411,13 @@ router.post(
       // Get or create relationship
       const { relationship } = await getOrCreateRelationship(client, userId, npcId);
 
-      // Apply emotion decay since last update
-      const hoursSinceUpdate = getHoursSinceUpdate(npc.emotionState.lastUpdated);
-      let currentEmotionState = decayEmotions(
-        npc.emotionState,
-        hoursSinceUpdate,
-        relationship.trust,
-        npc.traits
-      );
-
-      // Calculate dynamic difficulty with all modifiers
+      // Calculate dynamic difficulty with all modifiers (no emotion modifier for now)
+      const activityCategory = getActivityCategory(activity) as ActivityCategory;
       const traitBonus = getTraitActivityBonus(npc.revealedTraits, activityId);
       const archetypeBonus = getArchetypeBonus(
         player.archetype,
         npc.archetype,
-        activity.category
+        activityCategory
       );
 
       // Get detailed breakdowns for transparency
@@ -468,7 +425,7 @@ router.post(
       const archetypeDetails = getArchetypeBreakdown(
         player.archetype,
         npc.archetype,
-        activity.category
+        activityCategory
       );
 
       const relationshipModifier = getRelationshipDifficultyModifier(
@@ -479,12 +436,9 @@ router.post(
       // TODO: Load streak from database if we want to persist it
       const streak = undefined; // For now, no streak tracking
 
-      // Calculate difficulty with separate trait and archetype bonuses
+      // Calculate difficulty (emotion modifier removed - will be re-added with Plutchik system)
       const difficultyCalc = calculateDynamicDifficulty(
-        activity.difficulty || 50, // Default to medium difficulty if not specified
-        currentEmotionState,
-        { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
-        relationship.currentState,
+        ('difficulty' in activity && activity.difficulty) ? activity.difficulty : 50, // Default to medium difficulty if not specified
         relationshipModifier,
         traitBonus,        // NPC trait bonus
         archetypeBonus,    // Archetype compatibility bonus
@@ -496,17 +450,21 @@ router.post(
       // Roll for outcome
       const outcomeResult = rollOutcome(
         player.stats,
-        activity.relevantStats || [],
+        ('relevantStats' in activity && activity.relevantStats) ? activity.relevantStats : [],
         difficultyCalc.finalDifficulty
       );
 
-      // Get scaled relationship and emotion effects based on outcome
+      // Get scaled relationship effects based on outcome (no emotion effects for now)
+      // Social activities have relationshipEffects
+      if (!isSocialActivity(activity)) {
+        throw new Error('Activity must be a social activity');
+      }
+
       const effects = getActivityEffects(
-        activityId,
         {
-          trust: activity.effects.trust || 0,
-          affection: activity.effects.affection || 0,
-          desire: activity.effects.desire || 0
+          trust: activity.relationshipEffects.trust || 0,
+          affection: activity.relationshipEffects.affection || 0,
+          desire: activity.relationshipEffects.desire || 0
         },
         outcomeResult.tier
       );
@@ -525,15 +483,6 @@ router.post(
 
       // Update unlocked states
       const unlockedStates = updateUnlockedStates(relationship.unlockedStates, newState);
-
-      // Capture previous emotion state for transparency
-      const previousEmotionState = { ...currentEmotionState };
-
-      // Apply emotion deltas
-      currentEmotionState = applyEmotionDelta(currentEmotionState, effects.emotionEffects);
-
-      // Get dominant emotion for display
-      const dominantEmotion = getDominantEmotions(currentEmotionState);
 
       // Attempt trait discovery based on activity type
       let discoveredTrait: { trait: string; isNew: boolean } | null = null;
@@ -575,20 +524,14 @@ router.post(
         [trustValue, affectionValue, desireValue, newState, unlockedStates, new Date(), relationship.id]
       );
 
-      // Update NPC emotion state
-      await client.query(
-        `UPDATE npcs SET emotion_state = $1 WHERE id = $2`,
-        [JSON.stringify(currentEmotionState), npcId]
-      );
-
-      // Create interaction record
+      // Create interaction record (emotion_snapshot column removed)
       const interactionId = randomUUID();
       await client.query(
         `INSERT INTO interactions (
            id, relationship_id, activity_type,
            trust_delta, affection_delta, desire_delta,
-           emotion_snapshot, created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+           created_at
+         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
         [
           interactionId,
           relationship.id,
@@ -596,7 +539,6 @@ router.post(
           effects.relationshipEffects.trust || 0,
           effects.relationshipEffects.affection || 0,
           effects.relationshipEffects.desire || 0,
-          JSON.stringify(currentEmotionState),
           new Date()
         ]
       );
@@ -614,7 +556,6 @@ router.post(
         lastInteraction: new Date().toISOString(),
         npc: {
           ...npc,
-          emotionState: currentEmotionState,
           revealedTraits: discoveredTrait && discoveredTrait.isNew
             ? [...npc.revealedTraits, discoveredTrait.trait as any]
             : npc.revealedTraits
@@ -626,7 +567,7 @@ router.post(
           `(Outcome: ${outcomeResult.tier}) ` +
           `(T: ${relationship.trust} → ${trustValue}, A: ${relationship.affection} → ${affectionValue}, D: ${relationship.desire} → ${desireValue}) ` +
           `State: ${previousState}${stateChanged ? ` → ${newState}` : ''} ` +
-          `Emotion: ${dominantEmotion.primary.label}` +
+          `Emotion: ${npc.emotionInterpretation?.emotion || 'neutral'}` +
           (discoveredTrait?.isNew ? ` [Discovered: ${discoveredTrait.trait}]` : '')
       );
 
@@ -636,7 +577,7 @@ router.post(
         stateChanged,
         previousState,
         newState,
-        emotionalState: dominantEmotion.primary.label as any,
+        emotionalState: (npc.emotionInterpretation?.emotion || 'neutral') as any,
 
         // Enhanced response fields (Relationship Redesign)
         discoveredTrait: discoveredTrait ? {
@@ -660,14 +601,7 @@ router.post(
         },
 
         // Difficulty breakdown with full details
-        difficultyBreakdown: difficultyCalc,
-
-        // Emotion changes for transparency
-        emotionChanges: {
-          previousValues: previousEmotionState,
-          newValues: currentEmotionState,
-          deltas: effects.emotionEffects  // Only emotions that changed
-        }
+        difficultyBreakdown: difficultyCalc
       });
     } catch (error) {
       await client.query('ROLLBACK');

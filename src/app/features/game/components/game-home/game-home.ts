@@ -9,7 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship, LocationId, LocationWithNPCCount, Activity } from '../../../../../../shared/types';
+import { Relationship, LocationId, LocationWithNPCCount, Activity, requiresNPC } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
 import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-selection-modal';
@@ -106,7 +106,7 @@ export class GameHome {
 
     return this.activities().filter(activity => {
       // Must be solo activity and not sleep
-      if (activity.requiresNPC || activity.id === 'go_to_sleep') return false;
+      if (requiresNPC(activity) || activity.id === 'go_to_sleep') return false;
 
       // If activity has no location requirement, it's available everywhere
       if (!activity.location) return true;
@@ -233,7 +233,7 @@ export class GameHome {
             adjustedRoll: result.outcome.adjustedRoll,
             statBonus: result.outcome.statBonus,
             difficultyPenalty: result.outcome.difficultyPenalty,
-            difficultyClass: 100 + (activity.difficulty || 0),
+            difficultyClass: 100 + (('difficulty' in activity && activity.difficulty) || 0),
             statsUsed: result.outcome.statsUsed
           } : undefined,
           statChanges: result.statChanges,

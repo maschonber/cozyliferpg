@@ -15,12 +15,9 @@ import {
   PersonalityTrait,
   RomanceTrait,
   InterestTrait,
-  NPCEmotionState,
-  TimeSlot,
-  EmotionValues
+  NEUTRAL_EMOTION_VECTOR
 } from '../../../../shared/types';
 import { randomUUID } from 'crypto';
-import { initializeEmotions, applyEmotionDelta } from '../emotion';
 import {
   getArchetypeTraitWeights,
   selectWeightedTraits,
@@ -325,183 +322,6 @@ function generateTraits(archetype: NPCArchetype): NPCTrait[] {
   return validTraits;
 }
 
-/**
- * Generate default emotion state for a new NPC
- * Delegated to emotion service for consistent emotion initialization
- *
- * Note: We use a placeholder npcId since the actual ID will be assigned
- * by the database. The emotion service doesn't use the npcId parameter.
- */
-function generateEmotionState(traits: NPCTrait[]): NPCEmotionState {
-  return initializeEmotions('temp_id', traits);
-}
-
-/**
- * Initialize daily emotion state for an NPC based on time of day
- *
- * Task 5 Implementation:
- * Creates varied starting emotions for daily NPC encounters based on:
- * - Time of day (morning = calmer, evening = more varied)
- * - NPC traits (affect baseline emotions)
- * - Relationship level (optional - friends start happier)
- *
- * This should be called when:
- * - A new day starts (reset NPC emotions)
- * - First encounter with NPC on a given day
- * - Loading saved NPC state for a new gameplay session
- *
- * @param npc - The NPC (or just traits if initializing)
- * @param timeOfDay - Current time slot
- * @param relationshipLevel - Optional relationship state (affects starting disposition)
- * @returns New emotion state for the day
- *
- * @example
- * // Morning encounter with a friend
- * const emotions = initializeDailyEmotion(npc, 'morning', 'friend');
- * // Result: Higher calm, positive emotions, lower anxiety
- *
- * // Evening encounter with a stranger
- * const emotions = initializeDailyEmotion(npc, 'evening');
- * // Result: More varied emotions, higher excitement potential
- */
-export function initializeDailyEmotion(
-  npc: Pick<NPC, 'traits'> | NPCTrait[],
-  timeOfDay: TimeSlot,
-  relationshipLevel?: string
-): NPCEmotionState {
-  // Extract traits array
-  const traits = Array.isArray(npc) ? npc : npc.traits;
-
-  // Start with trait-based baseline emotions
-  const baseEmotions = initializeEmotions('temp_id', traits);
-
-  // Time-of-day modifiers
-  const timeModifiers: Partial<EmotionValues> = {};
-
-  switch (timeOfDay) {
-    case 'morning':
-      // Morning: calmer, more neutral, lower extremes
-      timeModifiers.calm = randomInt(5, 15);      // Boost calm
-      timeModifiers.joy = randomInt(-5, 10);      // Slight joy variance
-      timeModifiers.excitement = randomInt(-10, 0); // Lower excitement
-      timeModifiers.anxiety = randomInt(-5, 0);    // Lower anxiety
-      break;
-
-    case 'afternoon':
-      // Afternoon: moderate variance, generally balanced
-      timeModifiers.joy = randomInt(-5, 10);
-      timeModifiers.calm = randomInt(-5, 5);
-      timeModifiers.excitement = randomInt(-5, 10);
-      break;
-
-    case 'evening':
-      // Evening: more varied, higher excitement potential
-      timeModifiers.excitement = randomInt(0, 15); // Higher excitement
-      timeModifiers.joy = randomInt(-5, 15);       // More joy variance
-      timeModifiers.calm = randomInt(-10, 5);      // Lower calm
-      timeModifiers.romantic = randomInt(0, 10);   // Slight romantic boost
-      break;
-
-    case 'night':
-      // Night: calmer but can be more romantic/intimate
-      timeModifiers.calm = randomInt(0, 10);
-      timeModifiers.excitement = randomInt(-10, 5);
-      timeModifiers.romantic = randomInt(0, 15);   // Higher romantic potential
-      timeModifiers.anxiety = randomInt(-5, 10);   // Slight anxiety variance
-      break;
-  }
-
-  // Relationship-based modifiers
-  if (relationshipLevel) {
-    const relationshipModifiers: Partial<EmotionValues> = {};
-
-    switch (relationshipLevel) {
-      case 'partner':
-      case 'lover':
-        // Very positive, romantic
-        relationshipModifiers.joy = randomInt(10, 20);
-        relationshipModifiers.affection = randomInt(10, 20);
-        relationshipModifiers.romantic = randomInt(15, 25);
-        relationshipModifiers.anxiety = randomInt(-15, -5);
-        relationshipModifiers.sadness = randomInt(-10, -5);
-        break;
-
-      case 'close_friend':
-        // Very positive, comfortable
-        relationshipModifiers.joy = randomInt(10, 15);
-        relationshipModifiers.affection = randomInt(10, 15);
-        relationshipModifiers.calm = randomInt(5, 10);
-        relationshipModifiers.anxiety = randomInt(-10, -5);
-        break;
-
-      case 'friend':
-        // Positive, friendly
-        relationshipModifiers.joy = randomInt(5, 15);
-        relationshipModifiers.affection = randomInt(5, 10);
-        relationshipModifiers.anxiety = randomInt(-5, 0);
-        break;
-
-      case 'crush':
-        // Excited, nervous, romantic
-        relationshipModifiers.excitement = randomInt(10, 15);
-        relationshipModifiers.romantic = randomInt(10, 20);
-        relationshipModifiers.anxiety = randomInt(5, 15);
-        relationshipModifiers.joy = randomInt(5, 10);
-        break;
-
-      case 'acquaintance':
-        // Slightly positive
-        relationshipModifiers.joy = randomInt(0, 10);
-        relationshipModifiers.calm = randomInt(0, 5);
-        break;
-
-      case 'rival':
-        // Negative, competitive
-        relationshipModifiers.anger = randomInt(6, 15);
-        relationshipModifiers.anxiety = randomInt(5, 10);
-        relationshipModifiers.joy = randomInt(-10, -5);
-        break;
-
-      case 'enemy':
-        // Very negative
-        relationshipModifiers.anger = randomInt(16, 26);
-        relationshipModifiers.sadness = randomInt(5, 15);
-        relationshipModifiers.joy = randomInt(-25, -15);
-        relationshipModifiers.affection = randomInt(-20, -10);
-        break;
-
-      case 'complicated':
-        // Mixed emotions, high variance
-        relationshipModifiers.anxiety = randomInt(5, 15);
-        relationshipModifiers.joy = randomInt(-10, 10);
-        relationshipModifiers.romantic = randomInt(-5, 15);
-        break;
-
-      case 'stranger':
-      default:
-        // Neutral with slight variance
-        relationshipModifiers.anxiety = randomInt(0, 5);
-        relationshipModifiers.calm = randomInt(0, 5);
-        break;
-    }
-
-    // Apply relationship modifiers
-    Object.assign(timeModifiers, {
-      joy: (timeModifiers.joy ?? 0) + (relationshipModifiers.joy ?? 0),
-      affection: (timeModifiers.affection ?? 0) + (relationshipModifiers.affection ?? 0),
-      excitement: (timeModifiers.excitement ?? 0) + (relationshipModifiers.excitement ?? 0),
-      calm: (timeModifiers.calm ?? 0) + (relationshipModifiers.calm ?? 0),
-      sadness: (timeModifiers.sadness ?? 0) + (relationshipModifiers.sadness ?? 0),
-      anger: (timeModifiers.anger ?? 0) + (relationshipModifiers.anger ?? 0),
-      anxiety: (timeModifiers.anxiety ?? 0) + (relationshipModifiers.anxiety ?? 0),
-      romantic: (timeModifiers.romantic ?? 0) + (relationshipModifiers.romantic ?? 0),
-    });
-  }
-
-  // Apply all modifiers to base emotions
-  return applyEmotionDelta(baseEmotions, timeModifiers);
-}
-
 // ===== Main Generator =====
 
 /**
@@ -530,7 +350,7 @@ export function generateNPC(): Omit<NPC, 'id' | 'createdAt' | 'currentLocation'>
     traits,
     revealedTraits: [],  // No traits revealed initially
     gender,
-    emotionState: generateEmotionState(traits),
+    emotionVector: { ...NEUTRAL_EMOTION_VECTOR },  // All NPCs start neutral
     appearance: generateAppearance(),
     loras: generateLoras()
   };

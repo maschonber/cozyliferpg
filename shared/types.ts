@@ -122,55 +122,83 @@ export type InterestTrait =
  */
 export type NPCTrait = PersonalityTrait | RomanceTrait | InterestTrait;
 
-// ===== Emotion System (Relationship Redesign) =====
+// ===== Plutchik Emotion System =====
 
 /**
- * Core emotion types tracked numerically
+ * The 8 base emotions from Plutchik's wheel
  */
-export type EmotionType =
-  | 'joy'
-  | 'affection'
-  | 'excitement'
-  | 'calm'
-  | 'sadness'
-  | 'anger'
-  | 'anxiety'
-  | 'romantic';
+export type BaseEmotion =
+  | 'joy' | 'sadness'
+  | 'acceptance' | 'disgust'
+  | 'anger' | 'fear'
+  | 'anticipation' | 'surprise';
 
 /**
- * Emotion intensity tier based on value
+ * Four-dimensional emotion vector
+ * Each axis represents two opposing emotions
+ * Values range from -1 to +1
  */
-export type EmotionIntensity = 'mild' | 'moderate' | 'strong' | 'intense';
-
-/**
- * Emotion values for an NPC (0-100 each)
- */
-export interface EmotionValues {
-  joy: number;
-  affection: number;
-  excitement: number;
-  calm: number;
-  sadness: number;
-  anger: number;
-  anxiety: number;
-  romantic: number;
+export interface EmotionVector {
+  joySadness: number;           // -1 (sadness) to +1 (joy)
+  acceptanceDisgust: number;    // -1 (disgust) to +1 (acceptance)
+  angerFear: number;            // -1 (fear) to +1 (anger)
+  anticipationSurprise: number; // -1 (surprise) to +1 (anticipation)
 }
 
 /**
- * Full emotion state with metadata
+ * Neutral emotion vector (all axes at 0)
  */
-export interface NPCEmotionState extends EmotionValues {
-  lastUpdated: string;
-}
+export const NEUTRAL_EMOTION_VECTOR: EmotionVector = {
+  joySadness: 0,
+  acceptanceDisgust: 0,
+  angerFear: 0,
+  anticipationSurprise: 0,
+};
 
 /**
- * Display-ready emotion with intensity
+ * Intensity levels for interpreted emotions (Plutchik's three levels)
  */
-export interface EmotionDisplay {
-  emotion: EmotionType;
-  intensity: EmotionIntensity;
-  value: number;
-  label: string;  // e.g., "joyful", "content", "ecstatic"
+export type InterpretedIntensity = 'low' | 'medium' | 'high';
+
+/**
+ * Special emotion states
+ */
+export type SpecialEmotion = 'neutral' | 'mixed';
+
+/**
+ * Emotion dyad names (combinations of two primary emotions)
+ */
+export type EmotionDyad =
+  | 'love' | 'guilt' | 'delight' | 'pride'
+  | 'submission' | 'curiosity' | 'sentimentality'
+  | 'despair' | 'shame' | 'awe'
+  | 'disappointment' | 'unbelief'
+  | 'envy' | 'pessimism'
+  | 'remorse' | 'contempt' | 'cynicism' | 'morbidness'
+  | 'dominance' | 'aggression' | 'outrage'
+  | 'optimism' | 'anxiety' | 'fatalism';
+
+/**
+ * All possible interpreted emotion names
+ */
+export type InterpretedEmotion =
+  | BaseEmotion
+  | EmotionDyad
+  | SpecialEmotion;
+
+/**
+ * Slim result of interpreting an emotion vector
+ * Descriptive data (noun, adjective, color) should be looked up from config
+ */
+export interface EmotionInterpretationResult {
+  /** The interpreted emotion name - use this as key to look up descriptors from config */
+  emotion: InterpretedEmotion;
+
+  /** Intensity level (only for single emotions and dyads, not for special emotions) */
+  intensity?: InterpretedIntensity;
+
+  /** The base emotions contributing to this interpretation (1 for main emotions, 2 for dyads) */
+  contributingEmotions?: BaseEmotion[];
 }
 
 /**
@@ -191,9 +219,9 @@ export interface NPC {
   traits: NPCTrait[];           // All traits (hidden from player initially)
   revealedTraits: NPCTrait[];   // Traits discovered by player through gameplay
 
-  // Emotion system (Relationship Redesign)
-  emotionState: NPCEmotionState;
-  dominantEmotion?: EmotionDisplay;  // Current dominant emotion for display
+  // Plutchik Emotion System
+  emotionVector: EmotionVector;
+  emotionInterpretation?: EmotionInterpretationResult;  // Current emotion for display
 
   // Appearance (for AI image generation)
   appearance: NPCAppearance;
@@ -248,9 +276,8 @@ export interface Interaction {
   affectionDelta: number;
   desireDelta: number;
 
-  // Emotion at time of interaction
+  // Emotion at time of interaction (legacy)
   emotionalState?: EmotionalState;  // Legacy field for compatibility
-  emotionSnapshot?: EmotionValues;  // Full emotion state at interaction time
 
   notes?: string;
   createdAt: string;
@@ -331,51 +358,39 @@ export interface ActivityOutcomeProfile {
 }
 
 /**
- * Activity that player can perform with an NPC or alone
+ * Activity types - Re-exported from activity.types.ts
+ * See shared/types/activity.types.ts for the full discriminated union definition
  */
-export interface Activity {
-  id: string;
-  name: string;
-  description: string;
-  category: ActivityCategory;
+import type {
+  Activity as ActivityType,
+  WorkActivity,
+  SocialActivity,
+  TrainingActivity,
+  LeisureActivity,
+  RecoveryActivity,
+  DiscoveryActivity
+} from './types/activity.types';
 
-  // Activity type
-  requiresNPC: boolean;       // true = social activity (needs neighbor), false = solo activity
+export type Activity = ActivityType;
+export type {
+  WorkActivity,
+  SocialActivity,
+  TrainingActivity,
+  LeisureActivity,
+  RecoveryActivity,
+  DiscoveryActivity
+};
 
-  // Costs (Phase 2)
-  timeCost: number;           // Minutes consumed
-  energyCost: number;         // Can be negative (cost) or positive (restore)
-  moneyCost: number;          // Can be negative (cost) or positive (earn)
-
-  // Time restrictions (Phase 2)
-  allowedTimeSlots?: TimeSlot[];  // If undefined, available anytime
-
-  // Location restriction (Phase 3)
-  location?: LocationId;  // Specific location required (undefined = available anywhere with NPC for social, or flexible solo)
-
-  // Requirements (Phase 2+)
-  minEnergy?: number;              // Minimum energy required
-  minRelationship?: string;        // e.g., "friend" (for relationship-gated activities)
-
-  // Relationship effects (Relationship Redesign)
-  effects: {
-    trust?: number;
-    affection?: number;
-    desire?: number;
-  };
-
-  // Stat system (Phase 2.5)
-  difficulty?: number;              // 1-100, determines challenge level
-  relevantStats?: StatName[];       // Stats that modify the success roll
-  statEffects?: Partial<Record<StatName, number>>;  // Base stat gains before modifiers (deprecated - use outcomeProfile)
-  statRequirements?: Partial<Record<StatName, number>>;  // Minimum BASE stat required
-
-  // Outcome system (Phase 2.5.3)
-  outcomeProfile?: ActivityOutcomeProfile;  // Defines varied outcomes by tier
-
-  // Tags for filtering (Phase 2.5.4)
-  tags?: string[];  // Optional tags for mixed stat calculations (e.g., 'work', 'recovery')
-}
+export {
+  isWorkActivity,
+  isSocialActivity,
+  isTrainingActivity,
+  isLeisureActivity,
+  isRecoveryActivity,
+  isDiscoveryActivity,
+  requiresNPC,
+  getActivityCategory
+} from './types/activity.types';
 
 /**
  * Request to perform an activity with an NPC
@@ -421,13 +436,6 @@ export interface PerformActivityResponse {
 
   // Difficulty breakdown for feedback (replaces old difficultyInfo)
   difficultyBreakdown?: DifficultyBreakdown;
-
-  // Emotion changes for transparency (social activities only)
-  emotionChanges?: {
-    previousValues: EmotionValues;
-    newValues: EmotionValues;
-    deltas: Partial<EmotionValues>;
-  };
 
   error?: string;
 }
@@ -783,7 +791,6 @@ export interface DifficultyBreakdown {
   activityModifier?: number;  // Activity's difficulty value (0-100)
 
   // Social activity modifiers
-  emotionModifier?: number;      // -20 to +30 (emotion-based adjustment)
   relationshipModifier?: number; // -15 to +30 (relationship state adjustment)
   traitBonus?: number;           // -20 to +20 (combined trait + archetype)
   streakModifier?: number;       // -10 to +10 (performance streak)
@@ -879,15 +886,8 @@ export interface ActivitySummary {
     newState?: RelationshipState;
   };
 
-  // Emotional state (social activities only)
+  // Emotional state (social activities only, legacy)
   emotionalState?: EmotionalState;
-
-  // Emotion changes (social activities only)
-  emotionChanges?: {
-    previousValues: EmotionValues;
-    newValues: EmotionValues;
-    deltas: Partial<EmotionValues>;  // Only emotions that changed
-  };
 
   // Trait discovery (social activities only)
   discoveredTrait?: {

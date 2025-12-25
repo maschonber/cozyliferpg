@@ -3,7 +3,7 @@
  * Helper functions for time management, sleep calculations, and activity validation
  */
 
-import { TimeSlot, Activity, PlayerCharacter, ActivityAvailability, SleepResult } from '../../../../shared/types';
+import { TimeSlot, Activity, PlayerCharacter, ActivityAvailability, SleepResult, requiresNPC } from '../../../../shared/types';
 import { isLocationOpen, LOCATIONS } from '../location';
 
 /**
@@ -149,7 +149,7 @@ export function canPerformActivity(
   }
 
   // Check if NPC is at same location (for social activities)
-  if (activity.requiresNPC && npcLocation) {
+  if (requiresNPC(activity) && npcLocation) {
     if (player.currentLocation !== npcLocation) {
       return {
         activityId: activity.id,

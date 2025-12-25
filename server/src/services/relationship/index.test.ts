@@ -13,6 +13,7 @@ import {
   getRepairDifficulty,
   calculateDesireCap
 } from './index';
+import { getActivityCategory, isSocialActivity } from '../../../../shared/types';
 
 describe('Phase 2 Activities', () => {
   describe('Activity Count', () => {
@@ -27,21 +28,25 @@ describe('Phase 2 Activities', () => {
         expect(activity).toHaveProperty('id');
         expect(activity).toHaveProperty('name');
         expect(activity).toHaveProperty('description');
-        expect(activity).toHaveProperty('category');
+        expect(activity).toHaveProperty('type');
         expect(activity).toHaveProperty('timeCost');
         expect(activity).toHaveProperty('energyCost');
         expect(activity).toHaveProperty('moneyCost');
-        expect(activity).toHaveProperty('effects');
 
         // Validate types
         expect(typeof activity.id).toBe('string');
         expect(typeof activity.name).toBe('string');
         expect(typeof activity.description).toBe('string');
-        expect(typeof activity.category).toBe('string');
+        expect(typeof activity.type).toBe('string');
         expect(typeof activity.timeCost).toBe('number');
         expect(typeof activity.energyCost).toBe('number');
         expect(typeof activity.moneyCost).toBe('number');
-        expect(typeof activity.effects).toBe('object');
+
+        // Social activities have relationshipEffects
+        if (isSocialActivity(activity)) {
+          expect(activity).toHaveProperty('relationshipEffects');
+          expect(typeof activity.relationshipEffects).toBe('object');
+        }
       });
     });
 
@@ -51,16 +56,18 @@ describe('Phase 2 Activities', () => {
       expect(uniqueIds.size).toBe(ACTIVITIES.length);
     });
 
-    it('should have valid categories', () => {
+    it('should have valid types/categories', () => {
+      const validTypes = ['work', 'social', 'training', 'leisure', 'recovery', 'discovery'];
       const validCategories = ['work', 'social', 'self_improvement', 'leisure', 'self_care', 'discovery'];
       ACTIVITIES.forEach(activity => {
-        expect(validCategories).toContain(activity.category);
+        expect(validTypes).toContain(activity.type);
+        expect(validCategories).toContain(getActivityCategory(activity));
       });
     });
   });
 
   describe('Work Activities', () => {
-    const workActivities = ACTIVITIES.filter(a => a.category === 'work');
+    const workActivities = ACTIVITIES.filter(a => a.type === 'work');
 
     it('should have 3 work activities', () => {
       expect(workActivities).toHaveLength(3);
@@ -101,7 +108,7 @@ describe('Phase 2 Activities', () => {
   });
 
   describe('Social Activities', () => {
-    const socialActivities = ACTIVITIES.filter(a => a.category === 'social');
+    const socialActivities = ACTIVITIES.filter(a => a.type === 'social');
 
     it('should have 11 social activities', () => {
       expect(socialActivities).toHaveLength(11);
@@ -109,9 +116,9 @@ describe('Phase 2 Activities', () => {
 
     it('should have trust, affection, or desire effects', () => {
       socialActivities.forEach(activity => {
-        const hasTrust = activity.effects.trust !== undefined;
-        const hasAffection = activity.effects.affection !== undefined;
-        const hasDesire = activity.effects.desire !== undefined;
+        const hasTrust = activity.relationshipEffects.trust !== undefined;
+        const hasAffection = activity.relationshipEffects.affection !== undefined;
+        const hasDesire = activity.relationshipEffects.desire !== undefined;
         expect(hasTrust || hasAffection || hasDesire).toBe(true);
       });
     });
@@ -131,13 +138,13 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(activity?.category).toBe('social');
+        expect(getActivityCategory(activity!)).toBe('social');
       });
     });
   });
 
   describe('Self-Improvement Activities', () => {
-    const selfImprovementActivities = ACTIVITIES.filter(a => a.category === 'self_improvement');
+    const selfImprovementActivities = ACTIVITIES.filter(a => a.type === 'training');
 
     it('should have 11 self-improvement activities', () => {
       expect(selfImprovementActivities).toHaveLength(11);  // Added 5 mixed stat training activities
@@ -154,13 +161,13 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(activity?.category).toBe('self_improvement');
+        expect(getActivityCategory(activity!)).toBe('self_improvement');
       });
     });
   });
 
   describe('Leisure Activities', () => {
-    const leisureActivities = ACTIVITIES.filter(a => a.category === 'leisure');
+    const leisureActivities = ACTIVITIES.filter(a => a.type === 'leisure');
 
     it('should have 9 leisure activities', () => {
       expect(leisureActivities).toHaveLength(9);  // Added 2 wit training activities
@@ -177,7 +184,7 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(activity?.category).toBe('leisure');
+        expect(getActivityCategory(activity!)).toBe('leisure');
       });
     });
 
@@ -190,7 +197,7 @@ describe('Phase 2 Activities', () => {
   });
 
   describe('Self-Care Activities', () => {
-    const selfCareActivities = ACTIVITIES.filter(a => a.category === 'self_care');
+    const selfCareActivities = ACTIVITIES.filter(a => a.type === 'recovery');
 
     it('should have 2 self-care activities', () => {
       expect(selfCareActivities).toHaveLength(2);
@@ -214,7 +221,7 @@ describe('Phase 2 Activities', () => {
   });
 
   describe('Discovery Activities', () => {
-    const discoveryActivities = ACTIVITIES.filter(a => a.category === 'discovery');
+    const discoveryActivities = ACTIVITIES.filter(a => a.type === 'discovery');
 
     it('should have 1 discovery activity', () => {
       expect(discoveryActivities).toHaveLength(1);

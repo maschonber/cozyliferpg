@@ -19,8 +19,6 @@ import {
   NPCArchetype,
   PlayerArchetype,
   ActivityCategory,
-  EmotionType,
-  EmotionValues,
   TraitContribution,
   ArchetypeContribution,
 } from '../../../../shared/types';
@@ -373,42 +371,6 @@ export function hasUndiscoveredTraits(
   const categoryTraits = filterTraitsByCategory(npc.traits, category);
   const revealedCategoryTraits = filterTraitsByCategory(npc.revealedTraits, category);
   return categoryTraits.length > revealedCategoryTraits.length;
-}
-
-// ===== Trait-Based Emotion Modifiers =====
-
-/**
- * Calculate emotion baseline modifiers from traits
- *
- * Personality traits affect emotion baselines and volatility.
- * This function is used by the emotion service during initialization.
- *
- * @param traits - NPC's traits
- * @returns Emotion baseline adjustments (additive)
- *
- * @example
- * const modifiers = getTraitEmotionModifiers(['optimistic', 'passionate']);
- * // Returns: { joy: 10, sadness: -3, excitement: 10, romantic: 10 }
- */
-export function getTraitEmotionModifiers(traits: NPCTrait[]): Partial<EmotionValues> {
-  // Note: Emotion modifiers are defined in the emotion service config
-  // This function provides a clean interface for accessing them
-  // The actual implementation is in emotion/config.ts TRAIT_EMOTION_MODIFIERS
-  //
-  // This is intentional architectural separation:
-  // - Emotion service owns emotion baseline logic
-  // - Trait service provides trait query capabilities
-  //
-  // For now, we re-export the concept but the actual data lives in emotion service
-  // to avoid circular dependencies
-
-  const modifiers: Partial<EmotionValues> = {};
-
-  // Import is done at runtime to avoid circular dependency issues
-  // In a real implementation, you might restructure to have a shared config
-  // or have the emotion service call trait service for trait filtering only
-
-  return modifiers;
 }
 
 // ===== Trait Validation =====

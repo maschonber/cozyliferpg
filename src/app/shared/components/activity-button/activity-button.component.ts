@@ -84,7 +84,7 @@ export class ActivityButtonComponent {
    * Check if activity has stat requirements
    */
   hasStatRequirements(): boolean {
-    return !!(this.activity.statRequirements &&
+    return !!('statRequirements' in this.activity && this.activity.statRequirements &&
               Object.keys(this.activity.statRequirements).length > 0);
   }
 
@@ -92,7 +92,7 @@ export class ActivityButtonComponent {
    * Get stat requirement display info
    */
   getStatRequirements(): StatRequirementDisplay[] {
-    if (!this.activity.statRequirements) return [];
+    if (!('statRequirements' in this.activity) || !this.activity.statRequirements) return [];
 
     const statLabels: Record<StatName, string> = {
       fitness: 'FIT',

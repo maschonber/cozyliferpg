@@ -2,71 +2,24 @@
  * Social Activity Service Tests
  *
  * Comprehensive unit tests for Task 6: Social Activity Integration
+ *
+ * Note: Emotion-based difficulty modifiers and emotion effects have been removed.
+ * These will be re-implemented with the Plutchik emotion system in a future phase.
  */
 
 import {
-  getEmotionDifficultyModifier,
   calculateDynamicDifficulty,
   getStreakModifier,
   updateStreak,
   shouldResetStreak,
   scaleRelationshipEffects,
-  calculateEmotionEffects,
   getActivityEffects,
   getDifficultyBreakdown,
   InteractionStreak,
 } from './index';
-import { NPCEmotionState, RelationshipAxes, OutcomeTier } from '../../../../shared/types';
+import { RelationshipAxes, DifficultyBreakdown } from '../../../../shared/types';
 
 // ===== Test Data =====
-
-const neutralEmotions: NPCEmotionState = {
-  joy: 15,
-  affection: 10,
-  excitement: 5,
-  calm: 20,
-  sadness: 5,
-  anger: 0,
-  anxiety: 5,
-  romantic: 10,
-  lastUpdated: new Date().toISOString(),
-};
-
-const happyEmotions: NPCEmotionState = {
-  joy: 75,          // Strong joy (dominant)
-  affection: 30,
-  excitement: 25,
-  calm: 40,
-  sadness: 2,
-  anger: 0,
-  anxiety: 3,
-  romantic: 15,
-  lastUpdated: new Date().toISOString(),
-};
-
-const angryEmotions: NPCEmotionState = {
-  joy: 5,
-  affection: 10,
-  excitement: 0,
-  calm: 5,
-  sadness: 20,
-  anger: 80,        // Intense anger (dominant)
-  anxiety: 15,
-  romantic: 0,
-  lastUpdated: new Date().toISOString(),
-};
-
-const anxiousEmotions: NPCEmotionState = {
-  joy: 10,
-  affection: 15,
-  excitement: 5,
-  calm: 8,
-  sadness: 20,
-  anger: 5,
-  anxiety: 60,      // Strong anxiety (dominant)
-  romantic: 5,
-  lastUpdated: new Date().toISOString(),
-};
 
 const neutralAxes: RelationshipAxes = {
   trust: 0,
@@ -80,56 +33,6 @@ const goodAxes: RelationshipAxes = {
   desire: 30,
 };
 
-// ===== Emotion-Based Difficulty Modifier Tests =====
-
-describe('Social Activity Service - Emotion Difficulty Modifiers', () => {
-  describe('getEmotionDifficultyModifier', () => {
-    it('should return negative modifier for positive emotions (easier)', () => {
-      const modifier = getEmotionDifficultyModifier(happyEmotions);
-      expect(modifier).toBeLessThan(0);
-      expect(modifier).toBeGreaterThanOrEqual(-20);
-    });
-
-    it('should return positive modifier for negative emotions (harder)', () => {
-      const modifier = getEmotionDifficultyModifier(angryEmotions);
-      expect(modifier).toBeGreaterThan(0);
-      expect(modifier).toBeLessThanOrEqual(30);
-    });
-
-    it('should scale modifier by emotion intensity', () => {
-      // Create mildly happy emotions
-      const mildlyHappy: NPCEmotionState = {
-        ...neutralEmotions,
-        joy: 20,  // Mild intensity
-      };
-
-      // Create intensely happy emotions
-      const intenselyHappy: NPCEmotionState = {
-        ...neutralEmotions,
-        joy: 85,  // Intense
-      };
-
-      const mildModifier = Math.abs(getEmotionDifficultyModifier(mildlyHappy));
-      const intenseModifier = Math.abs(getEmotionDifficultyModifier(intenselyHappy));
-
-      // Intense emotions should have larger effect
-      expect(intenseModifier).toBeGreaterThan(mildModifier);
-    });
-
-    it('should handle anxious emotions appropriately', () => {
-      const modifier = getEmotionDifficultyModifier(anxiousEmotions);
-      expect(modifier).toBeGreaterThan(0);  // Anxiety makes things harder
-      expect(modifier).toBeLessThanOrEqual(30);
-    });
-
-    it('should clamp modifier to range [-20, 30]', () => {
-      const modifier = getEmotionDifficultyModifier(angryEmotions);
-      expect(modifier).toBeGreaterThanOrEqual(-20);
-      expect(modifier).toBeLessThanOrEqual(30);
-    });
-  });
-});
-
 // ===== Dynamic Difficulty Calculation Tests =====
 
 describe('Social Activity Service - Dynamic Difficulty', () => {
@@ -137,9 +40,6 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
     it('should combine all difficulty modifiers correctly', () => {
       const result = calculateDynamicDifficulty(
         50,              // base difficulty
-        happyEmotions,   // positive emotion modifier
-        goodAxes,
-        'friend',
         -8,              // relationship modifier (friend bonus)
         3,               // NPC trait bonus (positive in config = easier)
         2,               // archetype bonus (positive in config = easier)
@@ -147,7 +47,6 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
       );
 
       expect(result.baseDifficulty).toBe(50);
-      expect(result.emotionModifier).toBeLessThan(0);      // Happy = easier
       expect(result.relationshipModifier).toBe(-8);         // Friend bonus
       expect(result.traitBonus).toBe(-5);                  // Negated bonuses reduce difficulty
       expect(result.streakModifier).toBe(0);               // No streak
@@ -157,16 +56,12 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
     it('should increase difficulty with negative factors', () => {
       const result = calculateDynamicDifficulty(
         30,              // base difficulty
-        angryEmotions,   // negative emotion modifier
-        { trust: -40, affection: -30, desire: 0 },
-        'rival',
         15,              // relationship penalty (rival)
         -3,              // NPC trait penalty (negative in config = harder)
         -2,              // archetype penalty (negative in config = harder)
         undefined
       );
 
-      expect(result.emotionModifier).toBeGreaterThan(0);   // Angry = harder
       expect(result.relationshipModifier).toBe(15);        // Rival penalty
       expect(result.traitBonus).toBe(5);                   // Negated negative bonuses increase difficulty
       expect(result.finalDifficulty).toBeGreaterThan(30);  // Overall harder
@@ -175,12 +70,9 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
     it('should never return negative difficulty', () => {
       const result = calculateDynamicDifficulty(
         10,              // low base
-        happyEmotions,   // big negative modifier
-        goodAxes,
-        'partner',
         -15,             // big relationship bonus
-        -12,             // big NPC trait bonus
-        -8,              // big archetype bonus
+        12,              // big NPC trait bonus (config positive = easier, negated = reduces)
+        8,               // big archetype bonus (config positive = easier, negated = reduces)
         { consecutivePositive: 20, consecutiveNegative: 0, lastInteraction: new Date().toISOString(), lastDay: 1 }
       );
 
@@ -197,9 +89,6 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
 
       const result = calculateDynamicDifficulty(
         40,
-        neutralEmotions,
-        neutralAxes,
-        'stranger',
         0,               // relationship modifier
         0,               // NPC trait bonus
         0,               // archetype bonus
@@ -207,6 +96,38 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
       );
 
       expect(result.streakModifier).toBeLessThan(0);  // Positive streak = easier
+    });
+
+    it('should include trait breakdown when provided', () => {
+      const individualTraits = [
+        { trait: 'coffee_lover' as const, traitName: 'Coffee Lover', bonus: 20 },
+        { trait: 'outgoing' as const, traitName: 'Outgoing', bonus: 5 },
+      ];
+      const archetypeDetails = {
+        playerArchetype: 'social_butterfly' as const,
+        npcArchetype: 'Musician' as const,
+        activityCategory: 'social' as const,
+        matchBonus: 10,
+        activityAffinityBonus: 10,
+        totalBonus: 20,
+      };
+
+      const result = calculateDynamicDifficulty(
+        40,
+        0,
+        25,  // combined NPC trait bonus
+        20,  // combined archetype bonus
+        undefined,
+        individualTraits,
+        archetypeDetails
+      );
+
+      expect(result.traitBreakdown).toBeDefined();
+      expect(result.traitBreakdown?.individualTraits).toBeDefined();
+      expect(result.traitBreakdown?.archetypeDetails).toBeDefined();
+      // Trait breakdown should be negated for display
+      expect(result.traitBreakdown?.npcTraitBonus).toBe(-25);
+      expect(result.traitBreakdown?.archetypeBonus).toBe(-20);
     });
   });
 });
@@ -429,63 +350,18 @@ describe('Social Activity Service - Outcome Effects', () => {
     });
   });
 
-  describe('calculateEmotionEffects', () => {
-    it('should combine activity and outcome emotion effects', () => {
-      const effects = calculateEmotionEffects('flirt_playfully', 'best');
-
-      // Should have both flirt effects (romantic, excitement, joy, anxiety)
-      // AND best outcome effects (joy, affection, etc.)
-      expect(effects.romantic).toBeGreaterThan(0);
-      expect(effects.excitement).toBeGreaterThan(0);
-      expect(effects.joy).toBeGreaterThan(0);
-    });
-
-    it('should return only outcome effects for unknown activity', () => {
-      const effects = calculateEmotionEffects('unknown_activity', 'best');
-
-      // Should still have outcome effects
-      expect(effects.joy).toBeGreaterThan(0);
-      expect(effects.affection).toBeGreaterThan(0);
-    });
-
-    it('should handle catastrophic outcome appropriately', () => {
-      const effects = calculateEmotionEffects('deep_conversation', 'catastrophic');
-
-      // Catastrophic outcome should create negative emotions
-      expect(effects.sadness).toBeGreaterThan(0);
-      expect(effects.anger).toBeGreaterThan(0);
-      expect(effects.anxiety).toBeGreaterThan(0);
-    });
-
-    it('should scale activity effects by outcome tier', () => {
-      const bestEffects = calculateEmotionEffects('have_coffee', 'best');
-      const mixedEffects = calculateEmotionEffects('have_coffee', 'mixed');
-
-      // Best outcome should have positive effects
-      expect(bestEffects.joy).toBeGreaterThan(0);
-
-      // Mixed outcome should have negative effects
-      if (mixedEffects.anxiety) {
-        expect(mixedEffects.anxiety).toBeGreaterThan(0);
-      }
-      if (mixedEffects.sadness) {
-        expect(mixedEffects.sadness).toBeGreaterThan(0);
-      }
-    });
-  });
-
   describe('getActivityEffects', () => {
-    it('should return both relationship and emotion effects', () => {
+    it('should return relationship effects only (emotion effects removed)', () => {
       const baseRelEffects: Partial<RelationshipAxes> = {
         affection: 10,
         desire: 5,
       };
 
-      const effects = getActivityEffects('casual_date', baseRelEffects, 'best');
+      const effects = getActivityEffects(baseRelEffects, 'best');
 
       expect(effects.relationshipEffects).toBeDefined();
-      expect(effects.emotionEffects).toBeDefined();
       expect(effects.relationshipEffects.affection).toBe(15);  // 10 * 1.5
+      expect(effects.relationshipEffects.desire).toBe(8);      // 5 * 1.5 = 7.5 → 8
     });
   });
 });
@@ -495,26 +371,24 @@ describe('Social Activity Service - Outcome Effects', () => {
 describe('Social Activity Service - Display Functions', () => {
   describe('getDifficultyBreakdown', () => {
     it('should return breakdown of all modifiers', () => {
-      const calculation = {
+      const calculation: DifficultyBreakdown = {
         baseDifficulty: 40,
-        emotionModifier: -8,
         relationshipModifier: -10,
         traitBonus: 5,
         streakModifier: -2,
-        finalDifficulty: 25,
+        finalDifficulty: 33,
       };
 
       const breakdown = getDifficultyBreakdown(calculation);
 
-      expect(breakdown).toHaveLength(5);  // All modifiers present
+      expect(breakdown).toHaveLength(4);  // Base + relationship + traits + streak
       expect(breakdown[0].source).toBe('Base');
       expect(breakdown[0].modifier).toBe(40);
     });
 
     it('should only include non-zero modifiers', () => {
-      const calculation = {
+      const calculation: DifficultyBreakdown = {
         baseDifficulty: 30,
-        emotionModifier: 0,
         relationshipModifier: -5,
         traitBonus: 0,
         streakModifier: 0,
@@ -524,23 +398,27 @@ describe('Social Activity Service - Display Functions', () => {
       const breakdown = getDifficultyBreakdown(calculation);
 
       expect(breakdown).toHaveLength(2);  // Only base and relationship
-      expect(breakdown.some(b => b.source === 'Emotion')).toBe(false);
+      expect(breakdown.some(b => b.source === 'Traits')).toBe(false);
     });
 
     it('should include helpful descriptions', () => {
-      const calculation = {
+      const calculation: DifficultyBreakdown = {
         baseDifficulty: 40,
-        emotionModifier: -8,
         relationshipModifier: -10,
         traitBonus: 5,
         streakModifier: -2,
-        finalDifficulty: 25,
+        finalDifficulty: 33,
       };
 
       const breakdown = getDifficultyBreakdown(calculation);
 
-      expect(breakdown[1].description).toContain('positive');  // Emotion is negative modifier = positive state
-      expect(breakdown[2].description).toContain('Good');      // Relationship is negative modifier = good
+      // Find relationship modifier
+      const relMod = breakdown.find(b => b.source === 'Relationship');
+      expect(relMod?.description).toContain('Good');  // Negative modifier = good relationship
+
+      // Find streak modifier
+      const streakMod = breakdown.find(b => b.source === 'Streak');
+      expect(streakMod?.description).toContain('positive');  // Negative modifier = positive streak
     });
   });
 });
@@ -549,13 +427,10 @@ describe('Social Activity Service - Display Functions', () => {
 
 describe('Social Activity Service - Integration', () => {
   it('should handle complete activity flow', () => {
-    // Setup: Happy NPC, good relationship, matching traits, positive streak
-    const emotionState = happyEmotions;
-    const axes = goodAxes;
-    const state = 'friend';
+    // Setup: Good relationship, matching traits, positive streak
     const relationshipMod = -8;
-    const npcTraitBonus = -3;
-    const archetypeBonus = -2;
+    const npcTraitBonus = 3;
+    const archetypeBonus = 2;
     const streak: InteractionStreak = {
       consecutivePositive: 4,
       consecutiveNegative: 0,
@@ -566,9 +441,6 @@ describe('Social Activity Service - Integration', () => {
     // Calculate difficulty
     const difficulty = calculateDynamicDifficulty(
       40,
-      emotionState,
-      axes,
-      state,
       relationshipMod,
       npcTraitBonus,
       archetypeBonus,
@@ -583,10 +455,9 @@ describe('Social Activity Service - Integration', () => {
       trust: 5,
     };
 
-    const effects = getActivityEffects('have_coffee', baseEffects, 'best');
+    const effects = getActivityEffects(baseEffects, 'best');
 
     expect(effects.relationshipEffects.affection).toBeGreaterThan(10);  // Scaled up
-    expect(effects.emotionEffects.joy).toBeGreaterThan(0);              // Positive emotions
 
     // Update streak
     const newStreak = updateStreak(streak, 'best', 1);
@@ -595,13 +466,10 @@ describe('Social Activity Service - Integration', () => {
   });
 
   it('should handle difficult scenario with negative factors', () => {
-    // Setup: Angry NPC, bad relationship, mismatched traits, negative streak
-    const emotionState = angryEmotions;
-    const axes = { trust: -40, affection: -30, desire: 0 };
-    const state = 'rival';
+    // Setup: Bad relationship, mismatched traits, negative streak
     const relationshipMod = 15;  // Penalty
-    const npcTraitBonus = 3;     // Penalty
-    const archetypeBonus = 2;    // Penalty
+    const npcTraitBonus = -3;    // Penalty (negative in config = harder)
+    const archetypeBonus = -2;   // Penalty (negative in config = harder)
     const streak: InteractionStreak = {
       consecutivePositive: 0,
       consecutiveNegative: 6,
@@ -612,9 +480,6 @@ describe('Social Activity Service - Integration', () => {
     // Calculate difficulty
     const difficulty = calculateDynamicDifficulty(
       30,
-      emotionState,
-      axes,
-      state,
       relationshipMod,
       npcTraitBonus,
       archetypeBonus,
@@ -624,7 +489,7 @@ describe('Social Activity Service - Integration', () => {
     expect(difficulty.finalDifficulty).toBeGreaterThan(30);  // Much harder
 
     // Mixed outcome should have no relationship change (balanced update)
-    const effects = getActivityEffects('flirt_playfully', { desire: 12 }, 'mixed');
+    const effects = getActivityEffects({ desire: 12 }, 'mixed');
 
     expect(effects.relationshipEffects.desire).toBe(0);  // No change for mixed outcome
   });

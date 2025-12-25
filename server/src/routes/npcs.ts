@@ -6,42 +6,31 @@
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { generateNPC } from '../services/npc-generator';
-import { NPC, ApiResponse, NPCEmotionState, EmotionDisplay } from '../../../shared/types';
+import { NPC, ApiResponse, NEUTRAL_EMOTION_VECTOR } from '../../../shared/types';
 import { randomUUID } from 'crypto';
 import { AuthRequest } from '../auth/auth.middleware';
 import { getOrCreatePlayerCharacter } from '../services/player';
-import { decayEmotions, getDominantEmotions, getHoursSinceUpdate } from '../services/emotion';
+import { interpretEmotionVectorSlim } from '../services/plutchik-emotion';
 
 const router = Router();
 
 /**
  * Helper: Build NPC from database row
- * - Applies emotion decay
+ * - Parses emotion vector
  * - Filters traits based on showAllTraits flag
- * - Returns NPC with dominant emotion included
+ * - Returns NPC with emotion interpretation included
  */
-function buildNPCFromRow(row: any, showAllTraits: boolean = false, trustLevel: number = 0): NPC & { dominantEmotion?: EmotionDisplay } {
-  // Parse emotion state
-  let emotionState: NPCEmotionState = typeof row.emotion_state === 'string'
-    ? JSON.parse(row.emotion_state)
-    : row.emotion_state;
+function buildNPCFromRow(row: any, showAllTraits: boolean = false): NPC {
+  // Parse emotion vector (new Plutchik system)
+  const emotionVector = typeof row.emotion_vector === 'string'
+    ? JSON.parse(row.emotion_vector)
+    : (row.emotion_vector || NEUTRAL_EMOTION_VECTOR);
 
-  // Apply decay based on time since last update
-  const hoursSinceUpdate = getHoursSinceUpdate(emotionState.lastUpdated);
-  if (hoursSinceUpdate > 0) {
-    emotionState = decayEmotions(
-      emotionState,
-      hoursSinceUpdate,
-      trustLevel,
-      row.traits
-    );
-  }
-
-  // Get dominant emotion for display
-  const dominantEmotionData = getDominantEmotions(emotionState);
+  // Get emotion interpretation for display (slim - frontend will enrich with config)
+  const emotionInterpretation = interpretEmotionVectorSlim(emotionVector);
 
   // Build NPC object
-  const npc: NPC & { dominantEmotion?: EmotionDisplay } = {
+  const npc: NPC = {
     id: row.id,
     name: row.name,
     archetype: row.archetype,
@@ -49,7 +38,8 @@ function buildNPCFromRow(row: any, showAllTraits: boolean = false, trustLevel: n
     traits: showAllTraits ? row.traits : row.revealed_traits || [],
     revealedTraits: row.revealed_traits || [],
     gender: row.gender,
-    emotionState,
+    emotionVector,
+    emotionInterpretation,
     appearance: {
       hairColor: row.hair_color,
       hairStyle: row.hair_style,
@@ -66,8 +56,7 @@ function buildNPCFromRow(row: any, showAllTraits: boolean = false, trustLevel: n
     },
     loras: row.loras,
     currentLocation: row.current_location,
-    createdAt: row.created_at.toISOString(),
-    dominantEmotion: dominantEmotionData.primary
+    createdAt: row.created_at.toISOString()
   };
 
   return npc;
@@ -106,7 +95,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
         hair_color, hair_style, eye_color, face_details,
         body_type, torso_size, height, skin_tone,
         upper_trace, lower_trace, style, body_details,
-        loras, current_location, revealed_traits, emotion_state, created_at
+        loras, current_location, revealed_traits, emotion_vector, created_at
       ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
       RETURNING *
       `,
@@ -131,42 +120,15 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
         npcData.loras,
         player.currentLocation, // Spawn at player's location
         npcData.revealedTraits,
-        JSON.stringify(npcData.emotionState),
+        JSON.stringify(npcData.emotionVector),
         createdAt
       ]
     );
 
     const row = result.rows[0];
 
-    // Map database row to NPC type
-    const npc: NPC = {
-      id: row.id,
-      name: row.name,
-      archetype: row.archetype,
-      traits: row.traits,
-      revealedTraits: row.revealed_traits || [],
-      gender: row.gender,
-      emotionState: typeof row.emotion_state === 'string'
-        ? JSON.parse(row.emotion_state)
-        : row.emotion_state,
-      appearance: {
-        hairColor: row.hair_color,
-        hairStyle: row.hair_style,
-        eyeColor: row.eye_color,
-        faceDetails: row.face_details,
-        bodyType: row.body_type,
-        torsoSize: row.torso_size,
-        height: row.height,
-        skinTone: row.skin_tone,
-        upperTrace: row.upper_trace,
-        lowerTrace: row.lower_trace,
-        style: row.style,
-        bodyDetails: row.body_details
-      },
-      loras: row.loras,
-      currentLocation: row.current_location, // Phase 3
-      createdAt: row.created_at.toISOString()
-    };
+    // Use helper to build NPC from row
+    const npc = buildNPCFromRow(row, true); // Show all traits for newly created NPC
 
     console.log(`✅ Created NPC: ${npc.name} (${npc.archetype}) at ${npc.currentLocation}`);
 
@@ -205,7 +167,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
       `SELECT * FROM npcs ORDER BY created_at DESC`
     );
 
-    const npcs = result.rows.map((row) => buildNPCFromRow(row, showAllTraits, 0));
+    const npcs = result.rows.map((row) => buildNPCFromRow(row, showAllTraits));
 
     res.json({
       success: true,
@@ -226,11 +188,9 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NPC[]>>) => {
  * GET /api/npcs/:id
  * Get NPC by ID
  *
- * Task 7: Returns NPC with:
+ * Returns NPC with:
  * - Filtered traits (only revealed, unless ?showAllTraits=true)
- * - Emotion decay applied
- * - Dominant emotion included
- * - Trust level from relationship if it exists
+ * - Emotion interpretation included
  */
 router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
   const { id } = req.params;
@@ -253,20 +213,8 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => 
       return;
     }
 
-    // Get trust level from relationship if it exists (for better emotion decay)
-    let trustLevel = 0;
-    if (req.user?.userId) {
-      const relResult = await client.query(
-        `SELECT trust FROM relationships WHERE player_id = $1 AND npc_id = $2`,
-        [req.user.userId, id]
-      );
-      if (relResult.rows.length > 0) {
-        trustLevel = relResult.rows[0].trust;
-      }
-    }
-
     const row = result.rows[0];
-    const npc = buildNPCFromRow(row, showAllTraits, trustLevel);
+    const npc = buildNPCFromRow(row, showAllTraits);
 
     res.json({
       success: true,

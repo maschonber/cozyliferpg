@@ -1,6 +1,7 @@
-import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -13,6 +14,66 @@ import { GameFacade } from '../../services/game.facade';
 import { Subscription } from 'rxjs';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
+import { environment } from '../../../../../environments/environment';
+import {
+  EmotionInterpretationResult,
+  BaseEmotion,
+  EmotionDyad,
+  requiresNPC,
+  isSocialActivity,
+  SocialActivity
+} from '../../../../../../shared/types';
+
+/** Full interpretation with descriptors (after joining with config) */
+interface EmotionInterpretation extends EmotionInterpretationResult {
+  noun?: string;
+  adjective?: string;
+  color?: string;
+}
+
+/** Emotion descriptor from config */
+interface EmotionDescriptor {
+  noun: string;
+  adjective: string;
+  color: string;
+}
+
+/** Config response from the API */
+interface EmotionConfig {
+  thresholds: {
+    high: number;
+    medium: number;
+    low: number;
+    proximity: number;
+  };
+  emotions: {
+    base: {
+      [key in BaseEmotion]: {
+        low: EmotionDescriptor;
+        medium: EmotionDescriptor;
+        high: EmotionDescriptor;
+      };
+    };
+    dyads: {
+      [key in EmotionDyad]: {
+        low: EmotionDescriptor;
+        medium: EmotionDescriptor;
+        high: EmotionDescriptor;
+      };
+    };
+    special: {
+      neutral: {
+        noun: string;
+        adjective: string;
+      };
+      mixed: {
+        noun: string;
+        adjective: string;
+      };
+    };
+  };
+  success: boolean;
+}
 
 @Component({
   selector: 'app-neighbor-detail',
@@ -35,7 +96,11 @@ export class NeighborDetail implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private dialog = inject(MatDialog);
+  private http = inject(HttpClient);
   private subscriptions = new Subscription();
+
+  // Cached emotion config (fetched once)
+  private emotionConfig = signal<EmotionConfig | null>(null);
 
   // Expose Math for template
   Math = Math;
@@ -53,6 +118,13 @@ export class NeighborDetail implements OnInit, OnDestroy {
   isLoading = this.facade.isLoading;
   player = this.facade.player;
 
+  // Enriched emotion interpretation with color/adjective/noun
+  enrichedEmotion = computed(() => {
+    const npc = this.selectedNPC();
+    if (!npc?.emotionInterpretation) return null;
+    return this.enrichInterpretation(npc.emotionInterpretation);
+  });
+
   // Filter social activities (require NPC and available at current location)
   socialActivities = computed(() => {
     const player = this.player();
@@ -60,7 +132,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
 
     return this.activities().filter(activity => {
       // Must be social activity
-      if (!activity.requiresNPC) return false;
+      if (!requiresNPC(activity)) return false;
 
       // If activity has no location requirement, it's available everywhere
       if (!activity.location) return true;
@@ -71,6 +143,9 @@ export class NeighborDetail implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
+    // Fetch emotion config once on init
+    this.fetchEmotionConfig();
+
     // Get NPC ID from route params
     const npcId = this.route.snapshot.paramMap.get('id');
     if (npcId) {
@@ -202,7 +277,6 @@ export class NeighborDetail implements OnInit, OnDestroy {
             newState: response.newState
           } : undefined,
           emotionalState: response.emotionalState,
-          emotionChanges: response.emotionChanges,
           discoveredTrait: response.discoveredTrait,
           difficultyBreakdown: response.difficultyBreakdown
         };
@@ -278,10 +352,18 @@ export class NeighborDetail implements OnInit, OnDestroy {
   /**
    * Get variant for activity button (positive/negative coloring)
    */
+  getActivityEffects(activity: any): { trust?: number; affection?: number; desire?: number } | undefined {
+    if (isSocialActivity(activity)) {
+      return activity.relationshipEffects;
+    }
+    return undefined;
+  }
+
   getActivityVariant(activity: any): 'default' | 'positive' | 'negative' {
-    const trust = activity.effects?.trust || 0;
-    const affection = activity.effects?.affection || 0;
-    const desire = activity.effects?.desire || 0;
+    const effects = this.getActivityEffects(activity);
+    const trust = effects?.trust || 0;
+    const affection = effects?.affection || 0;
+    const desire = effects?.desire || 0;
 
     if (trust > 0 || affection > 0 || desire > 0) return 'positive';
     if (trust < 0 || affection < 0 || desire < 0) return 'negative';
@@ -289,20 +371,123 @@ export class NeighborDetail implements OnInit, OnDestroy {
   }
 
   /**
-   * Get icon for emotion type
+   * Fetch emotion config (descriptors, thresholds) - called once on init
+   */
+  private fetchEmotionConfig(): void {
+    this.http.get<{ success: boolean } & EmotionConfig>(
+      `${environment.apiUrl}/emotion-sandbox/config`
+    ).subscribe({
+      next: (response) => {
+        if (response.success) {
+          this.emotionConfig.set(response);
+        }
+      },
+      error: (err) => {
+        console.error('Error fetching emotion config:', err);
+        // Non-fatal - we can still function without descriptors
+      }
+    });
+  }
+
+  /**
+   * Join a slim interpretation result with config to get full descriptors
+   */
+  private enrichInterpretation(result: EmotionInterpretationResult): EmotionInterpretation {
+    const config = this.emotionConfig();
+    if (!config) {
+      // No config yet - return without descriptors
+      return result;
+    }
+
+    const { emotion, intensity } = result;
+
+    // Handle special emotions (neutral, mixed) - no color
+    if (emotion === 'neutral' || emotion === 'mixed') {
+      const special = config.emotions.special[emotion];
+      return {
+        ...result,
+        noun: special.noun,
+        adjective: special.adjective,
+      };
+    }
+
+    // For base emotions and dyads, we need an intensity level
+    const level = intensity || 'medium';
+
+    // Check if it's a base emotion
+    if (emotion in config.emotions.base) {
+      const descriptors = config.emotions.base[emotion as BaseEmotion][level];
+      return {
+        ...result,
+        noun: descriptors.noun,
+        adjective: descriptors.adjective,
+        color: descriptors.color,
+      };
+    }
+
+    // Must be a dyad
+    if (emotion in config.emotions.dyads) {
+      const descriptors = config.emotions.dyads[emotion as EmotionDyad][level];
+      return {
+        ...result,
+        noun: descriptors.noun,
+        adjective: descriptors.adjective,
+        color: descriptors.color,
+      };
+    }
+
+    // Fallback - shouldn't happen
+    return result;
+  }
+
+  /**
+   * Get icon for emotion type (Plutchik emotions)
    */
   getEmotionIcon(emotion: string): string {
     const icons: Record<string, string> = {
+      // Base emotions
       joy: 'sentiment_very_satisfied',
-      affection: 'favorite',
-      excitement: 'star',
-      calm: 'spa',
       sadness: 'sentiment_dissatisfied',
+      acceptance: 'handshake',
+      disgust: 'sick',
       anger: 'mood_bad',
-      anxiety: 'psychology',
-      romantic: 'favorite_border'
+      fear: 'warning',
+      anticipation: 'trending_up',
+      surprise: 'priority_high',
+      // Special states
+      neutral: 'sentiment_neutral',
+      mixed: 'shuffle',
+      // Common dyads
+      love: 'favorite',
+      optimism: 'wb_sunny',
+      submission: 'volunteer_activism',
+      awe: 'auto_awesome',
+      disappointment: 'sentiment_dissatisfied',
+      remorse: 'heart_broken',
+      contempt: 'thumb_down',
+      aggression: 'flash_on',
     };
     return icons[emotion] || 'sentiment_neutral';
+  }
+
+  /**
+   * Format emotion interpretation for display
+   */
+  formatEmotionLabel(interpretation: { emotion: string; intensity?: string }): string {
+    const emotion = interpretation.emotion;
+    const intensity = interpretation.intensity;
+
+    // Capitalize the emotion name
+    const emotionName = emotion.charAt(0).toUpperCase() + emotion.slice(1);
+
+    // Add intensity prefix if present
+    if (intensity === 'high') {
+      return `Very ${emotionName}`;
+    } else if (intensity === 'low') {
+      return `Slightly ${emotionName}`;
+    }
+
+    return emotionName;
   }
 
   /**

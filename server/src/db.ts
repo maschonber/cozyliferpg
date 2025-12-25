@@ -676,3 +676,75 @@ export async function migrateRelationshipRedesign() {
   }
 }
 
+// Plutchik Emotion System Migration: Replace old emotion system with new 4-axis vector
+export async function migratePlutchikEmotions() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Plutchik Emotion System migration...');
+
+    // ===== 1. Check if migration already applied (emotion_vector exists) =====
+    const emotionVectorCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='npcs' AND column_name='emotion_vector'
+    `);
+
+    if (emotionVectorCheck.rows.length === 0) {
+      console.log('  Migrating NPCs to Plutchik emotion vector...');
+
+      // Add new emotion_vector column with neutral default
+      await client.query(`
+        ALTER TABLE npcs
+        ADD COLUMN emotion_vector JSONB NOT NULL DEFAULT '{
+          "joySadness": 0,
+          "acceptanceDisgust": 0,
+          "angerFear": 0,
+          "anticipationSurprise": 0
+        }'::JSONB
+      `);
+
+      // Drop old emotion_state column
+      await client.query(`
+        ALTER TABLE npcs
+        DROP COLUMN IF EXISTS emotion_state
+      `);
+
+      console.log('  ✅ Migrated NPCs to emotion_vector');
+    } else {
+      console.log('  ⏭️  emotion_vector column already exists');
+    }
+
+    // ===== 2. Remove emotion_snapshot from interactions =====
+    const emotionSnapshotCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='interactions' AND column_name='emotion_snapshot'
+    `);
+
+    if (emotionSnapshotCheck.rows.length > 0) {
+      console.log('  Removing emotion_snapshot from interactions...');
+
+      await client.query(`
+        ALTER TABLE interactions
+        DROP COLUMN emotion_snapshot
+      `);
+
+      console.log('  ✅ Removed emotion_snapshot column');
+    } else {
+      console.log('  ⏭️  emotion_snapshot already removed');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Plutchik Emotion System migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Plutchik Emotion System migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+

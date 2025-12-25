@@ -19,7 +19,6 @@ import {
   NPCArchetype,
   PlayerArchetype,
   ActivityCategory,
-  EmotionType,
 } from '../../../../shared/types';
 
 // ===== Trait Metadata =====

@@ -64,13 +64,15 @@
           <mat-card-subtitle>{{ selectedNPC()!.archetype }}</mat-card-subtitle>
         </mat-card-header>
 
-        <!-- Current Emotion Display -->
-        @if (selectedNPC()?.dominantEmotion) {
-          <div class="emotion-display">
-            <mat-chip class="emotion-chip" [class]="'emotion-' + selectedNPC()!.dominantEmotion!.intensity">
-              <mat-icon>{{ getEmotionIcon(selectedNPC()!.dominantEmotion!.emotion) }}</mat-icon>
-              {{ selectedNPC()!.dominantEmotion!.label }}
-            </mat-chip>
+        <!-- Current Emotion Display (Plutchik) -->
+        @if (enrichedEmotion()) {
+          <div class="emotion-interpretation" [style.background-color]="enrichedEmotion()!.color || '#94a3b8'">
+            <!-- Primary: the adjective (e.g., "hostile", "angry") -->
+            <div class="interpretation-adjective">{{ enrichedEmotion()!.adjective || enrichedEmotion()!.emotion }}</div>
+            <!-- Fine print: emotion composition -->
+            <div class="interpretation-details">
+              {{ enrichedEmotion()!.emotion }}@if (enrichedEmotion()!.intensity) { ({{ enrichedEmotion()!.intensity }})}@if (enrichedEmotion()!.contributingEmotions && enrichedEmotion()!.contributingEmotions!.length > 1) { · {{ enrichedEmotion()!.contributingEmotions!.join(' + ') }}}
+            </div>
           </div>
         }
 
@@ -214,7 +216,7 @@
                   [activity]="activity"
                   [availability]="getActivityAvailability(activity.id)"
                   [disabled]="interacting()"
-                  [effects]="activity.effects"
+                  [effects]="getActivityEffects(activity)"
                   [variant]="getActivityVariant(activity)"
                   (activityClick)="onPerformActivity($event)">
                 </app-activity-button>

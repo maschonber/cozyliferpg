@@ -226,15 +226,14 @@ describe('Time Service', () => {
     };
 
     const mockActivity: Activity = {
+      type: 'leisure',
       id: 'test_activity',
       name: 'Test Activity',
       description: 'A test activity',
-      category: 'leisure',
-      requiresNPC: false,
       timeCost: 60,
       energyCost: -20,
       moneyCost: -10,
-      effects: {}
+      tags: []
     };
 
     it('should allow activity when all conditions are met', () => {
@@ -341,7 +340,19 @@ describe('Time Service', () => {
     });
 
     it('should block social activity when NPC is at different location', () => {
-      const activity = { ...mockActivity, requiresNPC: true };
+      const activity: Activity = {
+        type: 'social',
+        id: 'test_social',
+        name: 'Test Social',
+        description: 'A test social activity',
+        timeCost: 60,
+        energyCost: -20,
+        moneyCost: -10,
+        tags: [],
+        relationshipEffects: { trust: 5 },
+        difficulty: 50,
+        relevantStats: ['confidence']
+      };
       const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const };
       const npcLocation = 'beach';
       const result = canPerformActivity(activity, player, npcLocation);
@@ -350,7 +361,19 @@ describe('Time Service', () => {
     });
 
     it('should allow social activity when NPC is at same location', () => {
-      const activity = { ...mockActivity, requiresNPC: true };
+      const activity: Activity = {
+        type: 'social',
+        id: 'test_social',
+        name: 'Test Social',
+        description: 'A test social activity',
+        timeCost: 60,
+        energyCost: -20,
+        moneyCost: -10,
+        tags: [],
+        relationshipEffects: { trust: 5 },
+        difficulty: 50,
+        relevantStats: ['confidence']
+      };
       const player = { ...mockPlayer, currentLocation: 'coffee_shop' as const };
       const npcLocation = 'coffee_shop';
       const result = canPerformActivity(activity, player, npcLocation);

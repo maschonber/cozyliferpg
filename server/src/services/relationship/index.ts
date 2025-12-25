@@ -21,7 +21,7 @@ import {
   SexualPreference,
   Gender
 } from '../../../../shared/types';
-import { ACTIVITIES } from './activities';
+import { ACTIVITIES } from '../../activities';
 import {
   RELATIONSHIP_THRESHOLDS,
   STATE_EMOTION_MAP,
@@ -473,6 +473,9 @@ export function getActivityById(
 ): typeof ACTIVITIES[0] | undefined {
   return ACTIVITIES.find((a) => a.id === activityId);
 }
+
+// Note: These functions are kept here for backward compatibility.
+// The activities module also exports these same functions.
 
 // ===== Display Functions =====
 

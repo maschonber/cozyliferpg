@@ -697,7 +697,7 @@ describe('Emotion Interpretation', () => {
       expect(result.emotion).toBe('anger');
       expect(result.intensity).toBe('low');
       expect(result.noun).toBe('annoyance');
-      expect(result.adjective).toBe('irritated');
+      expect(result.adjective).toBe('annoyed');
     });
   });
 
