@@ -5,12 +5,16 @@
 
 import { Pool } from 'pg';
 import { randomUUID } from 'crypto';
-import { PlayerActivity, StatName, OutcomeTier, ActivityCategory } from '../../../../shared/types';
+import { PlayerActivity, StatName, OutcomeTier, ActivityTypeValue } from '../../../../shared/types';
+import { getActivityById } from '../../activities';
 
 /**
  * Map database row to PlayerActivity object
+ * Joins with in-memory activity definitions to get type
  */
 function mapRowToPlayerActivity(row: any): PlayerActivity {
+  const activityDef = getActivityById(row.activity_id);
+
   return {
     id: row.id,
     playerId: row.player_id,
@@ -18,11 +22,8 @@ function mapRowToPlayerActivity(row: any): PlayerActivity {
     performedAt: row.performed_at.toISOString(),
     dayNumber: row.day_number,
     timeOfDay: row.time_of_day,
-    activityName: row.activity_name,
-    category: row.category as ActivityCategory,
-    difficulty: row.difficulty,
-    relevantStats: row.relevant_stats || [],
-    tags: row.tags || undefined,
+    // Activity type from code definition
+    type: activityDef?.type ?? 'leisure' as ActivityTypeValue,
     timeCost: row.time_cost,
     energyCost: row.energy_cost,
     moneyCost: row.money_cost,
@@ -50,11 +51,6 @@ export async function recordPlayerActivity(
     activityId: string;
     dayNumber: number;
     timeOfDay: string;
-    activityName: string;
-    category: ActivityCategory;
-    difficulty?: number;
-    relevantStats: StatName[];
-    tags?: string[];
     timeCost: number;
     energyCost: number;
     moneyCost: number;
@@ -81,16 +77,15 @@ export async function recordPlayerActivity(
       INSERT INTO player_activities (
         id, player_id, activity_id,
         performed_at, day_number, time_of_day,
-        activity_name, category, difficulty, relevant_stats, tags,
         time_cost, energy_cost, money_cost,
         outcome_tier, roll, adjusted_roll, stat_bonus, difficulty_penalty,
         stat_effects, energy_delta, money_delta,
         npc_id, interaction_id,
         created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
-        $12, $13, $14, $15, $16, $17, $18, $19,
-        $20, $21, $22, $23, $24, $25
+        $1, $2, $3, $4, $5, $6,
+        $7, $8, $9, $10, $11, $12, $13, $14,
+        $15, $16, $17, $18, $19, $20
       )
       RETURNING *
       `,
@@ -101,11 +96,6 @@ export async function recordPlayerActivity(
         now,
         data.dayNumber,
         data.timeOfDay,
-        data.activityName,
-        data.category,
-        data.difficulty || null,
-        data.relevantStats,
-        data.tags || null,
         data.timeCost,
         data.energyCost,
         data.moneyCost,
@@ -210,37 +200,6 @@ export async function getActivitiesForLastNDays(
   }
 }
 
-/**
- * Get count of activities by category for a day
- */
-export async function getActivityCountsByCategory(
-  pool: Pool,
-  playerId: string,
-  dayNumber: number
-): Promise<Record<ActivityCategory, number>> {
-  const client = await pool.connect();
-
-  try {
-    const result = await client.query(
-      `
-      SELECT category, COUNT(*) as count
-      FROM player_activities
-      WHERE player_id = $1 AND day_number = $2
-      GROUP BY category
-      `,
-      [playerId, dayNumber]
-    );
-
-    const counts: Partial<Record<ActivityCategory, number>> = {};
-    for (const row of result.rows) {
-      counts[row.category as ActivityCategory] = parseInt(row.count);
-    }
-
-    return counts as Record<ActivityCategory, number>;
-  } finally {
-    client.release();
-  }
-}
 
 /**
  * Delete all activities for a player (used during reset)

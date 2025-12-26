@@ -10,8 +10,8 @@ import { getOrCreatePlayerCharacter, resetPlayerCharacter, updatePlayerCharacter
 import { calculateSleepResults, addMinutes } from '../services/time';
 import { calculateTravelTime } from '../services/location';
 import { processDailyStatChanges, setBaseStat, setCurrentStat, getBaseStat, getCurrentStat } from '../services/stat';
-import { calculateDefensiveStatChanges } from '../services/defensive-stats';
-import { calculateMixedStatChanges } from '../services/mixed-stats';
+import { buildPlayerPatternSnapshot } from '../services/player-patterns';
+import { evaluateAllPatterns } from '../services/stat-evaluators/engine';
 import { ApiResponse, PlayerCharacter, SleepResultWithStats, StatName, PlayerArchetype, StatChangeBreakdown, StatChangeComponent } from '../../../shared/types';
 
 const router = Router();
@@ -163,62 +163,22 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     const newDay = player.currentDay + 1;
     const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
 
-    // Calculate NEW streak values for defensive stat calculations
-    // Include today's activity in the streaks so bonuses/penalties apply correctly
-    const newWorkStreak = player.tracking.workedToday
-      ? player.tracking.workStreak + 1
-      : 0;
-    const newRestStreak = player.tracking.workedToday
-      ? 0
-      : player.tracking.restStreak + 1;
-    const newBurnoutStreak = player.tracking.minEnergyToday <= 0
-      ? player.tracking.burnoutStreak + 1
-      : 0;
-    const newLateNightStreak = parseInt(bedtime.split(':')[0]) >= 2 && parseInt(bedtime.split(':')[0]) < 6
-      ? player.tracking.lateNightStreak + 1
-      : 0;
+    // Build player pattern snapshot (consolidates all data with 2 queries)
+    const snapshot = await buildPlayerPatternSnapshot(pool, player, bedtime);
 
-    // Create updated player object for defensive stat calculations
-    // Keep workedToday/hadCatastrophicFailureToday as-is (reflects current day)
-    // Update streaks to include today (so bonuses/penalties apply on correct days)
-    const playerWithUpdatedTracking = {
-      ...player,
-      tracking: {
-        ...player.tracking,
-        workStreak: newWorkStreak,
-        restStreak: newRestStreak,
-        burnoutStreak: newBurnoutStreak,
-        lateNightStreak: newLateNightStreak
-      }
-    };
+    // Evaluate all lifestyle patterns using new evaluator system
+    const lifestyleResult = evaluateAllPatterns(snapshot);
 
-    // PHASE 1: Apply defensive stat changes to CURRENT stats (not base)
-    // These represent lifestyle patterns and cannot be trained directly
-    const defensiveChanges = await calculateDefensiveStatChanges(pool, playerWithUpdatedTracking, bedtime);
+    // Apply lifestyle pattern changes to CURRENT stats (not base)
+    let statsAfterLifestyle = { ...player.stats };
+    for (const [stat, change] of lifestyleResult.changes.entries()) {
+      statsAfterLifestyle = setCurrentStat(statsAfterLifestyle, stat,
+        getCurrentStat(statsAfterLifestyle, stat) + change);
+    }
 
-    let statsAfterDefensive = { ...player.stats };
-    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'vitality',
-      getCurrentStat(statsAfterDefensive, 'vitality') + defensiveChanges.vitality);
-    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'ambition',
-      getCurrentStat(statsAfterDefensive, 'ambition') + defensiveChanges.ambition);
-    statsAfterDefensive = setCurrentStat(statsAfterDefensive, 'empathy',
-      getCurrentStat(statsAfterDefensive, 'empathy') + defensiveChanges.empathy);
-
-    // PHASE 1.5: Apply mixed stat changes to CURRENT stats (not base)
-    // These represent activity variety patterns (weaker than defensive stats: 3x vs 5x)
-    const mixedChanges = await calculateMixedStatChanges(pool, playerWithUpdatedTracking);
-
-    let statsAfterMixed = { ...statsAfterDefensive };
-    statsAfterMixed = setCurrentStat(statsAfterMixed, 'poise',
-      getCurrentStat(statsAfterMixed, 'poise') + mixedChanges.poise);
-    statsAfterMixed = setCurrentStat(statsAfterMixed, 'creativity',
-      getCurrentStat(statsAfterMixed, 'creativity') + mixedChanges.creativity);
-    statsAfterMixed = setCurrentStat(statsAfterMixed, 'wit',
-      getCurrentStat(statsAfterMixed, 'wit') + mixedChanges.wit);
-
-    // PHASE 2: Process daily stat changes (base growth for ALL, current decay for OFFENSIVE only)
+    // Process daily stat changes (surplus conversion applies to ALL stats)
     const trainedStats = new Set<StatName>(player.tracking.statsTrainedToday);
-    const statResult = processDailyStatChanges(statsAfterMixed, trainedStats);
+    const statResult = processDailyStatChanges(statsAfterLifestyle, trainedStats);
 
     const finalStats = statResult.newStats;
 
@@ -241,17 +201,12 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       const newCurrent = getCurrentStat(finalStats, stat);
       const components: StatChangeComponent[] = [];
 
-      // Add defensive stat components (if any)
-      if (defensiveChanges.components.has(stat)) {
-        components.push(...defensiveChanges.components.get(stat)!);
+      // Add lifestyle pattern components (if any)
+      if (lifestyleResult.components.has(stat)) {
+        components.push(...lifestyleResult.components.get(stat)!);
       }
 
-      // Add mixed stat components (if any)
-      if (mixedChanges.components.has(stat)) {
-        components.push(...mixedChanges.components.get(stat)!);
-      }
-
-      // Add base growth and decay components (if any)
+      // Add surplus conversion components (if any)
       if (statResult.components.has(stat)) {
         components.push(...statResult.components.get(stat)!);
       }
@@ -272,6 +227,7 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
     }
 
     // Update player character with new stats and reset tracking
+    // Use streak values from snapshot (already updated to include today)
     await updatePlayerCharacter(pool, player.id, {
       currentTime: sleepResults.wakeTime,
       currentDay: newDay,
@@ -282,10 +238,10 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
       tracking: {
         minEnergyToday: newEnergy,
         endingEnergyToday: newEnergy,
-        workStreak: newWorkStreak,
-        restStreak: newRestStreak,
-        burnoutStreak: newBurnoutStreak,
-        lateNightStreak: newLateNightStreak,
+        workStreak: snapshot.work.currentWorkStreak,
+        restStreak: snapshot.work.currentRestStreak,
+        burnoutStreak: snapshot.sleep.burnoutStreak,
+        lateNightStreak: snapshot.sleep.lateNightStreak,
         workedToday: false,  // Reset for new day
         hadCatastrophicFailureToday: false,  // Reset for new day
         statsTrainedToday: []  // Reset for new day
@@ -299,18 +255,18 @@ router.post('/sleep', async (req: AuthRequest, res: Response<ApiResponse<SleepRe
         newDay,
         traveledHome: travelTimeHome > 0,
         travelTime: travelTimeHome,
-        statChanges: statResult.changes,  // Legacy
+        statChanges: statResult.changes,  // Legacy: surplus conversion
         baseGrowth,  // Legacy
         currentDecay,  // Legacy
-        defensiveStatChanges: {  // Legacy
-          vitality: defensiveChanges.vitality,
-          ambition: defensiveChanges.ambition,
-          empathy: defensiveChanges.empathy
+        defensiveStatChanges: {  // Legacy compatibility (now includes all lifestyle stats)
+          vitality: lifestyleResult.changes.get('vitality') || 0,
+          ambition: lifestyleResult.changes.get('ambition') || 0,
+          empathy: lifestyleResult.changes.get('empathy') || 0
         },
-        mixedStatChanges: {  // Phase 2.5.4
-          poise: mixedChanges.poise,
-          creativity: mixedChanges.creativity,
-          wit: mixedChanges.wit
+        mixedStatChanges: {  // Legacy compatibility (now includes all lifestyle stats)
+          poise: lifestyleResult.changes.get('poise') || 0,
+          creativity: lifestyleResult.changes.get('creativity') || 0,
+          wit: lifestyleResult.changes.get('wit') || 0
         },
         statChangeBreakdowns  // New comprehensive breakdown
       }

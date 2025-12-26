@@ -18,7 +18,7 @@ import {
   NPC,
   NPCArchetype,
   PlayerArchetype,
-  ActivityCategory,
+  ActivityTypeValue,
   TraitContribution,
   ArchetypeContribution,
 } from '../../../../shared/types';
@@ -190,10 +190,10 @@ export function getTraitActivityBreakdown(
  */
 export function getArchetypeActivityBonus(
   npcArchetype: NPCArchetype,
-  activityCategory: ActivityCategory
+  activityType: ActivityTypeValue
 ): number {
   const archetypeAffinities = NPC_ARCHETYPE_ACTIVITY_AFFINITY[npcArchetype];
-  return archetypeAffinities?.[activityCategory] ?? 0;
+  return archetypeAffinities?.[activityType] ?? 0;
 }
 
 /**
@@ -241,10 +241,10 @@ export function getArchetypeMatchBonus(
 export function getArchetypeBonus(
   playerArchetype: PlayerArchetype,
   npcArchetype: NPCArchetype,
-  activityCategory: ActivityCategory
+  activityType: ActivityTypeValue
 ): number {
   const matchBonus = getArchetypeMatchBonus(playerArchetype, npcArchetype);
-  const activityBonus = getArchetypeActivityBonus(npcArchetype, activityCategory);
+  const activityBonus = getArchetypeActivityBonus(npcArchetype, activityType);
   return matchBonus + activityBonus;
 }
 
@@ -273,15 +273,15 @@ export function getArchetypeBonus(
 export function getArchetypeBreakdown(
   playerArchetype: PlayerArchetype,
   npcArchetype: NPCArchetype,
-  activityCategory: ActivityCategory
+  activityType: ActivityTypeValue
 ): ArchetypeContribution {
   const matchBonus = getArchetypeMatchBonus(playerArchetype, npcArchetype);
-  const activityAffinityBonus = getArchetypeActivityBonus(npcArchetype, activityCategory);
+  const activityAffinityBonus = getArchetypeActivityBonus(npcArchetype, activityType);
 
   return {
     playerArchetype,
     npcArchetype,
-    activityCategory,
+    activityCategory: activityType,
     matchBonus,
     activityAffinityBonus,
     totalBonus: matchBonus + activityAffinityBonus,

@@ -15,9 +15,7 @@ import {
   calculateDesireCap
 } from '../services/relationship';
 import {
-  getActivityCategory,
-  isSocialActivity,
-  ActivityCategory
+  isSocialActivity
 } from '../../../shared/types';
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
@@ -412,12 +410,11 @@ router.post(
       const { relationship } = await getOrCreateRelationship(client, userId, npcId);
 
       // Calculate dynamic difficulty with all modifiers (no emotion modifier for now)
-      const activityCategory = getActivityCategory(activity) as ActivityCategory;
       const traitBonus = getTraitActivityBonus(npc.revealedTraits, activityId);
       const archetypeBonus = getArchetypeBonus(
         player.archetype,
         npc.archetype,
-        activityCategory
+        activity.type
       );
 
       // Get detailed breakdowns for transparency
@@ -425,7 +422,7 @@ router.post(
       const archetypeDetails = getArchetypeBreakdown(
         player.archetype,
         npc.archetype,
-        activityCategory
+        activity.type
       );
 
       const relationshipModifier = getRelationshipDifficultyModifier(

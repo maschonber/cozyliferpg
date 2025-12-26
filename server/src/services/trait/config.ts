@@ -18,7 +18,7 @@ import {
   InterestTrait,
   NPCArchetype,
   PlayerArchetype,
-  ActivityCategory,
+  ActivityTypeValue,
 } from '../../../../shared/types';
 
 // ===== Trait Metadata =====
@@ -714,33 +714,33 @@ export const TRAIT_ACTIVITY_AFFINITY: Partial<Record<NPCTrait, Partial<Record<st
  * How much each archetype enjoys different types of activities
  * Range: -10 to +10
  */
-export const NPC_ARCHETYPE_ACTIVITY_AFFINITY: Record<NPCArchetype, Partial<Record<ActivityCategory, number>>> = {
+export const NPC_ARCHETYPE_ACTIVITY_AFFINITY: Record<NPCArchetype, Partial<Record<ActivityTypeValue, number>>> = {
   Artist: {
-    self_improvement: 10,
+    training: 10,
     leisure: 8,
     social: 5,
     work: -5,
   },
   Athlete: {
-    self_improvement: 10,
+    training: 10,
     social: 8,
     work: 3,
     leisure: 0,
   },
   Bookworm: {
-    self_improvement: 10,
+    training: 10,
     leisure: 5,
     social: -3,
     work: 5,
   },
   Musician: {
-    self_improvement: 8,
+    training: 8,
     social: 10,
     leisure: 8,
     work: -3,
   },
   Scientist: {
-    self_improvement: 10,
+    training: 10,
     work: 8,
     social: -5,
     leisure: 0,

@@ -166,18 +166,3 @@ export function requiresNPC(activity: Activity): boolean {
   return activity.type === 'social';
 }
 
-/**
- * Get the legacy category for an activity
- * Maps new type field to old category field for backward compatibility
- */
-export function getActivityCategory(activity: Activity): string {
-  const categoryMap: Record<Activity['type'], string> = {
-    work: 'work',
-    social: 'social',
-    training: 'self_improvement',
-    leisure: 'leisure',
-    recovery: 'self_care',
-    discovery: 'discovery',
-  };
-  return categoryMap[activity.type];
-}

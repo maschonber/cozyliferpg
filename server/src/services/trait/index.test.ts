@@ -89,17 +89,17 @@ describe('Trait-Activity Bonuses', () => {
 // ===== Archetype Bonus Tests =====
 
 describe('Archetype Bonuses', () => {
-  test('getArchetypeActivityBonus returns bonus for matching archetype-category', () => {
-    const bonus = getArchetypeActivityBonus('Artist', 'self_improvement');
-    expect(bonus).toBe(10); // Artists love self-improvement
+  test('getArchetypeActivityBonus returns bonus for matching archetype-activity', () => {
+    const bonus = getArchetypeActivityBonus('Artist', 'training');
+    expect(bonus).toBe(10); // Artists love training activities
   });
 
-  test('getArchetypeActivityBonus returns penalty for mismatched archetype-category', () => {
+  test('getArchetypeActivityBonus returns penalty for mismatched archetype-activity', () => {
     const bonus = getArchetypeActivityBonus('Artist', 'work');
     expect(bonus).toBe(-5); // Artists dislike work
   });
 
-  test('getArchetypeActivityBonus returns 0 for neutral category', () => {
+  test('getArchetypeActivityBonus returns 0 for neutral activity type', () => {
     const bonus = getArchetypeActivityBonus('Athlete', 'leisure');
     expect(bonus).toBe(0);
   });
@@ -120,8 +120,8 @@ describe('Archetype Bonuses', () => {
   });
 
   test('getArchetypeBonus combines match and activity bonuses', () => {
-    const bonus = getArchetypeBonus('athlete', 'Athlete', 'self_improvement');
-    expect(bonus).toBe(20); // 10 from match + 10 from activity
+    const bonus = getArchetypeBonus('athlete', 'Athlete', 'training');
+    expect(bonus).toBe(20); // 10 from match + 10 from training activity
   });
 
   test('getArchetypeBonus can result in negative total', () => {

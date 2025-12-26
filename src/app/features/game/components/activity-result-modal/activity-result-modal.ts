@@ -12,7 +12,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { ActivitySummary, StatChange, OutcomeTier, getActivityCategory } from '../../../../../../shared/types';
+import { ActivitySummary, StatChange, OutcomeTier } from '../../../../../../shared/types';
 
 export interface ActivityResultModalData {
   summary: ActivitySummary;
@@ -116,14 +116,16 @@ export class ActivityResultModal {
   }
 
   /**
-   * Get icon for activity based on category
+   * Get icon for activity based on type
    */
   get activityIcon(): string {
-    const category = getActivityCategory(this.data.summary.activity);
-    switch (category) {
+    const activityType = this.data.summary.activity.type;
+    switch (activityType) {
       case 'work': return 'work';
       case 'social': return 'groups';
-      case 'self_improvement': return 'school';
+      case 'training': return 'school';
+      case 'recovery': return 'spa';
+      case 'discovery': return 'explore';
       default: return 'local_activity';
     }
   }

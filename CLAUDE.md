@@ -2,7 +2,7 @@
 
 ## ⚠️ CRITICAL: Production Environment
 
-**THIS APPLICATION IS PUBLICLY ACCESSIBLE IN PRODUCTION**
+**THIS APPLICATION HAS NO ACTIVE USERS YET, BUT IS PUBLICLY ACCESSIBLE IN PRODUCTION**
 
 - Frontend: Deployed at `https://maschonber.github.io/cozyliferpg/`
 - Backend: Deployed at `https://cozyliferpg-production.up.railway.app`
@@ -22,6 +22,10 @@
 - Bcrypt password hashing (10 salt rounds)
 - Protected routes require `authenticateToken` middleware
 - User passwords encrypted and managed securely in database
+
+### Backwards compatibility not necessary
+
+Although the application is in production for infrastructure reasons, it is still in early development and has no active users. This means that database structures and existing features can change, and should change if warranted by better architecture or new features. 
 
 ## Architecture
 
@@ -176,12 +180,10 @@ If you missed the build step and pushed code that fails in CI:
 
 ## Current User
 
-- Username: `qurbl`
 - Stored with bcrypt hash in production database
 - Password managed manually via Railway database tools when needed
 
 ## Notes
 
-- Application started as "simple demo" but is now in production
-- Security was added early specifically because of public accessibility
 - Always maintain production-level security standards
+- Security was added early specifically because of public accessibility

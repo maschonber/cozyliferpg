@@ -388,8 +388,7 @@ export {
   isLeisureActivity,
   isRecoveryActivity,
   isDiscoveryActivity,
-  requiresNPC,
-  getActivityCategory
+  requiresNPC
 } from './types/activity.types';
 
 /**
@@ -773,7 +772,7 @@ export interface TraitContribution {
 export interface ArchetypeContribution {
   playerArchetype: PlayerArchetype;
   npcArchetype: NPCArchetype;
-  activityCategory?: ActivityCategory;
+  activityCategory?: ActivityTypeValue;
   matchBonus: number;           // Bonus from player-NPC archetype compatibility
   activityAffinityBonus: number; // Bonus from NPC archetype's activity preference
   totalBonus: number;            // matchBonus + activityAffinityBonus
@@ -906,8 +905,13 @@ export interface ActivitySummary {
 }
 
 /**
+ * Activity type discriminator values from code-defined activity definitions
+ */
+export type ActivityTypeValue = 'work' | 'social' | 'training' | 'leisure' | 'recovery' | 'discovery';
+
+/**
  * Player activity history record (Phase 2.5.1)
- * Stores complete history of player activities for defensive stat calculations
+ * Stores history of player activities
  */
 export interface PlayerActivity {
   id: string;
@@ -919,12 +923,8 @@ export interface PlayerActivity {
   dayNumber: number;
   timeOfDay: string;            // "HH:MM"
 
-  // Activity details (denormalized for historical accuracy)
-  activityName: string;
-  category: ActivityCategory;
-  difficulty?: number;
-  relevantStats: StatName[];
-  tags?: string[];  // Optional tags for filtering (e.g., 'work', 'recovery')
+  // Activity type from code definition
+  type: ActivityTypeValue;
 
   // Costs (actual costs paid)
   timeCost: number;

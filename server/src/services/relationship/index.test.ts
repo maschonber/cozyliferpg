@@ -13,7 +13,7 @@ import {
   getRepairDifficulty,
   calculateDesireCap
 } from './index';
-import { getActivityCategory, isSocialActivity } from '../../../../shared/types';
+import { isSocialActivity } from '../../../../shared/types';
 
 describe('Phase 2 Activities', () => {
   describe('Activity Count', () => {
@@ -56,12 +56,10 @@ describe('Phase 2 Activities', () => {
       expect(uniqueIds.size).toBe(ACTIVITIES.length);
     });
 
-    it('should have valid types/categories', () => {
+    it('should have valid types', () => {
       const validTypes = ['work', 'social', 'training', 'leisure', 'recovery', 'discovery'];
-      const validCategories = ['work', 'social', 'self_improvement', 'leisure', 'self_care', 'discovery'];
       ACTIVITIES.forEach(activity => {
         expect(validTypes).toContain(activity.type);
-        expect(validCategories).toContain(getActivityCategory(activity));
       });
     });
   });
@@ -138,7 +136,7 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(getActivityCategory(activity!)).toBe('social');
+        expect(activity!.type).toBe('social');
       });
     });
   });
@@ -161,7 +159,7 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(getActivityCategory(activity!)).toBe('self_improvement');
+        expect(activity!.type).toBe('training');
       });
     });
   });
@@ -184,7 +182,7 @@ describe('Phase 2 Activities', () => {
       expectedIds.forEach(id => {
         const activity = getActivityById(id);
         expect(activity).toBeDefined();
-        expect(getActivityCategory(activity!)).toBe('leisure');
+        expect(activity!.type).toBe('leisure');
       });
     });
 
