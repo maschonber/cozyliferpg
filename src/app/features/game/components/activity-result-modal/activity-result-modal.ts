@@ -296,19 +296,10 @@ export class ActivityResultModal {
    */
   getEmotionInfo(): { emotion: string; icon: string } | null {
     const emotion = this.data.summary.emotionalState;
-    if (!emotion) return null;
-
-    const emotionIcons: Record<string, string> = {
-      neutral: 'sentiment_neutral',
-      happy: 'sentiment_very_satisfied',
-      sad: 'sentiment_dissatisfied',
-      flirty: 'favorite',
-      angry: 'sentiment_very_dissatisfied'
-    };
 
     return {
-      emotion: emotion.charAt(0).toUpperCase() + emotion.slice(1),
-      icon: emotionIcons[emotion] || 'sentiment_neutral'
+      emotion: emotion || 'neutral',
+      icon: 'sentiment_neutral'
     };
   }
 

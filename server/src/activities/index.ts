@@ -36,7 +36,30 @@ export function getAvailableActivities(): Activity[] {
 
 /**
  * Get activity by ID
+ *
+ * @param activityId - The activity ID to find
+ * @param type - Optional: narrow the return type to a specific activity type
+ * @returns The activity if found (and matches type if specified), undefined otherwise
+ *
+ * @example
+ * // Returns Activity | undefined
+ * const activity = getActivityById('work_part_time');
+ *
+ * @example
+ * // Returns WorkActivity | undefined (type-safe access to outcomeProfile)
+ * const workActivity = getActivityById('work_part_time', 'work');
  */
-export function getActivityById(activityId: string): Activity | undefined {
-  return ACTIVITIES.find(activity => activity.id === activityId);
+export function getActivityById(activityId: string): Activity | undefined;
+export function getActivityById<T extends Activity['type']>(
+  activityId: string,
+  type: T
+): Extract<Activity, { type: T }> | undefined;
+export function getActivityById(
+  activityId: string,
+  type?: Activity['type']
+): Activity | undefined {
+  const activity = ACTIVITIES.find(a => a.id === activityId);
+  if (!activity) return undefined;
+  if (type !== undefined && activity.type !== type) return undefined;
+  return activity;
 }

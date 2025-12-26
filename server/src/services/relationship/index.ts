@@ -16,23 +16,15 @@
 
 import {
   RelationshipState,
-  EmotionalState,
   RelationshipAxes,
   SexualPreference,
   Gender
 } from '../../../../shared/types';
 import { ACTIVITIES } from '../../activities';
 import {
-  RELATIONSHIP_THRESHOLDS,
-  STATE_EMOTION_MAP,
-  CONTEXTUAL_EMOTION_THRESHOLDS,
-  STATE_DESCRIPTIONS
+  RELATIONSHIP_THRESHOLDS
 } from './config';
 
-// ===== Exports =====
-
-// Re-export activities for backward compatibility
-export { ACTIVITIES };
 
 // ===== Utility Functions =====
 
@@ -410,30 +402,3 @@ export function getActivityById(
 
 // Note: These functions are kept here for backward compatibility.
 // The activities module also exports these same functions.
-
-// ===== Display Functions =====
-
-/**
- * Get human-readable description of relationship state
- *
- * @param state - Relationship state
- * @returns Description string for UI display
- */
-export function getStateDescription(state: RelationshipState): string {
-  return STATE_DESCRIPTIONS[state];
-}
-
-/**
- * Get display name for relationship state (Title Case)
- *
- * Converts snake_case to Title Case for UI.
- *
- * @param state - Relationship state
- * @returns Display name (e.g., "Close Friend")
- */
-export function getStateDisplayName(state: RelationshipState): string {
-  return state
-    .split('_')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}

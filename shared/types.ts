@@ -258,12 +258,6 @@ export type RelationshipState =
   | 'enemy';            // Trust < -50 AND Affection < -50
 
 /**
- * Emotional state for image generation (legacy - use EmotionDisplay for new code)
- * @deprecated Use EmotionDisplay from emotion system instead
- */
-export type EmotionalState = 'neutral' | 'happy' | 'sad' | 'flirty' | 'angry';
-
-/**
  * Interaction record in relationship history
  */
 export interface Interaction {
@@ -275,9 +269,6 @@ export interface Interaction {
   trustDelta: number;
   affectionDelta: number;
   desireDelta: number;
-
-  // Emotion at time of interaction (legacy)
-  emotionalState?: EmotionalState;  // Legacy field for compatibility
 
   notes?: string;
   createdAt: string;
@@ -408,8 +399,7 @@ export interface PerformActivityResponse {
   stateChanged?: boolean;
   previousState?: RelationshipState;
   newState?: RelationshipState;
-  emotionalState?: EmotionalState;
-
+  emotionalState?: InterpretedEmotion;
   // Trait discovery (Relationship Redesign)
   discoveredTrait?: {
     trait: NPCTrait;
@@ -444,7 +434,6 @@ export interface PerformActivityResponse {
  */
 export interface ImageGenerationRequest {
   characterId: string;
-  emotionalState: EmotionalState;
   location?: string;
   clothing?: string;
   context?: string;
@@ -885,8 +874,8 @@ export interface ActivitySummary {
     newState?: RelationshipState;
   };
 
-  // Emotional state (social activities only, legacy)
-  emotionalState?: EmotionalState;
+  // Emotional state (social activities only)
+  emotionalState?: InterpretedEmotion;
 
   // Trait discovery (social activities only)
   discoveredTrait?: {
@@ -910,7 +899,7 @@ export interface ActivitySummary {
 export type ActivityTypeValue = 'work' | 'social' | 'training' | 'leisure' | 'recovery' | 'discovery';
 
 /**
- * Player activity history record (Phase 2.5.1)
+ * Player activity history record
  * Stores history of player activities
  */
 export interface PlayerActivity {

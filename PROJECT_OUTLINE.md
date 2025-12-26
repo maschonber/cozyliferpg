@@ -108,7 +108,6 @@ interface Interaction {
   activityType: string;
   friendshipDelta: number;
   romanceDelta: number;
-  emotionalState?: EmotionalState;
   notes?: string;
   createdAt: string;
 }

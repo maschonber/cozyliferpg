@@ -9,7 +9,6 @@ export type {
   NPCAppearance,
   Relationship,
   RelationshipState,
-  EmotionalState,
   Interaction,
   Activity,
   PerformActivityRequest,
@@ -26,7 +25,6 @@ export interface NPCWithRelationship {
   npc: import('../../../../../shared/types').NPC;
   relationship?: import('../../../../../shared/types').Relationship;
   imageUrl?: string;
-  emotionalState?: import('../../../../../shared/types').EmotionalState;
 }
 
 /**

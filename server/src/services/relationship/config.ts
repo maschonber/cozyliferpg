@@ -5,7 +5,7 @@
  * Design: Configuration-driven to enable easy tuning and extension.
  */
 
-import { RelationshipState, EmotionalState } from '../../../../shared/types';
+import { RelationshipState } from '../../../../shared/types';
 
 /**
  * Relationship state thresholds
@@ -60,41 +60,6 @@ export const RELATIONSHIP_THRESHOLDS = {
     positive: 10,
     negative: -10
   }
-} as const;
-
-/**
- * Map relationship states to default emotional states
- *
- * Used for legacy emotional state system (pre-emotion service).
- * Will be replaced by emotion service's getDominantEmotions() in Task 7.
- */
-export const STATE_EMOTION_MAP: Record<RelationshipState, EmotionalState> = {
-  // Positive combined states
-  partner: 'happy',
-  lover: 'flirty',
-  close_friend: 'happy',
-  friend: 'happy',
-  crush: 'flirty',
-  acquaintance: 'neutral',
-  stranger: 'neutral',
-
-  // Mixed/complex states
-  complicated: 'sad',
-
-  // Negative states
-  rival: 'angry',
-  enemy: 'angry'
-};
-
-/**
- * Contextual emotion thresholds
- *
- * Used to override default emotions based on activity outcomes.
- * Negative threshold for strong negative reactions (angry).
- */
-export const CONTEXTUAL_EMOTION_THRESHOLDS = {
-  strongNegative: -15, // <= this becomes angry
-  anyNegative: 0       // < this becomes sad (if no positive)
 } as const;
 
 /**
