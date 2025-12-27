@@ -14,79 +14,48 @@ import {
   OutcomeTier,
   DifficultyBreakdown,
   TraitContribution,
-  ArchetypeContribution,
 } from '../../../../shared/types';
 import {
   OUTCOME_RELATIONSHIP_SCALING,
-  STREAK_DIFFICULTY_MODIFIERS,
-  POSITIVE_OUTCOME_TIERS,
 } from './config';
-
-// ===== Types =====
-
-/**
- * Interaction streak tracking
- */
-export interface InteractionStreak {
-  consecutivePositive: number;  // Count of consecutive positive outcomes
-  consecutiveNegative: number;  // Count of consecutive negative outcomes
-  lastInteraction: string;       // ISO timestamp of last interaction
-  lastDay: number;               // Day number of last interaction
-}
-
-// Note: DifficultyCalculation interface moved to shared/types.ts as DifficultyBreakdown
-// for consistency across solo and social activities
 
 // ===== Dynamic Difficulty Calculation =====
 
 /**
  * Calculate effective difficulty for an activity
  *
- * Dynamic difficulty calculation based on relationship, traits, and streaks.
+ * Dynamic difficulty calculation based on relationship and traits.
  * Note: Emotion-based difficulty has been removed - will be re-implemented
  * with the new Plutchik emotion system later.
  *
  * Formula:
  * effectiveDifficulty = baseDifficulty
  *   + relationshipModifier // -15 to +15 based on relationship level
- *   + traitBonus           // -20 to +20 from trait/archetype matching
- *   + streakModifier       // -10 to +10 based on recent interaction history
+ *   + traitBonus           // -20 to +20 from NPC trait matching
  *
  * @param baseDifficulty - Activity base difficulty
  * @param relationshipDifficultyMod - Relationship difficulty modifier (from relationship service)
  * @param npcTraitBonus - Combined trait bonus (from trait service)
- * @param archetypeBonus - Combined archetype bonus (from trait service)
- * @param streak - Interaction streak data
  * @param individualTraits - Optional detailed trait contributions
- * @param archetypeDetails - Optional detailed archetype breakdown
  * @returns Complete difficulty calculation with breakdown
  */
 export function calculateDynamicDifficulty(
   baseDifficulty: number,
   relationshipDifficultyMod: number,
   npcTraitBonus: number,
-  archetypeBonus: number,
-  streak?: InteractionStreak,
-  individualTraits?: TraitContribution[],
-  archetypeDetails?: ArchetypeContribution
+  individualTraits?: TraitContribution[]
 ): DifficultyBreakdown {
   // Relationship modifier (already calculated by relationship service)
   const relationshipModifier = relationshipDifficultyMod;
 
-  // Combined trait bonus (negate because config uses positive = easier, but we add to difficulty)
-  const traitBonus = -(npcTraitBonus + archetypeBonus);
+  // Trait bonus (negate because config uses positive = easier, but we add to difficulty)
+  const traitBonus = -npcTraitBonus;
 
-  // Streak modifier
-  const streakModifier = streak ? getStreakModifier(streak) : 0;
-
-  // Calculate final difficulty
-  const finalDifficulty = Math.max(
-    0,
+  // Calculate final difficulty (can go negative, resulting in DC below 100)
+  const finalDifficulty =
     baseDifficulty +
-      relationshipModifier +
-      traitBonus +
-      streakModifier
-  );
+    relationshipModifier +
+    traitBonus;
 
   // Negate individual trait contributions for display (positive = reduces difficulty)
   const negatedIndividualTraits = individualTraits?.map(trait => ({
@@ -94,149 +63,16 @@ export function calculateDynamicDifficulty(
     bonus: -trait.bonus
   }));
 
-  // Negate archetype details for display (positive = reduces difficulty)
-  const negatedArchetypeDetails = archetypeDetails ? {
-    ...archetypeDetails,
-    matchBonus: -archetypeDetails.matchBonus,
-    activityAffinityBonus: -archetypeDetails.activityAffinityBonus,
-    totalBonus: -archetypeDetails.totalBonus
-  } : undefined;
-
   return {
     baseDifficulty,
     relationshipModifier,
     traitBonus,
     traitBreakdown: {
       npcTraitBonus: -npcTraitBonus,  // Negate for display (positive = reduces difficulty)
-      archetypeBonus: -archetypeBonus, // Negate for display (positive = reduces difficulty)
       individualTraits: negatedIndividualTraits,
-      archetypeDetails: negatedArchetypeDetails,
     },
-    streakModifier,
     finalDifficulty,
   };
-}
-
-// ===== Streak System =====
-
-/**
- * Get difficulty modifier from interaction streak
- *
- * Task 6 Requirement 5: Streak tracking
- * - Positive streak → NPC "warming up" (easier, negative modifier)
- * - Negative streak → NPC "pulling away" (harder, positive modifier)
- *
- * @param streak - Streak data
- * @returns Difficulty modifier (-10 to +10)
- *
- * @example
- * getStreakModifier({ consecutivePositive: 4, consecutiveNegative: 0, ... })
- * // → -2 (NPC is warming up, 4 interactions / 2 = -2)
- */
-export function getStreakModifier(streak: InteractionStreak): number {
-  const { consecutivePositive, consecutiveNegative } = streak;
-  const { streakPerPoint, maxPositiveBonus, maxNegativePenalty } = STREAK_DIFFICULTY_MODIFIERS;
-
-  // Positive streak: easier (negative modifier)
-  if (consecutivePositive > 0) {
-    const modifier = -Math.floor(consecutivePositive / streakPerPoint);
-    return Math.max(maxPositiveBonus, modifier);
-  }
-
-  // Negative streak: harder (positive modifier)
-  if (consecutiveNegative > 0) {
-    const modifier = Math.floor(consecutiveNegative / streakPerPoint);
-    return Math.min(maxNegativePenalty, modifier);
-  }
-
-  return 0;
-}
-
-/**
- * Update streak based on activity outcome
- *
- * @param currentStreak - Current streak data
- * @param outcome - Activity outcome tier
- * @param currentDay - Current game day number
- * @returns Updated streak data
- *
- * @example
- * const newStreak = updateStreak(streak, 'best', 5);
- * // Increments consecutivePositive, resets consecutiveNegative
- */
-export function updateStreak(
-  currentStreak: InteractionStreak | undefined,
-  outcome: OutcomeTier,
-  currentDay: number
-): InteractionStreak {
-  const now = new Date().toISOString();
-
-  // Initialize streak if doesn't exist
-  if (!currentStreak) {
-    const isPositive = POSITIVE_OUTCOME_TIERS.includes(outcome);
-    return {
-      consecutivePositive: isPositive ? 1 : 0,
-      consecutiveNegative: isPositive ? 0 : 1,
-      lastInteraction: now,
-      lastDay: currentDay,
-    };
-  }
-
-  // Check if streak should reset
-  if (shouldResetStreak(currentStreak, currentDay)) {
-    const isPositive = POSITIVE_OUTCOME_TIERS.includes(outcome);
-    return {
-      consecutivePositive: isPositive ? 1 : 0,
-      consecutiveNegative: isPositive ? 0 : 1,
-      lastInteraction: now,
-      lastDay: currentDay,
-    };
-  }
-
-  // Update existing streak
-  const isPositive = POSITIVE_OUTCOME_TIERS.includes(outcome);
-  const maxStreak = STREAK_DIFFICULTY_MODIFIERS.maxStreakCount;
-
-  if (isPositive) {
-    return {
-      consecutivePositive: Math.min(maxStreak, currentStreak.consecutivePositive + 1),
-      consecutiveNegative: 0,  // Reset negative streak
-      lastInteraction: now,
-      lastDay: currentDay,
-    };
-  } else {
-    return {
-      consecutivePositive: 0,  // Reset positive streak
-      consecutiveNegative: Math.min(maxStreak, currentStreak.consecutiveNegative + 1),
-      lastInteraction: now,
-      lastDay: currentDay,
-    };
-  }
-}
-
-/**
- * Check if streak should be reset
- *
- * @param streak - Current streak
- * @param currentDay - Current game day
- * @returns True if streak should reset
- */
-export function shouldResetStreak(streak: InteractionStreak, currentDay: number): boolean {
-  // Reset on new day
-  if (currentDay !== streak.lastDay) {
-    return true;
-  }
-
-  // Reset if time gap too large
-  const lastInteractionDate = new Date(streak.lastInteraction);
-  const now = new Date();
-  const hoursSince = (now.getTime() - lastInteractionDate.getTime()) / (1000 * 60 * 60);
-
-  if (hoursSince > 24) {
-    return true;
-  }
-
-  return false;
 }
 
 // ===== Activity Outcome Effects =====
@@ -339,17 +175,6 @@ export function getDifficultyBreakdown(calculation: DifficultyBreakdown): Array<
         calculation.traitBonus > 0
           ? 'NPC traits make this harder'
           : 'NPC traits make this easier',
-    });
-  }
-
-  if (calculation.streakModifier !== undefined && calculation.streakModifier !== 0) {
-    breakdown.push({
-      source: 'Streak',
-      modifier: calculation.streakModifier,
-      description:
-        calculation.streakModifier > 0
-          ? 'Recent negative interactions'
-          : 'Recent positive interactions',
     });
   }
 

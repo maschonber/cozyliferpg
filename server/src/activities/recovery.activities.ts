@@ -10,7 +10,7 @@ export const RECOVERY_ACTIVITIES: RecoveryActivity[] = [
     timeCost: 60,
     energyCost: 5,
     moneyCost: 0,
-    tags: ['recovery']
+    tags: ['calm']
   }),
 
   createRecoveryActivity({
@@ -21,6 +21,6 @@ export const RECOVERY_ACTIVITIES: RecoveryActivity[] = [
     energyCost: 0,
     moneyCost: 0,
     allowedTimeSlots: ['evening', 'night'],
-    tags: ['recovery']
+    tags: ['calm']
   })
 ];

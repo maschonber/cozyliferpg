@@ -81,7 +81,6 @@ export async function initDatabase() {
         name VARCHAR(255) NOT NULL,
 
         -- Game-specific fields
-        archetype VARCHAR(100) NOT NULL,
         traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
 
         -- Gender field
@@ -192,6 +191,45 @@ export async function seedUsers() {
   }
 }
 
+
+// NPC Archetype Removal Migration
+// Removes the archetype column from npcs table (archetypes are no longer used)
+export async function migrateRemoveNpcArchetype() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running NPC Archetype Removal migration...');
+
+    // Check if archetype column exists
+    const archetypeCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='npcs' AND column_name='archetype'
+    `);
+
+    if (archetypeCheck.rows.length > 0) {
+      console.log('  Removing archetype column from npcs table...');
+      await client.query(`
+        ALTER TABLE npcs
+        DROP COLUMN archetype
+      `);
+      console.log('  ✅ Removed archetype column');
+    } else {
+      console.log('  ⏭️  archetype column already removed');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ NPC Archetype Removal migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ NPC Archetype Removal migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
 
 // Social Activities Consolidation Migration
 // Consolidates social activities into player_activities and removes interactions table

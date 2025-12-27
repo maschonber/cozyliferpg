@@ -111,25 +111,6 @@
                     </div>
                   }
 
-                  <!-- Archetype Details -->
-                  @if (hasArchetypeDetails && archetypeDetails) {
-                    <div class="archetype-details-section">
-                      <h5>Archetype Contributions</h5>
-                      <div class="archetype-contributions">
-                        <div class="archetype-contribution-item" [class.positive]="archetypeDetails.matchBonus > 0" [class.negative]="archetypeDetails.matchBonus < 0">
-                          <mat-icon>people</mat-icon>
-                          <span class="contribution-label">Archetype Match</span>
-                          <span class="contribution-value">{{ archetypeDetails.matchBonus > 0 ? '+' : '' }}{{ archetypeDetails.matchBonus }}</span>
-                        </div>
-                        <div class="archetype-contribution-item" [class.positive]="archetypeDetails.activityBonus > 0" [class.negative]="archetypeDetails.activityBonus < 0">
-                          <mat-icon>favorite</mat-icon>
-                          <span class="contribution-label">Activity Affinity</span>
-                          <span class="contribution-value">{{ archetypeDetails.activityBonus > 0 ? '+' : '' }}{{ archetypeDetails.activityBonus }}</span>
-                        </div>
-                      </div>
-                    </div>
-                  }
-
                   @if (data.summary.difficultyBreakdown) {
                     <div class="final-difficulty">
                       <span class="final-label">Final DC:</span>
@@ -252,7 +233,6 @@
           </div>
           <div class="trait-info">
             <span class="trait-name">{{ trait.traitName }}</span>
-            <span class="trait-category">({{ trait.category }})</span>
           </div>
           <p class="trait-description">{{ trait.traitDescription }}</p>
         </div>

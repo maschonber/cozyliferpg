@@ -500,27 +500,12 @@ export class NeighborDetail implements OnInit, OnDestroy {
   }
 
   /**
-   * Get traits by category
+   * Get all revealed traits for display
    */
-  getTraitsByCategory(category: 'personality' | 'romance' | 'interest'): string[] {
+  getRevealedTraits(): string[] {
     const npc = this.selectedNPC();
     if (!npc) return [];
-
-    // Category mappings based on trait definitions
-    const categoryMap = {
-      personality: ['outgoing', 'reserved', 'logical', 'creative', 'intuitive',
-                    'adventurous', 'cautious', 'spontaneous', 'optimistic',
-                    'melancholic', 'passionate', 'stoic', 'empathetic',
-                    'independent', 'nurturing', 'competitive'],
-      romance: ['flirtatious', 'romantic', 'physical', 'intellectual',
-                'slow_burn', 'intense', 'commitment_seeking', 'free_spirit'],
-      interest: ['coffee_lover', 'fitness_enthusiast', 'music_fan',
-                 'art_appreciator', 'foodie', 'reader', 'gamer', 'nature_lover']
-    };
-
-    return npc.revealedTraits.filter(trait =>
-      categoryMap[category].includes(trait as string)
-    );
+    return npc.revealedTraits;
   }
 
   /**
@@ -529,8 +514,8 @@ export class NeighborDetail implements OnInit, OnDestroy {
   hasHiddenTraits(): boolean {
     const npc = this.selectedNPC();
     if (!npc) return false;
-    // If there are few revealed traits, hint that more exist
-    // NPCs typically have 5-8 traits total
-    return npc.revealedTraits.length < 7;
+    // If there are unrevealed traits, hint that more exist
+    // NPCs have 1-3 traits total
+    return npc.revealedTraits.length < npc.traits.length;
   }
 }

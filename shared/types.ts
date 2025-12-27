@@ -63,64 +63,27 @@ export type Gender = 'female' | 'male' | 'other';
  */
 export type SexualPreference = 'women' | 'men' | 'everyone' | 'no_one';
 
-// ===== Trait System (Relationship Redesign) =====
+// ===== Trait System =====
 
 /**
- * Personality traits - affect social interactions and emotion baselines
+ * NPC traits - simple quirks that affect activity affinities
+ * Each trait maps to activity tags with bonuses/penalties
  */
-export type PersonalityTrait =
-  // Social energy
-  | 'outgoing'
-  | 'reserved'
-  // Thinking style
-  | 'logical'
-  | 'creative'
-  | 'intuitive'
-  // Risk attitude
-  | 'adventurous'
-  | 'cautious'
-  | 'spontaneous'
-  // Emotional style
-  | 'optimistic'
-  | 'melancholic'
-  | 'passionate'
-  | 'stoic'
-  // Interpersonal
-  | 'empathetic'
-  | 'independent'
-  | 'nurturing'
-  | 'competitive';
-
-/**
- * Romance traits - affect romantic relationship dynamics
- */
-export type RomanceTrait =
-  | 'flirtatious'
-  | 'romantic'
-  | 'physical'
-  | 'intellectual'
-  | 'slow_burn'
-  | 'intense'
-  | 'commitment_seeking'
-  | 'free_spirit';
-
-/**
- * Interest traits - affect activity bonuses
- */
-export type InterestTrait =
-  | 'coffee_lover'
-  | 'fitness_enthusiast'
-  | 'music_fan'
-  | 'art_appreciator'
-  | 'foodie'
-  | 'reader'
-  | 'gamer'
-  | 'nature_lover';
-
-/**
- * Combined trait type for NPCs
- */
-export type NPCTrait = PersonalityTrait | RomanceTrait | InterestTrait;
+export type NPCTrait =
+  // Interest-based traits
+  | 'coffee_lover'      // Loves coffee-related activities
+  | 'athletic'          // Enjoys physical activities
+  | 'bookworm'          // Prefers intellectual, calm activities
+  | 'foodie'            // Appreciates food and romantic dining
+  | 'gamer'             // Enjoys gaming and competition
+  | 'nature_lover'      // Loves outdoor activities
+  | 'creative_soul'     // Drawn to creative pursuits
+  // Personality-based traits
+  | 'competitive'       // Thrives in competitive situations
+  | 'romantic'          // Enjoys romantic activities
+  | 'intellectual'      // Prefers intellectual engagement
+  | 'adventurous'       // Likes outdoor/physical, dislikes calm
+  | 'introverted';      // Prefers calm, dislikes competition
 
 // ===== Plutchik Emotion System =====
 
@@ -202,17 +165,11 @@ export interface EmotionInterpretationResult {
 }
 
 /**
- * NPC Archetype
- */
-export type NPCArchetype = 'Artist' | 'Athlete' | 'Bookworm' | 'Musician' | 'Scientist';
-
-/**
  * NPC (Non-Player Character)
  */
 export interface NPC {
   id: string;
   name: string;
-  archetype: NPCArchetype;
   gender: Gender;
 
   // Trait system (Relationship Redesign)
@@ -400,13 +357,12 @@ export interface PerformActivityResponse {
   previousState?: RelationshipState;
   newState?: RelationshipState;
   emotionalState?: InterpretedEmotion;
-  // Trait discovery (Relationship Redesign)
+  // Trait discovery
   discoveredTrait?: {
     trait: NPCTrait;
     traitName: string;        // Display name of the trait
     traitDescription: string; // Description of the trait
     isNew: boolean;
-    category: 'personality' | 'romance' | 'interest';
   };
 
   // Outcome information
@@ -756,18 +712,6 @@ export interface TraitContribution {
 }
 
 /**
- * Archetype contribution breakdown
- */
-export interface ArchetypeContribution {
-  playerArchetype: PlayerArchetype;
-  npcArchetype: NPCArchetype;
-  activityCategory?: ActivityTypeValue;
-  matchBonus: number;           // Bonus from player-NPC archetype compatibility
-  activityAffinityBonus: number; // Bonus from NPC archetype's activity preference
-  totalBonus: number;            // matchBonus + activityAffinityBonus
-}
-
-/**
  * Difficulty calculation breakdown
  * Applicable to both solo and social activities
  */
@@ -780,17 +724,14 @@ export interface DifficultyBreakdown {
 
   // Social activity modifiers
   relationshipModifier?: number; // -15 to +30 (relationship state adjustment)
-  traitBonus?: number;           // -20 to +20 (combined trait + archetype)
-  streakModifier?: number;       // -10 to +10 (performance streak)
+  traitBonus?: number;           // -20 to +20 (from NPC traits)
 
   // Trait bonus breakdown (social only)
   traitBreakdown?: {
     npcTraitBonus: number;       // Bonus from NPC's specific traits
-    archetypeBonus: number;      // Bonus from archetype compatibility
 
     // Detailed individual contributions
     individualTraits?: TraitContribution[];  // Each NPC trait's contribution
-    archetypeDetails?: ArchetypeContribution; // Separated archetype bonuses
   };
 
   // Final calculated difficulty
@@ -883,7 +824,6 @@ export interface ActivitySummary {
     traitName: string;
     traitDescription: string;
     isNew: boolean;
-    category: 'personality' | 'romance' | 'interest';
   };
 
   // Difficulty breakdown (both activity types now have this)

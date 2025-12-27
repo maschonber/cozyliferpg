@@ -9,7 +9,8 @@ import {
   TrainingActivity,
   LeisureActivity,
   RecoveryActivity,
-  DiscoveryActivity
+  DiscoveryActivity,
+  ActivityTag
 } from '../../../shared/types/activity.types';
 
 import {
@@ -32,7 +33,7 @@ interface BaseActivityParams {
   energyCost: number;
   moneyCost: number;
   allowedTimeSlots?: TimeSlot[];
-  tags?: string[];
+  tags?: ActivityTag[];
 }
 
 /**
@@ -49,7 +50,7 @@ export function createWorkActivity(
   return {
     type: 'work',
     ...params,
-    tags: params.tags || ['work']
+    tags: params.tags || []
   };
 }
 

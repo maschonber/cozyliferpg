@@ -10,20 +10,13 @@ import {
   NPC,
   NPCAppearance,
   Gender,
-  NPCArchetype,
   NPCTrait,
-  PersonalityTrait,
-  RomanceTrait,
-  InterestTrait,
   NEUTRAL_EMOTION_VECTOR
 } from '../../../../shared/types';
 import { randomUUID } from 'crypto';
 import {
-  getArchetypeTraitWeights,
-  selectWeightedTraits,
-  selectRandomTraitsFromCategory,
-  removeConflictingTraits,
-  validateTraits
+  selectRandomTraits,
+  getAllTraits as getTraitServiceAllTraits
 } from '../trait';
 
 // ===== Generation Data Pools =====
@@ -63,55 +56,6 @@ const LAST_NAMES = [
   'Flores', 'Green', 'Adams', 'Nelson', 'Baker', 'Hall', 'Rivera', 'Campbell',
   'Mitchell', 'Carter', 'Roberts', 'Turner', 'Phillips', 'Evans', 'Parker',
   'Collins', 'Edwards', 'Stewart', 'Morris', 'Murphy', 'Cook', 'Rogers'
-];
-
-const ARCHETYPES: NPCArchetype[] = [
-  'Artist',
-  'Athlete',
-  'Bookworm',
-  'Musician',
-  'Scientist'
-];
-
-const PERSONALITY_TRAITS: PersonalityTrait[] = [
-  'outgoing',
-  'reserved',
-  'logical',
-  'creative',
-  'intuitive',
-  'adventurous',
-  'cautious',
-  'spontaneous',
-  'optimistic',
-  'melancholic',
-  'passionate',
-  'stoic',
-  'empathetic',
-  'independent',
-  'nurturing',
-  'competitive'
-];
-
-const ROMANCE_TRAITS: RomanceTrait[] = [
-  'flirtatious',
-  'romantic',
-  'physical',
-  'intellectual',
-  'slow_burn',
-  'intense',
-  'commitment_seeking',
-  'free_spirit'
-];
-
-const INTEREST_TRAITS: InterestTrait[] = [
-  'coffee_lover',
-  'fitness_enthusiast',
-  'music_fan',
-  'art_appreciator',
-  'foodie',
-  'reader',
-  'gamer',
-  'nature_lover'
 ];
 
 const HAIR_COLORS = [
@@ -265,61 +209,14 @@ function generateLoras(): string[] {
 }
 
 /**
- * Generate random archetype
- */
-function generateArchetype(): NPCArchetype {
-  return randomChoice(ARCHETYPES);
-}
-
-/**
- * Generate random traits based on archetype (2-3 personality + 1-2 romance + 2-3 interests)
+ * Generate 1-3 random traits
  *
- * Task 5 Implementation:
- * - Uses archetype-based weighting for personality traits
- * - Ensures no conflicting traits (e.g., not both 'outgoing' and 'reserved')
- * - Romance and interest traits are random (not archetype-specific)
- *
- * @param archetype - NPC archetype (affects personality trait weights)
- * @returns Array of traits with no conflicts
+ * Simple random selection with conflict checking.
+ * No archetype influence - traits are independent quirks.
  */
-function generateTraits(archetype: NPCArchetype): NPCTrait[] {
-  const personalityCount = randomInt(2, 3);
-  const romanceCount = randomInt(1, 2);
-  const interestCount = randomInt(2, 3);
-
-  // Get archetype-weighted personality traits
-  const archetypeWeights = getArchetypeTraitWeights(archetype);
-
-  // Select personality traits using weighted selection
-  let personality: NPCTrait[];
-  if (Object.keys(archetypeWeights).length > 0) {
-    // Use weighted selection based on archetype
-    personality = selectWeightedTraits(archetypeWeights, personalityCount);
-  } else {
-    // Fallback to random if no weights defined (shouldn't happen)
-    personality = randomChoices(PERSONALITY_TRAITS, personalityCount);
-  }
-
-  // Select random romance traits (not archetype-specific)
-  const romance = randomChoices(ROMANCE_TRAITS, romanceCount) as NPCTrait[];
-
-  // Select random interest traits (not archetype-specific)
-  const interests = randomChoices(INTEREST_TRAITS, interestCount) as NPCTrait[];
-
-  // Combine all traits
-  const allTraits = [...personality, ...romance, ...interests];
-
-  // Remove any conflicting traits (safety check)
-  const validTraits = removeConflictingTraits(allTraits);
-
-  // Validate final result (should always pass, but check for safety)
-  const validation = validateTraits(validTraits);
-  if (!validation.valid) {
-    console.warn('Trait generation produced conflicts:', validation.conflicts);
-    // This shouldn't happen, but log it if it does
-  }
-
-  return validTraits;
+function generateTraits(): NPCTrait[] {
+  const traitCount = randomInt(1, 3);
+  return selectRandomTraits(traitCount);
 }
 
 // ===== Main Generator =====
@@ -328,25 +225,16 @@ function generateTraits(archetype: NPCArchetype): NPCTrait[] {
  * Generate a random NPC
  *
  * Note: currentLocation is set by the route based on player location (Phase 3)
- *
- * Task 5 Implementation:
- * - Archetype influences personality trait selection (weighted probabilities)
- * - Traits are validated for conflicts before assignment
- * - Emotion state initialized based on traits
  */
 export function generateNPC(): Omit<NPC, 'id' | 'createdAt' | 'currentLocation'> {
-  // Generate archetype first (it influences trait selection)
-  const archetype = generateArchetype();
-
   // Generate gender for name selection
   const gender = generateGender();
 
-  // Generate traits based on archetype (with conflict detection)
-  const traits = generateTraits(archetype);
+  // Generate 1-3 random traits
+  const traits = generateTraits();
 
   return {
     name: generateName(gender),
-    archetype,
     traits,
     revealedTraits: [],  // No traits revealed initially
     gender,
@@ -372,15 +260,8 @@ export function createNPC(currentLocation: string = 'park'): NPC {
 }
 
 /**
- * Get all available archetypes
- */
-export function getArchetypes(): NPCArchetype[] {
-  return [...ARCHETYPES];
-}
-
-/**
  * Get all available traits
  */
 export function getAllTraits(): NPCTrait[] {
-  return [...PERSONALITY_TRAITS, ...ROMANCE_TRAITS, ...INTEREST_TRAITS];
+  return getTraitServiceAllTraits();
 }

@@ -444,36 +444,14 @@ export class ActivityResultModal {
       });
     }
 
-    // Trait bonus (social activities - combined)
+    // Trait bonus (social activities)
     if (breakdown.traitBonus !== undefined && breakdown.traitBonus !== 0) {
-      const parts: string[] = [];
-
-      if (breakdown.traitBreakdown) {
-        if (breakdown.traitBreakdown.npcTraitBonus !== 0) {
-          parts.push(`NPC traits: ${breakdown.traitBreakdown.npcTraitBonus > 0 ? '+' : ''}${breakdown.traitBreakdown.npcTraitBonus}`);
-        }
-        if (breakdown.traitBreakdown.archetypeBonus !== 0) {
-          parts.push(`Archetype: ${breakdown.traitBreakdown.archetypeBonus > 0 ? '+' : ''}${breakdown.traitBreakdown.archetypeBonus}`);
-        }
-      }
-
       modifiers.push({
         label: 'Traits',
         value: breakdown.traitBonus,
-        description: parts.length > 0 ? parts.join(', ') : (breakdown.traitBonus > 0
+        description: breakdown.traitBonus > 0
           ? 'NPC traits make this harder'
-          : 'NPC traits make this easier')
-      });
-    }
-
-    // Streak modifier (social activities)
-    if (breakdown.streakModifier !== undefined && breakdown.streakModifier !== 0) {
-      modifiers.push({
-        label: 'Streak',
-        value: breakdown.streakModifier,
-        description: breakdown.streakModifier > 0
-          ? 'Recent negative interactions'
-          : 'Recent positive interactions'
+          : 'NPC traits make this easier'
       });
     }
 
@@ -499,29 +477,6 @@ export class ActivityResultModal {
       name: trait.traitName,
       bonus: trait.bonus
     }));
-  }
-
-  /**
-   * Check if we have archetype details
-   */
-  get hasArchetypeDetails(): boolean {
-    const breakdown = this.data.summary.difficultyBreakdown;
-    return !!breakdown?.traitBreakdown?.archetypeDetails;
-  }
-
-  /**
-   * Get archetype contribution details for display
-   */
-  get archetypeDetails(): { matchBonus: number; activityBonus: number; total: number } | null {
-    const breakdown = this.data.summary.difficultyBreakdown;
-    if (!breakdown?.traitBreakdown?.archetypeDetails) return null;
-
-    const details = breakdown.traitBreakdown.archetypeDetails;
-    return {
-      matchBonus: details.matchBonus,
-      activityBonus: details.activityAffinityBonus,
-      total: details.totalBonus
-    };
   }
 
   onContinue(): void {

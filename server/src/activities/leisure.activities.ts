@@ -10,7 +10,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     timeCost: 60,
     energyCost: -3,
     moneyCost: 0,
-    allowedTimeSlots: ['morning', 'afternoon', 'evening']
+    allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['outdoor', 'calm']
   }),
 
   createLeisureActivity({
@@ -20,7 +21,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'home',
     timeCost: 120,
     energyCost: -5,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['gaming']
   }),
 
   createLeisureActivity({
@@ -30,7 +32,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'home',
     timeCost: 90,
     energyCost: 0,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['calm']
   }),
 
   createLeisureActivity({
@@ -40,7 +43,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'home',
     timeCost: 30,
     energyCost: 0,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['calm']
   }),
 
   createLeisureActivity({
@@ -51,7 +55,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     timeCost: 90,
     energyCost: -10,
     moneyCost: -5,
-    allowedTimeSlots: ['evening', 'night']
+    allowedTimeSlots: ['evening', 'night'],
+    tags: ['intellectual', 'competitive']
   }),
 
   createLeisureActivity({
@@ -61,7 +66,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'home',
     timeCost: 60,
     energyCost: 0,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['calm']
   }),
 
   createLeisureActivity({
@@ -71,7 +77,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'beach',
     timeCost: 45,
     energyCost: -3,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['outdoor', 'calm']
   }),
 
   createLeisureActivity({
@@ -81,7 +88,8 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'shopping_district',
     timeCost: 60,
     energyCost: -5,
-    moneyCost: 0
+    moneyCost: 0,
+    tags: ['calm']
   }),
 
   createLeisureActivity({
@@ -91,6 +99,7 @@ export const LEISURE_ACTIVITIES: LeisureActivity[] = [
     location: 'boardwalk',
     timeCost: 90,
     energyCost: -8,
-    moneyCost: -10
+    moneyCost: -10,
+    tags: ['gaming', 'competitive']
   })
 ];

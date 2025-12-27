@@ -23,17 +23,14 @@ import { recordPlayerActivity } from '../services/activity-history';
 import {
   calculateDynamicDifficulty,
   getActivityEffects,
-  updateStreak
 } from '../services/social-activity';
 import {
   getTraitActivityBonus,
   getTraitActivityBreakdown,
-  getArchetypeBonus,
-  getArchetypeBreakdown,
-  discoverTrait,
-  getTraitCategory,
+  getContributingTrait,
   getTraitDefinition
 } from '../services/trait';
+import { ActivityTag } from '../../../shared/types/activity.types';
 import { rollOutcome } from '../services/outcome';
 import { interpretEmotionVectorSlim } from '../services/plutchik-emotion';
 import {
@@ -92,7 +89,6 @@ function buildNPCFromRow(row: any): NPC {
   return {
     id: row.id,
     name: row.name,
-    archetype: row.archetype,
     traits: row.traits,
     revealedTraits: row.revealed_traits || [],
     gender: row.gender,
@@ -214,7 +210,6 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
         r.*,
         n.id as npc_id,
         n.name as npc_name,
-        n.archetype as npc_archetype,
         n.traits as npc_traits,
         n.revealed_traits as npc_revealed_traits,
         n.gender as npc_gender,
@@ -238,7 +233,6 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Relationship[
       const npc = buildNPCFromRow({
         id: row.npc_id,
         name: row.npc_name,
-        archetype: row.npc_archetype,
         traits: row.npc_traits,
         revealed_traits: row.npc_revealed_traits,
         gender: row.npc_gender,
@@ -411,38 +405,24 @@ router.post(
       const { relationship } = await getOrCreateRelationship(client, userId, npcId);
 
       // Calculate dynamic difficulty with all modifiers (no emotion modifier for now)
-      const traitBonus = getTraitActivityBonus(npc.revealedTraits, activityId);
-      const archetypeBonus = getArchetypeBonus(
-        player.archetype,
-        npc.archetype,
-        activity.type
-      );
+      // Use activity tags for trait bonus calculation (all traits, not just revealed)
+      const activityTags = (activity.tags || []) as ActivityTag[];
+      const traitBonus = getTraitActivityBonus(npc.traits, activityTags);
 
       // Get detailed breakdowns for transparency
-      const individualTraits = getTraitActivityBreakdown(npc.revealedTraits, activityId);
-      const archetypeDetails = getArchetypeBreakdown(
-        player.archetype,
-        npc.archetype,
-        activity.type
-      );
+      const individualTraits = getTraitActivityBreakdown(npc.traits, activityTags);
 
       const relationshipModifier = getRelationshipDifficultyModifier(
         { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
         relationship.currentState
       );
 
-      // TODO: Load streak from database if we want to persist it
-      const streak = undefined; // For now, no streak tracking
-
       // Calculate difficulty (emotion modifier removed - will be re-added with Plutchik system)
       const difficultyCalc = calculateDynamicDifficulty(
         ('difficulty' in activity && activity.difficulty) ? activity.difficulty : 50, // Default to medium difficulty if not specified
         relationshipModifier,
         traitBonus,        // NPC trait bonus
-        archetypeBonus,    // Archetype compatibility bonus
-        streak,
-        individualTraits,  // Detailed trait contributions
-        archetypeDetails   // Detailed archetype breakdown
+        individualTraits   // Detailed trait contributions
       );
 
       // Roll for outcome
@@ -482,11 +462,10 @@ router.post(
       // Update unlocked states
       const unlockedStates = updateUnlockedStates(relationship.unlockedStates, newState);
 
-      // Attempt trait discovery based on activity type
+      // Attempt trait discovery - reveal trait when it first affects an activity
       let discoveredTrait: { trait: string; isNew: boolean } | null = null;
-      const discoveryMethod = getDiscoveryMethod(activityId);
-      if (discoveryMethod) {
-        const discovery = discoverTrait(npc, discoveryMethod);
+      if (activityTags.length > 0) {
+        const discovery = getContributingTrait(npc, activityTags);
         if (discovery && discovery.isNew) {
           discoveredTrait = discovery;
           // Update revealed traits in NPC
@@ -579,13 +558,12 @@ router.post(
         newState,
         emotionalState: (npc.emotionInterpretation?.emotion || 'neutral') as any,
 
-        // Enhanced response fields (Relationship Redesign)
+        // Enhanced response fields
         discoveredTrait: discoveredTrait ? {
           trait: discoveredTrait.trait as any,
           traitName: getTraitDefinition(discoveredTrait.trait as any).name,
           traitDescription: getTraitDefinition(discoveredTrait.trait as any).description,
-          isNew: discoveredTrait.isNew,
-          category: getTraitCategory(discoveredTrait.trait as any)
+          isNew: discoveredTrait.isNew
         } : undefined,
 
         outcome: {
@@ -616,25 +594,6 @@ router.post(
     }
   }
 );
-
-/**
- * Helper: Map activity ID to trait discovery method
- */
-function getDiscoveryMethod(activityId: string): string | null {
-  // Map specific activities to discovery methods
-  const discoveryMap: Record<string, string> = {
-    'have_coffee': 'conversation',
-    'study_together': 'conversation',
-    'go_to_movie': 'shared_activity',
-    'work_out_together': 'shared_activity',
-    'go_to_party': 'shared_activity',
-    'have_deep_conversation': 'deep_conversation',
-    'go_on_date': 'date',
-    'flirt_playfully': 'date'
-  };
-
-  return discoveryMap[activityId] || 'conversation'; // Default to conversation
-}
 
 /**
  * Helper: Get description for outcome tier

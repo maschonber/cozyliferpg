@@ -61,7 +61,6 @@
               }
             </span>
           </mat-card-title>
-          <mat-card-subtitle>{{ selectedNPC()!.archetype }}</mat-card-subtitle>
         </mat-card-header>
 
         <!-- Current Emotion Display (Plutchik) -->
@@ -97,41 +96,11 @@
             @if (selectedNPC()!.revealedTraits.length === 0) {
               <p class="no-traits">No traits discovered yet. Spend time together to learn more!</p>
             } @else {
-              <!-- Personality Traits -->
-              @if (getTraitsByCategory('personality').length > 0) {
-                <div class="trait-category">
-                  <h4><mat-icon>psychology</mat-icon> Personality</h4>
-                  <div class="traits-grid">
-                    @for (trait of getTraitsByCategory('personality'); track trait) {
-                      <mat-chip class="personality-trait">{{ formatTraitName(trait) }}</mat-chip>
-                    }
-                  </div>
-                </div>
-              }
-
-              <!-- Romance Traits -->
-              @if (getTraitsByCategory('romance').length > 0) {
-                <div class="trait-category">
-                  <h4><mat-icon>favorite</mat-icon> Romance Style</h4>
-                  <div class="traits-grid">
-                    @for (trait of getTraitsByCategory('romance'); track trait) {
-                      <mat-chip class="romance-trait">{{ formatTraitName(trait) }}</mat-chip>
-                    }
-                  </div>
-                </div>
-              }
-
-              <!-- Interest Traits -->
-              @if (getTraitsByCategory('interest').length > 0) {
-                <div class="trait-category">
-                  <h4><mat-icon>interests</mat-icon> Interests</h4>
-                  <div class="traits-grid">
-                    @for (trait of getTraitsByCategory('interest'); track trait) {
-                      <mat-chip class="interest-trait">{{ formatTraitName(trait) }}</mat-chip>
-                    }
-                  </div>
-                </div>
-              }
+              <div class="traits-grid">
+                @for (trait of getRevealedTraits(); track trait) {
+                  <mat-chip class="trait-chip">{{ formatTraitName(trait) }}</mat-chip>
+                }
+              </div>
             }
 
             <!-- Hidden traits indicator -->

@@ -5,17 +5,15 @@
  *
  * Note: Emotion-based difficulty modifiers and emotion effects have been removed.
  * These will be re-implemented with the Plutchik emotion system in a future phase.
+ *
+ * Note: Streak system has been removed as it was never properly implemented.
  */
 
 import {
   calculateDynamicDifficulty,
-  getStreakModifier,
-  updateStreak,
-  shouldResetStreak,
   scaleRelationshipEffects,
   getActivityEffects,
   getDifficultyBreakdown,
-  InteractionStreak,
 } from './index';
 import { RelationshipAxes, DifficultyBreakdown } from '../../../../shared/types';
 
@@ -41,15 +39,12 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
       const result = calculateDynamicDifficulty(
         50,              // base difficulty
         -8,              // relationship modifier (friend bonus)
-        3,               // NPC trait bonus (positive in config = easier)
-        2,               // archetype bonus (positive in config = easier)
-        undefined        // no streak
+        5                // NPC trait bonus (positive in config = easier)
       );
 
       expect(result.baseDifficulty).toBe(50);
       expect(result.relationshipModifier).toBe(-8);         // Friend bonus
-      expect(result.traitBonus).toBe(-5);                  // Negated bonuses reduce difficulty
-      expect(result.streakModifier).toBe(0);               // No streak
+      expect(result.traitBonus).toBe(-5);                  // Negated bonus reduces difficulty
       expect(result.finalDifficulty).toBeLessThan(50);     // Overall easier
     });
 
@@ -57,239 +52,43 @@ describe('Social Activity Service - Dynamic Difficulty', () => {
       const result = calculateDynamicDifficulty(
         30,              // base difficulty
         15,              // relationship penalty (rival)
-        -3,              // NPC trait penalty (negative in config = harder)
-        -2,              // archetype penalty (negative in config = harder)
-        undefined
+        -5               // NPC trait penalty (negative in config = harder)
       );
 
       expect(result.relationshipModifier).toBe(15);        // Rival penalty
-      expect(result.traitBonus).toBe(5);                   // Negated negative bonuses increase difficulty
+      expect(result.traitBonus).toBe(5);                   // Negated negative bonus increases difficulty
       expect(result.finalDifficulty).toBeGreaterThan(30);  // Overall harder
     });
 
-    it('should never return negative difficulty', () => {
+    it('should allow negative difficulty for very easy activities', () => {
       const result = calculateDynamicDifficulty(
         10,              // low base
         -15,             // big relationship bonus
-        12,              // big NPC trait bonus (config positive = easier, negated = reduces)
-        8,               // big archetype bonus (config positive = easier, negated = reduces)
-        { consecutivePositive: 20, consecutiveNegative: 0, lastInteraction: new Date().toISOString(), lastDay: 1 }
+        20               // big NPC trait bonus (config positive = easier, negated = reduces)
       );
 
-      expect(result.finalDifficulty).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should include streak modifier when provided', () => {
-      const positiveStreak: InteractionStreak = {
-        consecutivePositive: 4,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const result = calculateDynamicDifficulty(
-        40,
-        0,               // relationship modifier
-        0,               // NPC trait bonus
-        0,               // archetype bonus
-        positiveStreak
-      );
-
-      expect(result.streakModifier).toBeLessThan(0);  // Positive streak = easier
+      // Difficulty can go negative, resulting in DC below 100
+      // 10 base + (-15) relationship + (-20) trait = -25
+      expect(result.finalDifficulty).toBeLessThan(0);
     });
 
     it('should include trait breakdown when provided', () => {
       const individualTraits = [
         { trait: 'coffee_lover' as const, traitName: 'Coffee Lover', bonus: 20 },
-        { trait: 'outgoing' as const, traitName: 'Outgoing', bonus: 5 },
+        { trait: 'bookworm' as const, traitName: 'Bookworm', bonus: 5 },
       ];
-      const archetypeDetails = {
-        playerArchetype: 'social_butterfly' as const,
-        npcArchetype: 'Musician' as const,
-        activityCategory: 'social' as const,
-        matchBonus: 10,
-        activityAffinityBonus: 10,
-        totalBonus: 20,
-      };
 
       const result = calculateDynamicDifficulty(
         40,
         0,
         25,  // combined NPC trait bonus
-        20,  // combined archetype bonus
-        undefined,
-        individualTraits,
-        archetypeDetails
+        individualTraits
       );
 
       expect(result.traitBreakdown).toBeDefined();
       expect(result.traitBreakdown?.individualTraits).toBeDefined();
-      expect(result.traitBreakdown?.archetypeDetails).toBeDefined();
       // Trait breakdown should be negated for display
       expect(result.traitBreakdown?.npcTraitBonus).toBe(-25);
-      expect(result.traitBreakdown?.archetypeBonus).toBe(-20);
-    });
-  });
-});
-
-// ===== Streak System Tests =====
-
-describe('Social Activity Service - Streak System', () => {
-  describe('getStreakModifier', () => {
-    it('should return negative modifier for positive streak', () => {
-      const streak: InteractionStreak = {
-        consecutivePositive: 4,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const modifier = getStreakModifier(streak);
-      expect(modifier).toBeLessThan(0);  // Easier
-      expect(modifier).toBe(-2);  // 4 / 2 = -2
-    });
-
-    it('should return positive modifier for negative streak', () => {
-      const streak: InteractionStreak = {
-        consecutivePositive: 0,
-        consecutiveNegative: 6,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const modifier = getStreakModifier(streak);
-      expect(modifier).toBeGreaterThan(0);  // Harder
-      expect(modifier).toBe(3);  // 6 / 2 = 3
-    });
-
-    it('should return zero for no streak', () => {
-      const streak: InteractionStreak = {
-        consecutivePositive: 0,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const modifier = getStreakModifier(streak);
-      expect(modifier).toBe(0);
-    });
-
-    it('should cap modifier at max values', () => {
-      const hugePositiveStreak: InteractionStreak = {
-        consecutivePositive: 100,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const modifier = getStreakModifier(hugePositiveStreak);
-      expect(modifier).toBeGreaterThanOrEqual(-10);  // Capped at -10
-    });
-  });
-
-  describe('updateStreak', () => {
-    it('should initialize streak on first interaction', () => {
-      const streak = updateStreak(undefined, 'best', 1);
-
-      expect(streak.consecutivePositive).toBe(1);
-      expect(streak.consecutiveNegative).toBe(0);
-      expect(streak.lastDay).toBe(1);
-    });
-
-    it('should increment positive streak on positive outcome', () => {
-      const currentStreak: InteractionStreak = {
-        consecutivePositive: 2,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const updated = updateStreak(currentStreak, 'best', 1);
-
-      expect(updated.consecutivePositive).toBe(3);
-      expect(updated.consecutiveNegative).toBe(0);
-    });
-
-    it('should reset positive streak and start negative on bad outcome', () => {
-      const currentStreak: InteractionStreak = {
-        consecutivePositive: 4,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const updated = updateStreak(currentStreak, 'catastrophic', 1);
-
-      expect(updated.consecutivePositive).toBe(0);
-      expect(updated.consecutiveNegative).toBe(1);
-    });
-
-    it('should reset streak on new day', () => {
-      const currentStreak: InteractionStreak = {
-        consecutivePositive: 5,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const updated = updateStreak(currentStreak, 'best', 2);  // New day
-
-      expect(updated.consecutivePositive).toBe(1);  // Reset and start new
-      expect(updated.lastDay).toBe(2);
-    });
-
-    it('should cap streak at maximum', () => {
-      const currentStreak: InteractionStreak = {
-        consecutivePositive: 20,  // Already at max
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const updated = updateStreak(currentStreak, 'best', 1);
-
-      expect(updated.consecutivePositive).toBe(20);  // Capped, doesn't increase
-    });
-  });
-
-  describe('shouldResetStreak', () => {
-    it('should reset on new day', () => {
-      const streak: InteractionStreak = {
-        consecutivePositive: 3,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),
-        lastDay: 1,
-      };
-
-      const shouldReset = shouldResetStreak(streak, 2);
-      expect(shouldReset).toBe(true);
-    });
-
-    it('should not reset on same day with recent interaction', () => {
-      const streak: InteractionStreak = {
-        consecutivePositive: 3,
-        consecutiveNegative: 0,
-        lastInteraction: new Date().toISOString(),  // Just now
-        lastDay: 1,
-      };
-
-      const shouldReset = shouldResetStreak(streak, 1);
-      expect(shouldReset).toBe(false);
-    });
-
-    it('should reset if time gap is too large', () => {
-      const yesterday = new Date();
-      yesterday.setHours(yesterday.getHours() - 25);  // 25 hours ago
-
-      const streak: InteractionStreak = {
-        consecutivePositive: 3,
-        consecutiveNegative: 0,
-        lastInteraction: yesterday.toISOString(),
-        lastDay: 1,
-      };
-
-      const shouldReset = shouldResetStreak(streak, 1);
-      expect(shouldReset).toBe(true);
     });
   });
 });
@@ -375,13 +174,12 @@ describe('Social Activity Service - Display Functions', () => {
         baseDifficulty: 40,
         relationshipModifier: -10,
         traitBonus: 5,
-        streakModifier: -2,
-        finalDifficulty: 33,
+        finalDifficulty: 35,
       };
 
       const breakdown = getDifficultyBreakdown(calculation);
 
-      expect(breakdown).toHaveLength(4);  // Base + relationship + traits + streak
+      expect(breakdown).toHaveLength(3);  // Base + relationship + traits
       expect(breakdown[0].source).toBe('Base');
       expect(breakdown[0].modifier).toBe(40);
     });
@@ -391,7 +189,6 @@ describe('Social Activity Service - Display Functions', () => {
         baseDifficulty: 30,
         relationshipModifier: -5,
         traitBonus: 0,
-        streakModifier: 0,
         finalDifficulty: 25,
       };
 
@@ -406,8 +203,7 @@ describe('Social Activity Service - Display Functions', () => {
         baseDifficulty: 40,
         relationshipModifier: -10,
         traitBonus: 5,
-        streakModifier: -2,
-        finalDifficulty: 33,
+        finalDifficulty: 35,
       };
 
       const breakdown = getDifficultyBreakdown(calculation);
@@ -416,9 +212,9 @@ describe('Social Activity Service - Display Functions', () => {
       const relMod = breakdown.find(b => b.source === 'Relationship');
       expect(relMod?.description).toContain('Good');  // Negative modifier = good relationship
 
-      // Find streak modifier
-      const streakMod = breakdown.find(b => b.source === 'Streak');
-      expect(streakMod?.description).toContain('positive');  // Negative modifier = positive streak
+      // Find traits modifier
+      const traitMod = breakdown.find(b => b.source === 'Traits');
+      expect(traitMod?.description).toContain('harder');  // Positive modifier = harder
     });
   });
 });
@@ -427,24 +223,15 @@ describe('Social Activity Service - Display Functions', () => {
 
 describe('Social Activity Service - Integration', () => {
   it('should handle complete activity flow', () => {
-    // Setup: Good relationship, matching traits, positive streak
+    // Setup: Good relationship, matching traits
     const relationshipMod = -8;
-    const npcTraitBonus = 3;
-    const archetypeBonus = 2;
-    const streak: InteractionStreak = {
-      consecutivePositive: 4,
-      consecutiveNegative: 0,
-      lastInteraction: new Date().toISOString(),
-      lastDay: 1,
-    };
+    const npcTraitBonus = 5;
 
     // Calculate difficulty
     const difficulty = calculateDynamicDifficulty(
       40,
       relationshipMod,
-      npcTraitBonus,
-      archetypeBonus,
-      streak
+      npcTraitBonus
     );
 
     expect(difficulty.finalDifficulty).toBeLessThan(40);  // Should be easier
@@ -458,32 +245,18 @@ describe('Social Activity Service - Integration', () => {
     const effects = getActivityEffects(baseEffects, 'best');
 
     expect(effects.relationshipEffects.affection).toBeGreaterThan(10);  // Scaled up
-
-    // Update streak
-    const newStreak = updateStreak(streak, 'best', 1);
-
-    expect(newStreak.consecutivePositive).toBe(5);  // Continued streak
   });
 
   it('should handle difficult scenario with negative factors', () => {
-    // Setup: Bad relationship, mismatched traits, negative streak
+    // Setup: Bad relationship, mismatched traits
     const relationshipMod = 15;  // Penalty
-    const npcTraitBonus = -3;    // Penalty (negative in config = harder)
-    const archetypeBonus = -2;   // Penalty (negative in config = harder)
-    const streak: InteractionStreak = {
-      consecutivePositive: 0,
-      consecutiveNegative: 6,
-      lastInteraction: new Date().toISOString(),
-      lastDay: 1,
-    };
+    const npcTraitBonus = -5;    // Penalty (negative in config = harder)
 
     // Calculate difficulty
     const difficulty = calculateDynamicDifficulty(
       30,
       relationshipMod,
-      npcTraitBonus,
-      archetypeBonus,
-      streak
+      npcTraitBonus
     );
 
     expect(difficulty.finalDifficulty).toBeGreaterThan(30);  // Much harder

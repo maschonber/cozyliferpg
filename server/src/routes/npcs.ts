@@ -33,7 +33,6 @@ function buildNPCFromRow(row: any, showAllTraits: boolean = false): NPC {
   const npc: NPC = {
     id: row.id,
     name: row.name,
-    archetype: row.archetype,
     // Filter traits: only show revealed traits unless showAllTraits is true
     traits: showAllTraits ? row.traits : row.revealed_traits || [],
     revealedTraits: row.revealed_traits || [],
@@ -91,18 +90,17 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
     const result = await client.query(
       `
       INSERT INTO npcs (
-        id, name, archetype, traits, gender,
+        id, name, traits, gender,
         hair_color, hair_style, eye_color, face_details,
         body_type, torso_size, height, skin_tone,
         upper_trace, lower_trace, style, body_details,
         loras, current_location, revealed_traits, emotion_vector, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21)
       RETURNING *
       `,
       [
         id,
         npcData.name,
-        npcData.archetype,
         npcData.traits,
         npcData.gender,
         npcData.appearance.hairColor,
@@ -130,7 +128,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NPC>>) => {
     // Use helper to build NPC from row
     const npc = buildNPCFromRow(row, true); // Show all traits for newly created NPC
 
-    console.log(`✅ Created NPC: ${npc.name} (${npc.archetype}) at ${npc.currentLocation}`);
+    console.log(`✅ Created NPC: ${npc.name} at ${npc.currentLocation}`);
 
     res.json({
       success: true,

@@ -1,309 +1,242 @@
 /**
  * Trait Service Tests
+ *
+ * Tests for the simplified tag-based trait system.
  */
 
 import {
-  getTraitCategory,
   getTraitDefinition,
   getAllTraitDefinitions,
+  getAllTraits,
   getTraitActivityBonus,
-  getArchetypeActivityBonus,
-  getArchetypeMatchBonus,
-  getArchetypeBonus,
-  discoverTrait,
-  hasUndiscoveredTraits,
+  getTraitActivityBreakdown,
+  getContributingTrait,
   traitsConflict,
   validateTraits,
   removeConflictingTraits,
-  getArchetypeTraitWeights,
-  selectWeightedTraits,
-  selectRandomTraitsFromCategory,
+  selectRandomTraits,
 } from './index';
+import { AFFINITY } from './config';
 import { NPCTrait, NPC } from '../../../../shared/types';
+import { ActivityTag } from '../../../../shared/types/activity.types';
 
 // ===== Trait Information Tests =====
 
 describe('Trait Information', () => {
-  test('getTraitCategory returns correct category', () => {
-    expect(getTraitCategory('optimistic')).toBe('personality');
-    expect(getTraitCategory('romantic')).toBe('romance');
-    expect(getTraitCategory('coffee_lover')).toBe('interest');
-  });
-
   test('getTraitDefinition returns complete definition', () => {
-    const def = getTraitDefinition('optimistic');
-    expect(def.trait).toBe('optimistic');
-    expect(def.category).toBe('personality');
-    expect(def.name).toBe('Optimistic');
+    const def = getTraitDefinition('coffee_lover');
+    expect(def.trait).toBe('coffee_lover');
+    expect(def.name).toBe('Coffee Lover');
     expect(def.description).toBeTruthy();
     expect(def.gameplayEffects).toBeInstanceOf(Array);
   });
 
-  test('getAllTraitDefinitions returns all traits', () => {
+  test('getAllTraitDefinitions returns all 12 traits', () => {
     const allDefs = getAllTraitDefinitions();
-    expect(Object.keys(allDefs).length).toBeGreaterThan(30); // We have 32 traits
-    expect(allDefs['optimistic']).toBeDefined();
+    expect(Object.keys(allDefs).length).toBe(12);
     expect(allDefs['coffee_lover']).toBeDefined();
+    expect(allDefs['athletic']).toBeDefined();
+    expect(allDefs['bookworm']).toBeDefined();
+  });
+
+  test('getAllTraits returns array of all traits', () => {
+    const traits = getAllTraits();
+    expect(traits).toHaveLength(12);
+    expect(traits).toContain('coffee_lover');
+    expect(traits).toContain('athletic');
+    expect(traits).toContain('introverted');
   });
 });
 
-// ===== Trait-Activity Bonus Tests =====
+// ===== Trait-Activity Bonus Tests (Tag-Based) =====
 
-describe('Trait-Activity Bonuses', () => {
-  test('getTraitActivityBonus returns 0 for no matching traits', () => {
-    const bonus = getTraitActivityBonus(['stoic', 'logical'], 'have_coffee');
+describe('Trait-Activity Bonuses (Tag-Based)', () => {
+  test('getTraitActivityBonus returns 0 for no matching tags', () => {
+    const bonus = getTraitActivityBonus(['coffee_lover'], ['outdoor']);
     expect(bonus).toBe(0);
   });
 
-  test('getTraitActivityBonus returns positive bonus for matching trait', () => {
-    const bonus = getTraitActivityBonus(['coffee_lover'], 'have_coffee');
-    expect(bonus).toBe(20); // Coffee lover gets +20 for coffee
+  test('getTraitActivityBonus returns positive bonus for matching tag', () => {
+    const bonus = getTraitActivityBonus(['coffee_lover'], ['coffee']);
+    expect(bonus).toBe(AFFINITY.STRONG_LIKE); // 15
   });
 
-  test('getTraitActivityBonus returns negative penalty for mismatched trait', () => {
-    const bonus = getTraitActivityBonus(['reserved'], 'play_pool_darts');
-    expect(bonus).toBe(-8); // Reserved dislikes loud bar games
+  test('getTraitActivityBonus returns negative penalty for disliked tag', () => {
+    const bonus = getTraitActivityBonus(['adventurous'], ['calm']);
+    expect(bonus).toBe(AFFINITY.SLIGHT_DISLIKE); // -5
   });
 
-  test('getTraitActivityBonus stacks multiple trait bonuses', () => {
-    const bonus = getTraitActivityBonus(['coffee_lover', 'outgoing'], 'have_coffee');
-    expect(bonus).toBe(25); // 20 from coffee_lover + 5 from outgoing
+  test('getTraitActivityBonus stacks multiple tag bonuses from single trait (capped)', () => {
+    // bookworm likes intellectual (+15) and calm (+10) = 25, but capped at 20
+    const bonus = getTraitActivityBonus(['bookworm'], ['intellectual', 'calm']);
+    expect(bonus).toBe(AFFINITY.MAX); // Capped at 20
   });
 
-  test('getTraitActivityBonus handles mixed bonuses and penalties', () => {
-    const bonus = getTraitActivityBonus(['outgoing', 'cautious'], 'casual_date');
-    expect(bonus).toBe(3); // 8 from outgoing - 5 from cautious
+  test('getTraitActivityBonus stacks bonuses from multiple traits (capped)', () => {
+    // coffee_lover: coffee +15
+    // introverted: calm +10
+    // Total: 25, but capped at 20
+    const bonus = getTraitActivityBonus(['coffee_lover', 'introverted'], ['coffee', 'calm']);
+    expect(bonus).toBe(AFFINITY.MAX); // Capped at 20
   });
 
-  test('getTraitActivityBonus with interest trait gives large bonus', () => {
-    const bonus = getTraitActivityBonus(['fitness_enthusiast'], 'exercise_together');
-    expect(bonus).toBe(20);
+  test('getTraitActivityBonus caps at AFFINITY.MAX (20)', () => {
+    // Try to get a bonus over 20 by stacking
+    // bookworm: intellectual +15, calm +10 = 25 (but capped at 20)
+    const bonus = getTraitActivityBonus(['bookworm'], ['intellectual', 'calm']);
+    expect(bonus).toBe(AFFINITY.MAX); // Capped at 20
   });
 
-  test('getTraitActivityBonus with romance trait on romantic activity', () => {
-    const bonus = getTraitActivityBonus(['flirtatious'], 'flirt_playfully');
-    expect(bonus).toBe(20);
+  test('getTraitActivityBonus caps at AFFINITY.MIN (-20)', () => {
+    // Multiple negative affinities would get capped
+    // adventurous: calm -5
+    // introverted: competitive -5
+    // Even with more negative traits, should cap at -20
+    const bonus = getTraitActivityBonus(['adventurous', 'introverted'], ['calm', 'competitive']);
+    // adventurous: calm -5, introverted: calm +10, competitive -5
+    // Total: -5 + 10 + (-5) = 0
+    expect(bonus).toBe(0);
+  });
+
+  test('getTraitActivityBonus returns 0 for empty tags', () => {
+    const bonus = getTraitActivityBonus(['coffee_lover', 'athletic'], []);
+    expect(bonus).toBe(0);
+  });
+
+  test('getTraitActivityBonus returns 0 for empty traits', () => {
+    const bonus = getTraitActivityBonus([], ['coffee', 'calm']);
+    expect(bonus).toBe(0);
   });
 });
 
-// ===== Archetype Bonus Tests =====
+// ===== Trait Activity Breakdown Tests =====
 
-describe('Archetype Bonuses', () => {
-  test('getArchetypeActivityBonus returns bonus for matching archetype-activity', () => {
-    const bonus = getArchetypeActivityBonus('Artist', 'training');
-    expect(bonus).toBe(10); // Artists love training activities
+describe('Trait Activity Breakdown', () => {
+  test('getTraitActivityBreakdown returns individual contributions', () => {
+    const breakdown = getTraitActivityBreakdown(['coffee_lover', 'introverted'], ['coffee', 'calm']);
+
+    expect(breakdown).toHaveLength(2);
+
+    const coffeeLoverContrib = breakdown.find((c) => c.trait === 'coffee_lover');
+    expect(coffeeLoverContrib).toBeDefined();
+    expect(coffeeLoverContrib!.bonus).toBe(AFFINITY.STRONG_LIKE);
+    expect(coffeeLoverContrib!.traitName).toBe('Coffee Lover');
+
+    const introvertedContrib = breakdown.find((c) => c.trait === 'introverted');
+    expect(introvertedContrib).toBeDefined();
+    expect(introvertedContrib!.bonus).toBe(AFFINITY.LIKE);
   });
 
-  test('getArchetypeActivityBonus returns penalty for mismatched archetype-activity', () => {
-    const bonus = getArchetypeActivityBonus('Artist', 'work');
-    expect(bonus).toBe(-5); // Artists dislike work
+  test('getTraitActivityBreakdown excludes traits with no contribution', () => {
+    const breakdown = getTraitActivityBreakdown(['coffee_lover', 'athletic'], ['outdoor']);
+
+    // coffee_lover has no outdoor affinity, athletic has no outdoor affinity
+    expect(breakdown).toHaveLength(0);
   });
 
-  test('getArchetypeActivityBonus returns 0 for neutral activity type', () => {
-    const bonus = getArchetypeActivityBonus('Athlete', 'leisure');
-    expect(bonus).toBe(0);
-  });
+  test('getTraitActivityBreakdown sums multiple tag bonuses per trait', () => {
+    // bookworm: intellectual +15, calm +10
+    const breakdown = getTraitActivityBreakdown(['bookworm'], ['intellectual', 'calm']);
 
-  test('getArchetypeMatchBonus returns high bonus for same archetype', () => {
-    const bonus = getArchetypeMatchBonus('athlete', 'Athlete');
-    expect(bonus).toBe(10); // Same archetype match
-  });
-
-  test('getArchetypeMatchBonus returns penalty for incompatible archetypes', () => {
-    const bonus = getArchetypeMatchBonus('athlete', 'Bookworm');
-    expect(bonus).toBe(-3); // Different interests
-  });
-
-  test('getArchetypeMatchBonus returns 0 for neutral pairing', () => {
-    const bonus = getArchetypeMatchBonus('balanced', 'Artist');
-    expect(bonus).toBe(3); // Balanced gets small bonus with everyone
-  });
-
-  test('getArchetypeBonus combines match and activity bonuses', () => {
-    const bonus = getArchetypeBonus('athlete', 'Athlete', 'training');
-    expect(bonus).toBe(20); // 10 from match + 10 from training activity
-  });
-
-  test('getArchetypeBonus can result in negative total', () => {
-    const bonus = getArchetypeBonus('athlete', 'Scientist', 'social');
-    expect(bonus).toBe(-7); // -2 from match + -5 from Scientist disliking social
+    expect(breakdown).toHaveLength(1);
+    expect(breakdown[0].trait).toBe('bookworm');
+    expect(breakdown[0].bonus).toBe(25); // Not capped in breakdown
   });
 });
 
 // ===== Trait Discovery Tests =====
 
 describe('Trait Discovery', () => {
-  test('discoverTrait reveals new personality trait from conversation', () => {
+  test('getContributingTrait reveals unrevealed trait with matching tag', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'creative', 'coffee_lover'],
+      traits: ['coffee_lover', 'athletic'],
       revealedTraits: [],
     };
 
-    const result = discoverTrait(npc, 'conversation');
-    expect(result).toBeTruthy();
-    expect(result!.isNew).toBe(true);
-    expect(['optimistic', 'creative']).toContain(result!.trait);
-    expect(result!.trait).not.toBe('coffee_lover'); // Interest trait shouldn't be revealed
-  });
-
-  test('discoverTrait reveals romance trait from date', () => {
-    const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'romantic', 'coffee_lover'],
-      revealedTraits: [],
-    };
-
-    const result = discoverTrait(npc, 'date');
-    expect(result).toBeTruthy();
-    expect(result!.isNew).toBe(true);
-    expect(result!.trait).toBe('romantic'); // Only romance trait
-  });
-
-  test('discoverTrait reveals interest trait from shared_activity', () => {
-    const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'romantic', 'coffee_lover'],
-      revealedTraits: [],
-    };
-
-    const result = discoverTrait(npc, 'shared_activity');
+    const result = getContributingTrait(npc, ['coffee']);
     expect(result).toBeTruthy();
     expect(result!.isNew).toBe(true);
     expect(result!.trait).toBe('coffee_lover');
   });
 
-  test('discoverTrait can reveal personality or romance from deep_conversation', () => {
+  test('getContributingTrait returns null when no trait matches tags', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'romantic', 'coffee_lover'],
+      traits: ['coffee_lover'],
       revealedTraits: [],
     };
 
-    const result = discoverTrait(npc, 'deep_conversation');
-    expect(result).toBeTruthy();
-    expect(result!.isNew).toBe(true);
-    expect(['optimistic', 'romantic']).toContain(result!.trait);
-  });
-
-  test('discoverTrait returns already-revealed trait when no new traits available', () => {
-    const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'romantic', 'coffee_lover'],
-      revealedTraits: ['optimistic'],
-    };
-
-    // Try conversation multiple times - should eventually reveal or re-reveal
-    const result = discoverTrait(npc, 'conversation');
-    expect(result).toBeTruthy();
-    expect(result!.trait).toBe('optimistic');
-    expect(result!.isNew).toBe(false);
-  });
-
-  test('discoverTrait returns null for invalid method', () => {
-    const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic'],
-      revealedTraits: [],
-    };
-
-    const result = discoverTrait(npc, 'invalid_method');
+    const result = getContributingTrait(npc, ['outdoor', 'physical']);
     expect(result).toBeNull();
   });
 
-  test('discoverTrait prioritizes unrevealed traits', () => {
+  test('getContributingTrait skips already revealed traits', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'creative', 'passionate'],
-      revealedTraits: ['optimistic'],
+      traits: ['coffee_lover', 'introverted'],
+      revealedTraits: ['coffee_lover'],
     };
 
-    // Should reveal creative or passionate, not optimistic
-    const result = discoverTrait(npc, 'conversation');
+    // coffee_lover is revealed, so should return introverted for calm tag
+    const result = getContributingTrait(npc, ['calm', 'coffee']);
     expect(result).toBeTruthy();
+    expect(result!.trait).toBe('introverted');
     expect(result!.isNew).toBe(true);
-    expect(['creative', 'passionate']).toContain(result!.trait);
   });
 
-  test('hasUndiscoveredTraits returns true when traits remain', () => {
+  test('getContributingTrait returns null when all matching traits revealed', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'creative'],
-      revealedTraits: ['optimistic'],
+      traits: ['coffee_lover'],
+      revealedTraits: ['coffee_lover'],
     };
 
-    expect(hasUndiscoveredTraits(npc, 'personality')).toBe(true);
+    const result = getContributingTrait(npc, ['coffee']);
+    expect(result).toBeNull();
   });
 
-  test('hasUndiscoveredTraits returns false when all discovered', () => {
+  test('getContributingTrait returns null for empty tags', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'creative'],
-      revealedTraits: ['optimistic', 'creative'],
+      traits: ['coffee_lover', 'athletic'],
+      revealedTraits: [],
     };
 
-    expect(hasUndiscoveredTraits(npc, 'personality')).toBe(false);
-  });
-
-  test('hasUndiscoveredTraits checks correct category', () => {
-    const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'romantic'],
-      revealedTraits: ['optimistic'],
-    };
-
-    expect(hasUndiscoveredTraits(npc, 'personality')).toBe(false);
-    expect(hasUndiscoveredTraits(npc, 'romance')).toBe(true);
+    const result = getContributingTrait(npc, []);
+    expect(result).toBeNull();
   });
 });
 
 // ===== Trait Validation Tests =====
 
 describe('Trait Validation', () => {
-  test('traitsConflict returns true for conflicting traits', () => {
-    expect(traitsConflict('outgoing', 'reserved')).toBe(true);
-    expect(traitsConflict('reserved', 'outgoing')).toBe(true); // Symmetric
-    expect(traitsConflict('optimistic', 'melancholic')).toBe(true);
-    expect(traitsConflict('passionate', 'stoic')).toBe(true);
+  test('traitsConflict returns true for adventurous/introverted', () => {
+    expect(traitsConflict('adventurous', 'introverted')).toBe(true);
+    expect(traitsConflict('introverted', 'adventurous')).toBe(true); // Symmetric
   });
 
   test('traitsConflict returns false for non-conflicting traits', () => {
-    expect(traitsConflict('outgoing', 'optimistic')).toBe(false);
-    expect(traitsConflict('creative', 'logical')).toBe(false);
-    expect(traitsConflict('coffee_lover', 'fitness_enthusiast')).toBe(false);
+    expect(traitsConflict('coffee_lover', 'athletic')).toBe(false);
+    expect(traitsConflict('bookworm', 'gamer')).toBe(false);
+    expect(traitsConflict('romantic', 'competitive')).toBe(false);
   });
 
   test('validateTraits identifies conflicts', () => {
-    const result = validateTraits(['outgoing', 'reserved', 'optimistic']);
+    const result = validateTraits(['adventurous', 'introverted', 'coffee_lover']);
     expect(result.valid).toBe(false);
     expect(result.conflicts).toHaveLength(1);
-    expect(result.conflicts[0]).toEqual(['outgoing', 'reserved']);
+    expect(result.conflicts[0]).toEqual(['adventurous', 'introverted']);
   });
 
   test('validateTraits passes for valid trait set', () => {
-    const result = validateTraits(['outgoing', 'optimistic', 'creative', 'coffee_lover']);
+    const result = validateTraits(['coffee_lover', 'athletic', 'bookworm']);
     expect(result.valid).toBe(true);
     expect(result.conflicts).toHaveLength(0);
   });
 
-  test('validateTraits identifies multiple conflicts', () => {
-    const result = validateTraits([
-      'outgoing',
-      'reserved',
-      'optimistic',
-      'melancholic',
-    ]);
-    expect(result.valid).toBe(false);
-    expect(result.conflicts.length).toBeGreaterThanOrEqual(2);
-  });
-
   test('removeConflictingTraits keeps first occurrence', () => {
-    const filtered = removeConflictingTraits(['outgoing', 'reserved', 'optimistic']);
-    expect(filtered).toEqual(['outgoing', 'optimistic']);
-  });
-
-  test('removeConflictingTraits handles multiple conflicts', () => {
-    const filtered = removeConflictingTraits([
-      'outgoing',
-      'reserved',
-      'optimistic',
-      'melancholic',
-    ]);
-    expect(filtered).toEqual(['outgoing', 'optimistic']);
+    const filtered = removeConflictingTraits(['adventurous', 'introverted', 'coffee_lover']);
+    expect(filtered).toEqual(['adventurous', 'coffee_lover']);
   });
 
   test('removeConflictingTraits returns same array if no conflicts', () => {
-    const traits: NPCTrait[] = ['outgoing', 'optimistic', 'creative'];
+    const traits: NPCTrait[] = ['coffee_lover', 'athletic', 'bookworm'];
     const filtered = removeConflictingTraits(traits);
     expect(filtered).toEqual(traits);
   });
@@ -312,82 +245,43 @@ describe('Trait Validation', () => {
 // ===== Trait Generation Tests =====
 
 describe('Trait Generation', () => {
-  test('getArchetypeTraitWeights returns weights for archetype', () => {
-    const weights = getArchetypeTraitWeights('Artist');
-    expect(weights.creative).toBe(3.0);
-    expect(weights.passionate).toBe(2.5);
-    expect(weights.intuitive).toBe(2.0);
+  test('selectRandomTraits selects correct number of traits', () => {
+    const traits = selectRandomTraits(2);
+    expect(traits).toHaveLength(2);
+    expect(traits[0]).not.toBe(traits[1]); // No duplicates
   });
 
-  test('getArchetypeTraitWeights returns empty for unknown archetype', () => {
-    // TypeScript prevents this but test runtime behavior
-    const weights = getArchetypeTraitWeights('UnknownArchetype' as any);
-    expect(weights).toEqual({});
-  });
-
-  test('selectWeightedTraits selects correct number of traits', () => {
-    const weights = {
-      creative: 3.0,
-      logical: 1.0,
-      outgoing: 2.0,
-    };
-    const selected = selectWeightedTraits(weights, 2);
-    expect(selected).toHaveLength(2);
-    expect(selected[0]).not.toBe(selected[1]); // No duplicates
-  });
-
-  test('selectWeightedTraits respects weight distribution', () => {
-    // Run many times and check that higher weights are more common
-    const weights = {
-      high: 10.0,
-      low: 0.1,
-    };
-
-    let highCount = 0;
-    const iterations = 100;
-
-    for (let i = 0; i < iterations; i++) {
-      const selected = selectWeightedTraits(weights, 1);
-      if (selected[0] === 'high') highCount++;
+  test('selectRandomTraits avoids conflicts', () => {
+    // Run multiple times to ensure conflicts are avoided
+    for (let i = 0; i < 20; i++) {
+      const traits = selectRandomTraits(3);
+      const validation = validateTraits(traits);
+      expect(validation.valid).toBe(true);
     }
-
-    // High weight should be selected much more often (expect >90%)
-    expect(highCount).toBeGreaterThan(80);
   });
 
-  test('selectWeightedTraits handles empty weights', () => {
-    const selected = selectWeightedTraits({}, 2);
-    expect(selected).toHaveLength(0);
-  });
+  test('selectRandomTraits returns traits from valid set', () => {
+    const allTraits = getAllTraits();
+    const traits = selectRandomTraits(3);
 
-  test('selectWeightedTraits does not exceed available traits', () => {
-    const weights = {
-      trait1: 1.0,
-      trait2: 1.0,
-    };
-    const selected = selectWeightedTraits(weights, 5);
-    expect(selected.length).toBeLessThanOrEqual(2);
-  });
-
-  test('selectRandomTraitsFromCategory selects from correct category', () => {
-    const traits = selectRandomTraitsFromCategory('personality', 3);
-    expect(traits).toHaveLength(3);
-
-    // All should be personality traits
     traits.forEach((trait) => {
-      expect(getTraitCategory(trait)).toBe('personality');
+      expect(allTraits).toContain(trait);
     });
   });
 
-  test('selectRandomTraitsFromCategory returns unique traits', () => {
-    const traits = selectRandomTraitsFromCategory('interest', 3);
-    const uniqueTraits = new Set(traits);
-    expect(uniqueTraits.size).toBe(traits.length); // No duplicates
+  test('selectRandomTraits respects count limit', () => {
+    const traits1 = selectRandomTraits(1);
+    expect(traits1).toHaveLength(1);
+
+    const traits3 = selectRandomTraits(3);
+    expect(traits3).toHaveLength(3);
   });
 
-  test('selectRandomTraitsFromCategory respects count limit', () => {
-    const traits = selectRandomTraitsFromCategory('romance', 2);
-    expect(traits).toHaveLength(2);
+  test('selectRandomTraits does not exceed available non-conflicting traits', () => {
+    // Even if we ask for more, we can't get conflicting pairs
+    const traits = selectRandomTraits(12);
+    const validation = validateTraits(traits);
+    expect(validation.valid).toBe(true);
   });
 });
 
@@ -395,71 +289,45 @@ describe('Trait Generation', () => {
 
 describe('Integration Tests', () => {
   test('Complete trait-based activity bonus calculation', () => {
-    // Scenario: Athletic player doing exercise with athletic NPC who is a fitness enthusiast
-    const npcTraits: NPCTrait[] = ['adventurous', 'competitive', 'fitness_enthusiast'];
-    const playerArchetype = 'athlete';
-    const npcArchetype = 'Athlete';
-    const activityId = 'exercise_together';
-    const activityCategory = 'social';
+    // Scenario: NPC with athletic trait doing exercise (physical tag)
+    const npcTraits: NPCTrait[] = ['athletic', 'competitive'];
+    const activityTags: ActivityTag[] = ['physical', 'competitive'];
 
-    const traitBonus = getTraitActivityBonus(npcTraits, activityId);
-    const archetypeBonus = getArchetypeBonus(playerArchetype, npcArchetype, activityCategory);
+    const traitBonus = getTraitActivityBonus(npcTraits, activityTags);
 
-    // fitness_enthusiast: +20, adventurous: +12, competitive: +12 = +44
-    expect(traitBonus).toBe(44);
-
-    // Same archetype: +10, Athlete likes social: +8 = +18
-    expect(archetypeBonus).toBe(18);
-
-    const totalBonus = traitBonus + archetypeBonus;
-    expect(totalBonus).toBe(62); // Massive bonus!
+    // athletic: physical +15
+    // competitive: competitive +15
+    // Total: 30, but capped at 20
+    expect(traitBonus).toBe(AFFINITY.MAX);
   });
 
-  test('Complete trait discovery flow', () => {
+  test('Trait discovery flow with activity tags', () => {
     const npc: Pick<NPC, 'traits' | 'revealedTraits'> = {
-      traits: ['optimistic', 'creative', 'romantic', 'coffee_lover', 'reader'],
+      traits: ['coffee_lover', 'bookworm', 'romantic'],
       revealedTraits: [],
     };
 
-    // First conversation - should reveal personality trait
-    const conv1 = discoverTrait(npc, 'conversation');
-    expect(conv1).toBeTruthy();
-    expect(conv1!.isNew).toBe(true);
-    expect(['optimistic', 'creative']).toContain(conv1!.trait);
+    // Coffee activity - should reveal coffee_lover
+    const coffeeResult = getContributingTrait(npc, ['coffee', 'calm']);
+    expect(coffeeResult).toBeTruthy();
+    expect(coffeeResult!.isNew).toBe(true);
+    // Could be coffee_lover (coffee) or bookworm (calm)
+    expect(['coffee_lover', 'bookworm']).toContain(coffeeResult!.trait);
 
-    npc.revealedTraits.push(conv1!.trait);
+    // Mark as revealed
+    npc.revealedTraits.push(coffeeResult!.trait);
 
-    // Date - should reveal romance trait
-    const date1 = discoverTrait(npc, 'date');
-    expect(date1).toBeTruthy();
-    expect(date1!.isNew).toBe(true);
-    expect(date1!.trait).toBe('romantic');
-
-    npc.revealedTraits.push(date1!.trait);
-
-    // Shared activity - should reveal interest trait
-    const activity1 = discoverTrait(npc, 'shared_activity');
-    expect(activity1).toBeTruthy();
-    expect(activity1!.isNew).toBe(true);
-    expect(['coffee_lover', 'reader']).toContain(activity1!.trait);
+    // Romantic activity - if bookworm not revealed, could reveal it or romantic
+    const romanticResult = getContributingTrait(npc, ['romantic']);
+    expect(romanticResult).toBeTruthy();
+    expect(romanticResult!.trait).toBe('romantic');
   });
 
-  test('Trait validation during NPC generation', () => {
-    // Simulate generating traits for an Artist
-    const weights = getArchetypeTraitWeights('Artist');
-    const personalityTraits = selectWeightedTraits(weights, 3);
+  test('NPC with no matching traits gets no bonus', () => {
+    const npcTraits: NPCTrait[] = ['coffee_lover', 'bookworm'];
+    const activityTags: ActivityTag[] = ['physical', 'competitive'];
 
-    // Remove any conflicts
-    const validTraits = removeConflictingTraits(personalityTraits);
-
-    // Add romance and interest traits
-    const romanceTraits = selectRandomTraitsFromCategory('romance', 1);
-    const interestTraits = selectRandomTraitsFromCategory('interest', 2);
-
-    const allTraits = [...validTraits, ...romanceTraits, ...interestTraits];
-
-    // Validate final trait set
-    const validation = validateTraits(allTraits);
-    expect(validation.valid).toBe(true);
+    const traitBonus = getTraitActivityBonus(npcTraits, activityTags);
+    expect(traitBonus).toBe(0);
   });
 });

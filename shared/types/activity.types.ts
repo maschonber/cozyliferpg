@@ -14,6 +14,21 @@ import {
 } from '../types';
 
 /**
+ * Activity tags for trait affinity matching
+ */
+export type ActivityTag =
+  | 'outdoor'
+  | 'intellectual'
+  | 'creative'
+  | 'physical'
+  | 'calm'
+  | 'romantic'
+  | 'competitive'
+  | 'coffee'
+  | 'gaming'
+  | 'food';
+
+/**
  * Base properties shared by all activities
  */
 interface BaseActivity {
@@ -25,7 +40,7 @@ interface BaseActivity {
   moneyCost: number;          // Can be negative (cost) or positive (earn)
   location?: LocationId;      // Specific location required
   allowedTimeSlots?: TimeSlot[];  // If undefined, available anytime
-  tags?: string[];            // Optional tags for filtering
+  tags?: ActivityTag[];       // Tags for trait affinity matching
 }
 
 /**

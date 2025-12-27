@@ -64,6 +64,7 @@ export const WORK_ACTIVITIES: WorkActivity[] = [
     energyCost: -35,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon'],
+    tags: ['coffee'],
     difficulty: 35,
     relevantStats: ['confidence'],
     outcomeProfile: {

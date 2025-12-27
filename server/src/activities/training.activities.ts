@@ -11,6 +11,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -12,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['intellectual', 'calm'],
     difficulty: 45,
     relevantStats: ['knowledge'],
     statRequirements: { knowledge: 10 },
@@ -36,6 +37,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -15,
     moneyCost: -10,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['physical'],
     difficulty: 40,
     relevantStats: ['fitness'],
     outcomeProfile: {
@@ -60,6 +62,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     timeCost: 90,
     energyCost: -5,
     moneyCost: 0,
+    tags: ['intellectual', 'calm'],
     difficulty: 25,
     relevantStats: ['knowledge'],
     outcomeProfile: {
@@ -83,6 +86,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     timeCost: 120,
     energyCost: -10,
     moneyCost: 0,
+    tags: ['creative'],
     difficulty: 45,
     relevantStats: ['creativity'],
     outcomeProfile: {
@@ -108,6 +112,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -12,
     moneyCost: -10,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['calm', 'physical'],
     difficulty: 35,
     relevantStats: ['poise', 'fitness'],
     outcomeProfile: {
@@ -133,6 +138,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: 0,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening', 'night'],
+    tags: ['calm'],
     difficulty: 25,
     relevantStats: ['poise'],
     outcomeProfile: {
@@ -155,6 +161,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -5,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['physical'],
     difficulty: 20,
     relevantStats: ['poise', 'fitness'],
     outcomeProfile: {
@@ -179,6 +186,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -8,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening', 'night'],
+    tags: ['creative', 'intellectual'],
     difficulty: 30,
     relevantStats: ['creativity'],
     outcomeProfile: {
@@ -202,6 +210,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -8,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['creative', 'outdoor'],
     difficulty: 35,
     relevantStats: ['creativity'],
     outcomeProfile: {
@@ -227,6 +236,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -10,
     moneyCost: 0,
     allowedTimeSlots: ['morning'],
+    tags: ['outdoor', 'physical'],
     difficulty: 30,
     relevantStats: ['fitness'],
     outcomeProfile: {
@@ -252,6 +262,7 @@ export const TRAINING_ACTIVITIES: TrainingActivity[] = [
     energyCost: -12,
     moneyCost: 0,
     allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['outdoor', 'physical'],
     difficulty: 40,
     relevantStats: ['fitness'],
     outcomeProfile: {

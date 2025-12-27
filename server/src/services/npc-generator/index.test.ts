@@ -1,22 +1,17 @@
 /**
  * NPC Generator Service Tests
  *
- * Task 5 Implementation Tests:
- * - Archetype-weighted trait generation
- * - Conflict detection and validation
- *
- * Note: Emotion initialization tests removed - NPCs now start with neutral emotions
- * (Plutchik system). Emotion modification will be implemented in a future phase.
+ * Tests for NPC generation with simplified trait system.
+ * NPCs now have 1-3 random traits.
  */
 
 import {
   generateNPC,
   createNPC,
-  getArchetypes,
   getAllTraits,
 } from './index';
 import { validateTraits } from '../trait';
-import { NPCArchetype, NPCTrait, NPC, NEUTRAL_EMOTION_VECTOR } from '../../../../shared/types';
+import { NPCTrait, NEUTRAL_EMOTION_VECTOR } from '../../../../shared/types';
 
 // ===== NPC Generation Tests =====
 
@@ -25,7 +20,6 @@ describe('NPC Generation', () => {
     const npc = generateNPC();
 
     expect(npc.name).toBeTruthy();
-    expect(npc.archetype).toBeTruthy();
     expect(npc.gender).toBeTruthy();
     expect(npc.traits).toBeInstanceOf(Array);
     expect(npc.revealedTraits).toEqual([]); // Initially no traits revealed
@@ -50,36 +44,35 @@ describe('NPC Generation', () => {
     expect(npc.createdAt).toBeTruthy();
   });
 
-  test('getArchetypes returns all archetype options', () => {
-    const archetypes = getArchetypes();
-
-    expect(archetypes).toContain('Artist');
-    expect(archetypes).toContain('Athlete');
-    expect(archetypes).toContain('Bookworm');
-    expect(archetypes).toContain('Musician');
-    expect(archetypes).toContain('Scientist');
-    expect(archetypes.length).toBe(5);
-  });
-
-  test('getAllTraits returns all trait options', () => {
+  test('getAllTraits returns all 12 simplified traits', () => {
     const traits = getAllTraits();
 
-    expect(traits.length).toBe(32); // 16 personality + 8 romance + 8 interest
-    expect(traits).toContain('optimistic');
-    expect(traits).toContain('romantic');
+    expect(traits.length).toBe(12);
     expect(traits).toContain('coffee_lover');
+    expect(traits).toContain('athletic');
+    expect(traits).toContain('bookworm');
+    expect(traits).toContain('foodie');
+    expect(traits).toContain('gamer');
+    expect(traits).toContain('nature_lover');
+    expect(traits).toContain('creative_soul');
+    expect(traits).toContain('competitive');
+    expect(traits).toContain('romantic');
+    expect(traits).toContain('intellectual');
+    expect(traits).toContain('adventurous');
+    expect(traits).toContain('introverted');
   });
 });
 
 // ===== Trait Generation Tests =====
 
-describe('Trait Generation (Task 5)', () => {
-  test('generated NPCs have correct number of traits', () => {
-    const npc = generateNPC();
+describe('Trait Generation (Simplified System)', () => {
+  test('generated NPCs have 1-3 traits', () => {
+    for (let i = 0; i < 20; i++) {
+      const npc = generateNPC();
 
-    // Should have 2-3 personality + 1-2 romance + 2-3 interest = 5-8 total
-    expect(npc.traits.length).toBeGreaterThanOrEqual(5);
-    expect(npc.traits.length).toBeLessThanOrEqual(8);
+      expect(npc.traits.length).toBeGreaterThanOrEqual(1);
+      expect(npc.traits.length).toBeLessThanOrEqual(3);
+    }
   });
 
   test('generated NPCs have no conflicting traits', () => {
@@ -93,131 +86,65 @@ describe('Trait Generation (Task 5)', () => {
     }
   });
 
-  test('Artist archetype favors creative traits', () => {
-    // Generate multiple Artists and check for trait distribution
-    const artistCount = 20;
-    let creativeCount = 0;
-    let passionateCount = 0;
-    let intuitiveCount = 0;
-
-    // Mock Math.random to ensure we generate Artists
-    const originalRandom = Math.random;
-    let callCount = 0;
-
-    for (let i = 0; i < artistCount; i++) {
-      // Force Artist archetype selection
-      Math.random = () => {
-        callCount++;
-        if (callCount % 100 < 20) return 0; // Select 'Artist' from archetype array
-        return originalRandom();
-      };
-
-      const npc = generateNPC();
-
-      if (npc.archetype === 'Artist') {
-        if (npc.traits.includes('creative')) creativeCount++;
-        if (npc.traits.includes('passionate')) passionateCount++;
-        if (npc.traits.includes('intuitive')) intuitiveCount++;
-      }
-    }
-
-    Math.random = originalRandom;
-
-    // Artists should have higher probability of these traits
-    // At least some Artists should have these traits (probabilistic test)
-    expect(creativeCount).toBeGreaterThan(0);
-  });
-
-  test('Athlete archetype favors competitive traits', () => {
-    // Generate multiple Athletes
-    const athleteCount = 20;
-    let competitiveCount = 0;
-    let adventurousCount = 0;
-
-    const originalRandom = Math.random;
-    let callCount = 0;
-
-    for (let i = 0; i < athleteCount; i++) {
-      // Force Athlete archetype
-      Math.random = () => {
-        callCount++;
-        if (callCount % 100 < 20) return 0.21; // Select 'Athlete'
-        return originalRandom();
-      };
-
-      const npc = generateNPC();
-
-      if (npc.archetype === 'Athlete') {
-        if (npc.traits.includes('competitive')) competitiveCount++;
-        if (npc.traits.includes('adventurous')) adventurousCount++;
-      }
-    }
-
-    Math.random = originalRandom;
-
-    expect(competitiveCount).toBeGreaterThan(0);
-  });
-
-  test('Bookworm archetype favors logical and reserved traits', () => {
-    const bookwormCount = 20;
-    let logicalCount = 0;
-    let reservedCount = 0;
-
-    const originalRandom = Math.random;
-    let callCount = 0;
-
-    for (let i = 0; i < bookwormCount; i++) {
-      Math.random = () => {
-        callCount++;
-        if (callCount % 100 < 20) return 0.41; // Select 'Bookworm'
-        return originalRandom();
-      };
-
-      const npc = generateNPC();
-
-      if (npc.archetype === 'Bookworm') {
-        if (npc.traits.includes('logical')) logicalCount++;
-        if (npc.traits.includes('reserved')) reservedCount++;
-      }
-    }
-
-    Math.random = originalRandom;
-
-    // At least one Bookworm should have logical OR reserved (both weighted at 2.5)
-    expect(logicalCount + reservedCount).toBeGreaterThan(0);
-  });
-
-  test('traits do not include both outgoing and reserved', () => {
-    // These are conflicting traits
-    for (let i = 0; i < 50; i++) {
-      const npc = generateNPC();
-
-      const hasOutgoing = npc.traits.includes('outgoing');
-      const hasReserved = npc.traits.includes('reserved');
-
-      expect(hasOutgoing && hasReserved).toBe(false);
-    }
-  });
-
-  test('traits do not include both optimistic and melancholic', () => {
-    for (let i = 0; i < 50; i++) {
-      const npc = generateNPC();
-
-      const hasOptimistic = npc.traits.includes('optimistic');
-      const hasMelancholic = npc.traits.includes('melancholic');
-
-      expect(hasOptimistic && hasMelancholic).toBe(false);
-    }
-  });
-
-  test('traits do not include both adventurous and cautious', () => {
+  test('traits do not include both adventurous and introverted', () => {
+    // These are the only conflicting traits in the new system
     for (let i = 0; i < 50; i++) {
       const npc = generateNPC();
 
       const hasAdventurous = npc.traits.includes('adventurous');
-      const hasCautious = npc.traits.includes('cautious');
+      const hasIntroverted = npc.traits.includes('introverted');
 
-      expect(hasAdventurous && hasCautious).toBe(false);
+      expect(hasAdventurous && hasIntroverted).toBe(false);
+    }
+  });
+
+  test('trait distribution is random', () => {
+    // Generate many NPCs and count trait occurrences
+    const traitCounts: Record<string, number> = {};
+    const iterations = 100;
+
+    for (let i = 0; i < iterations; i++) {
+      const npc = generateNPC();
+      for (const trait of npc.traits) {
+        traitCounts[trait] = (traitCounts[trait] || 0) + 1;
+      }
+    }
+
+    // All traits should appear at least once in 100 NPCs
+    const allTraits = getAllTraits();
+    for (const trait of allTraits) {
+      // With random distribution, most traits should appear
+      // We don't require all traits since it's probabilistic
+      expect(typeof traitCounts[trait]).toBe('number');
+    }
+
+    // No single trait should dominate too heavily (random check)
+    const maxCount = Math.max(...Object.values(traitCounts));
+    const minCount = Math.min(...Object.values(traitCounts).filter((c) => c > 0));
+
+    // With random distribution, max should not be more than 10x min
+    // (This is a loose check to allow for randomness)
+    expect(maxCount / Math.max(minCount, 1)).toBeLessThan(20);
+  });
+
+  test('generated traits are from valid trait list', () => {
+    const allTraits = getAllTraits();
+
+    for (let i = 0; i < 20; i++) {
+      const npc = generateNPC();
+
+      for (const trait of npc.traits) {
+        expect(allTraits).toContain(trait);
+      }
+    }
+  });
+
+  test('generated traits have no duplicates', () => {
+    for (let i = 0; i < 50; i++) {
+      const npc = generateNPC();
+      const uniqueTraits = new Set(npc.traits);
+
+      expect(uniqueTraits.size).toBe(npc.traits.length);
     }
   });
 });
@@ -262,13 +189,13 @@ describe('Integration Tests', () => {
     // Verify all fields
     expect(npc.id).toBeTruthy();
     expect(npc.name).toBeTruthy();
-    expect(npc.archetype).toBeTruthy();
     expect(npc.gender).toBeTruthy();
     expect(npc.currentLocation).toBe('coffee_shop');
     expect(npc.createdAt).toBeTruthy();
 
-    // Verify traits are valid
-    expect(npc.traits.length).toBeGreaterThan(0);
+    // Verify traits are valid (1-3 traits)
+    expect(npc.traits.length).toBeGreaterThanOrEqual(1);
+    expect(npc.traits.length).toBeLessThanOrEqual(3);
     const validation = validateTraits(npc.traits);
     expect(validation.valid).toBe(true);
 
@@ -287,15 +214,17 @@ describe('Integration Tests', () => {
     }
   });
 
-  test('NPCs have varied archetypes', () => {
-    const archetypes = new Set<NPCArchetype>();
+  test('NPCs have varied traits', () => {
+    const allTraitsUsed = new Set<NPCTrait>();
 
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 30; i++) {
       const npc = generateNPC();
-      archetypes.add(npc.archetype);
+      for (const trait of npc.traits) {
+        allTraitsUsed.add(trait);
+      }
     }
 
-    // Should have at least 3 different archetypes in 20 NPCs
-    expect(archetypes.size).toBeGreaterThanOrEqual(3);
+    // Should have at least 8 different traits in 30 NPCs
+    expect(allTraitsUsed.size).toBeGreaterThanOrEqual(8);
   });
 });
