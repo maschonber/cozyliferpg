@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { getActivityById } from '../../../activities';
 
 const QUICK_THRESHOLD = 60;  // Minutes
 const BONUS = 1.0;
@@ -12,7 +13,10 @@ export class QuickInteractionEvaluator implements PatternEvaluator {
 
   evaluate(snapshot: PlayerPatternSnapshot): number {
     const socialActivities = snapshot.today.byType.get('social') || [];
-    const hadQuick = socialActivities.some(a => a.timeCost < QUICK_THRESHOLD);
+    const hadQuick = socialActivities.some(a => {
+      const activityDef = getActivityById(a.activityId);
+      return activityDef && activityDef.timeCost < QUICK_THRESHOLD;
+    });
 
     return hadQuick ? BONUS : 0;
   }

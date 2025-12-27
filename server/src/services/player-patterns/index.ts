@@ -113,11 +113,6 @@ export async function buildPlayerPatternSnapshot(
         // Activity type from code definition
         type: activityDef?.type ?? 'leisure' as ActivityTypeValue,
 
-        // Costs (actual costs paid - from DB)
-        timeCost: row.time_cost,
-        energyCost: row.energy_cost,
-        moneyCost: row.money_cost,
-
         // Outcome data (from DB)
         outcomeTier: row.outcome_tier as OutcomeTier | undefined,
         roll: row.roll,
@@ -127,12 +122,12 @@ export async function buildPlayerPatternSnapshot(
 
         // Effects (from DB)
         statEffects: row.stat_effects,
+        relationshipEffects: row.relationship_effects,
         energyDelta: row.energy_delta,
         moneyDelta: row.money_delta,
 
         // Social activity data (from DB)
         npcId: row.npc_id,
-        interactionId: row.interaction_id,
 
         createdAt: row.created_at?.toISOString?.() ?? row.created_at,
       };
@@ -148,14 +143,15 @@ export async function buildPlayerPatternSnapshot(
     const last7DaysActivities = allActivities; // All fetched
 
     // === Fetch Relationships ===
+    // Get last contact from player_activities where npc_id matches
     const relationshipsResult = await client.query(
       `SELECT r.npc_id, r.trust, r.affection, r.desire,
-              MAX(i.created_at) as last_contact
+              MAX(pa.performed_at) as last_contact
        FROM relationships r
-       LEFT JOIN interactions i ON i.relationship_id = r.id
+       LEFT JOIN player_activities pa ON pa.npc_id = r.npc_id AND pa.player_id = $2
        WHERE r.player_id = $1
        GROUP BY r.npc_id, r.trust, r.affection, r.desire`,
-      [player.userId]
+      [player.userId, player.id]
     );
 
     const now = new Date();

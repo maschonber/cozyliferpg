@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { getActivityById } from '../../../activities';
 
 const THRESHOLD = 60;  // Minutes
 const BONUS = 1.0;
@@ -13,8 +14,14 @@ export class TonalAgilityEvaluator implements PatternEvaluator {
   evaluate(snapshot: PlayerPatternSnapshot): number {
     const socialActivities = snapshot.last3Days.byType.get('social') || [];
 
-    const hasQuick = socialActivities.some(a => a.timeCost < THRESHOLD);
-    const hasLong = socialActivities.some(a => a.timeCost >= THRESHOLD);
+    const hasQuick = socialActivities.some(a => {
+      const activityDef = getActivityById(a.activityId);
+      return activityDef && activityDef.timeCost < THRESHOLD;
+    });
+    const hasLong = socialActivities.some(a => {
+      const activityDef = getActivityById(a.activityId);
+      return activityDef && activityDef.timeCost >= THRESHOLD;
+    });
 
     return (hasQuick && hasLong) ? BONUS : 0;
   }

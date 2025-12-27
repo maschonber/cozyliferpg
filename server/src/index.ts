@@ -11,7 +11,7 @@ import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import emotionSandboxRouter from './routes/emotion-sandbox';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers, migratePhase3Locations, migratePhase25Stats, migratePhase251ActivityHistory, migratePhase254MixedStats, migrateRelationshipRedesign, migratePlutchikEmotions } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers, migrateSocialActivitiesConsolidation } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -128,18 +128,8 @@ async function startServer() {
         await seedDatabase();
         console.log('👤 Checking for initial user...');
         await seedUsers();
-        console.log('🗺️  Running Phase 3 migration...');
-        await migratePhase3Locations();
-        console.log('📊 Running Phase 2.5 stats migration...');
-        await migratePhase25Stats();
-        console.log('📝 Running Phase 2.5.1 activity history migration...');
-        await migratePhase251ActivityHistory();
-        console.log('🎨 Running Phase 2.5.4 mixed stats migration...');
-        await migratePhase254MixedStats();
-        console.log('💕 Running Relationship Redesign migration...');
-        await migrateRelationshipRedesign();
-        console.log('🎭 Running Plutchik Emotion System migration...');
-        await migratePlutchikEmotions();
+        console.log('🔄 Running migrations...');
+        await migrateSocialActivitiesConsolidation();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }

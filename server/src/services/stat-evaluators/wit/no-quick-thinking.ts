@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { getActivityById } from '../../../activities';
 
 const THRESHOLD = 60;  // Minutes
 const PENALTY = -1.0;
@@ -15,7 +16,10 @@ export class NoQuickThinkingEvaluator implements PatternEvaluator {
     if (socialActivities.length === 0) return 0;
 
     // Check if ALL interactions were long (none were quick)
-    const allLong = socialActivities.every(a => a.timeCost >= THRESHOLD);
+    const allLong = socialActivities.every(a => {
+      const activityDef = getActivityById(a.activityId);
+      return activityDef && activityDef.timeCost >= THRESHOLD;
+    });
 
     return allLong ? PENALTY : 0;
   }

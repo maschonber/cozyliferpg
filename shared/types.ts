@@ -915,11 +915,6 @@ export interface PlayerActivity {
   // Activity type from code definition
   type: ActivityTypeValue;
 
-  // Costs (actual costs paid)
-  timeCost: number;
-  energyCost: number;
-  moneyCost: number;
-
   // Outcome (if activity had a roll)
   outcomeTier?: OutcomeTier;
   roll?: number;
@@ -929,12 +924,16 @@ export interface PlayerActivity {
 
   // Effects (actual effects received)
   statEffects?: Partial<Record<StatName, number>>;
+  relationshipEffects?: {
+    trust?: number;
+    affection?: number;
+    desire?: number;
+  };
   energyDelta?: number;
   moneyDelta?: number;
 
   // For social activities (if NPC was involved)
   npcId?: string;
-  interactionId?: string;
 
   createdAt: string;
 }

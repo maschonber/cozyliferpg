@@ -1,5 +1,5 @@
 import { Router, Request, Response } from 'express';
-import { pool, initDatabase, migratePhase3Locations, migratePhase25Stats } from '../db';
+import { pool, initDatabase, migrateSocialActivitiesConsolidation } from '../db';
 
 const router = Router();
 
@@ -26,16 +26,13 @@ router.get('/init-db', async (req: Request, res: Response) => {
     console.log('🔧 Admin: Initializing database schema...');
     await initDatabase();
 
-    console.log('🔧 Admin: Running Phase 3 migration (locations)...');
-    await migratePhase3Locations();
-
-    console.log('🔧 Admin: Running Phase 2.5 migration (stats)...');
-    await migratePhase25Stats();
+    console.log('🔧 Admin: Running migrations...');
+    await migrateSocialActivitiesConsolidation();
 
     return res.json({
       success: true,
       message: 'Database schema initialized and all migrations completed successfully',
-      migrations: ['Base Schema', 'Phase 3 Locations', 'Phase 2.5 Stats'],
+      migrations: ['Base Schema', 'Social Activities Consolidation'],
       timestamp: new Date().toISOString()
     });
   } catch (error) {

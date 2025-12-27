@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { getActivityById } from '../../../activities';
 
 const MIN_DURATION = 60;  // Minutes
 const BONUS = 1.5;
@@ -12,7 +13,10 @@ export class MeaningfulConversationEvaluator implements PatternEvaluator {
 
   evaluate(snapshot: PlayerPatternSnapshot): number {
     const socialActivities = snapshot.today.byType.get('social') || [];
-    const hadMeaningful = socialActivities.some(a => a.timeCost >= MIN_DURATION);
+    const hadMeaningful = socialActivities.some(a => {
+      const activityDef = getActivityById(a.activityId);
+      return activityDef && activityDef.timeCost >= MIN_DURATION;
+    });
     return hadMeaningful ? BONUS : 0;
   }
 

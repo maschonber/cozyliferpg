@@ -10,6 +10,7 @@ export class NoPracticeEvaluator implements PatternEvaluator {
   readonly name = 'No Practice Penalty';
 
   evaluate(snapshot: PlayerPatternSnapshot): number {
+    console.log(snapshot.today);
     const socialToday = snapshot.today.byType.get('social') || [];
     return socialToday.length === 0 ? PENALTY : 0;
   }

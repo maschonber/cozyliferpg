@@ -19,6 +19,7 @@ import {
 } from '../../../shared/types';
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
+import { recordPlayerActivity } from '../services/activity-history';
 import {
   calculateDynamicDifficulty,
   getActivityEffects,
@@ -521,24 +522,26 @@ router.post(
         [trustValue, affectionValue, desireValue, newState, unlockedStates, new Date(), relationship.id]
       );
 
-      // Create interaction record (emotion_snapshot column removed)
-      const interactionId = randomUUID();
-      await client.query(
-        `INSERT INTO interactions (
-           id, relationship_id, activity_type,
-           trust_delta, affection_delta, desire_delta,
-           created_at
-         ) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [
-          interactionId,
-          relationship.id,
-          activity.name,
-          effects.relationshipEffects.trust || 0,
-          effects.relationshipEffects.affection || 0,
-          effects.relationshipEffects.desire || 0,
-          new Date()
-        ]
-      );
+      // Record activity in player_activities (social activities now go here too)
+      await recordPlayerActivity(pool, {
+        playerId: player.id,
+        activityId: activity.id,
+        dayNumber: player.currentDay,
+        timeOfDay: player.currentTime,
+        outcomeTier: outcomeResult.tier,
+        roll: outcomeResult.roll,
+        adjustedRoll: outcomeResult.adjustedRoll,
+        statBonus: outcomeResult.statBonus,
+        difficultyPenalty: difficultyCalc.finalDifficulty,
+        relationshipEffects: {
+          trust: effects.relationshipEffects.trust || 0,
+          affection: effects.relationshipEffects.affection || 0,
+          desire: effects.relationshipEffects.desire || 0
+        },
+        energyDelta: newEnergy - player.currentEnergy,
+        moneyDelta: newMoney - player.money,
+        npcId: npcId
+      });
 
       await client.query('COMMIT');
 

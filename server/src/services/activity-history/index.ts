@@ -24,19 +24,16 @@ function mapRowToPlayerActivity(row: any): PlayerActivity {
     timeOfDay: row.time_of_day,
     // Activity type from code definition
     type: activityDef?.type ?? 'leisure' as ActivityTypeValue,
-    timeCost: row.time_cost,
-    energyCost: row.energy_cost,
-    moneyCost: row.money_cost,
     outcomeTier: row.outcome_tier as OutcomeTier | undefined,
     roll: row.roll,
     adjustedRoll: row.adjusted_roll,
     statBonus: row.stat_bonus,
     difficultyPenalty: row.difficulty_penalty,
     statEffects: row.stat_effects || undefined,
+    relationshipEffects: row.relationship_effects || undefined,
     energyDelta: row.energy_delta,
     moneyDelta: row.money_delta,
     npcId: row.npc_id || undefined,
-    interactionId: row.interaction_id || undefined,
     createdAt: row.created_at.toISOString()
   };
 }
@@ -51,19 +48,16 @@ export async function recordPlayerActivity(
     activityId: string;
     dayNumber: number;
     timeOfDay: string;
-    timeCost: number;
-    energyCost: number;
-    moneyCost: number;
     outcomeTier?: OutcomeTier;
     roll?: number;
     adjustedRoll?: number;
     statBonus?: number;
     difficultyPenalty?: number;
     statEffects?: Partial<Record<StatName, number>>;
+    relationshipEffects?: { trust?: number; affection?: number; desire?: number };
     energyDelta?: number;
     moneyDelta?: number;
     npcId?: string;
-    interactionId?: string;
   }
 ): Promise<PlayerActivity> {
   const client = await pool.connect();
@@ -77,15 +71,14 @@ export async function recordPlayerActivity(
       INSERT INTO player_activities (
         id, player_id, activity_id,
         performed_at, day_number, time_of_day,
-        time_cost, energy_cost, money_cost,
         outcome_tier, roll, adjusted_roll, stat_bonus, difficulty_penalty,
-        stat_effects, energy_delta, money_delta,
-        npc_id, interaction_id,
+        stat_effects, relationship_effects, energy_delta, money_delta,
+        npc_id,
         created_at
       ) VALUES (
         $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10, $11, $12, $13, $14,
-        $15, $16, $17, $18, $19, $20
+        $7, $8, $9, $10, $11,
+        $12, $13, $14, $15, $16, $17
       )
       RETURNING *
       `,
@@ -96,19 +89,16 @@ export async function recordPlayerActivity(
         now,
         data.dayNumber,
         data.timeOfDay,
-        data.timeCost,
-        data.energyCost,
-        data.moneyCost,
         data.outcomeTier || null,
         data.roll || null,
         data.adjustedRoll || null,
         data.statBonus || null,
         data.difficultyPenalty || null,
         data.statEffects ? JSON.stringify(data.statEffects) : null,
+        data.relationshipEffects ? JSON.stringify(data.relationshipEffects) : null,
         data.energyDelta || null,
         data.moneyDelta || null,
         data.npcId || null,
-        data.interactionId || null,
         now
       ]
     );
