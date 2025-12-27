@@ -135,7 +135,7 @@ describe('GameHome', () => {
       locations: locationsSignal,
       relationships: relationshipsSignal,
       initialize: jest.fn(),
-      performSoloActivity: jest.fn(),
+      performActivity: jest.fn(),
       createNPC: jest.fn(),
       getRelationship: jest.fn()
     };
@@ -161,7 +161,7 @@ describe('GameHome', () => {
   describe('onMeetSomeoneNew', () => {
     it('should load relationship after creating NPC', (done) => {
       // Arrange
-      const performSoloActivitySpy = jest.spyOn(mockFacade, 'performSoloActivity')
+      const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(of({ success: true } as any));
       const createNPCSpy = jest.spyOn(mockFacade, 'createNPC')
         .mockReturnValue(of(mockNPC));
@@ -173,7 +173,7 @@ describe('GameHome', () => {
 
       // Assert
       setTimeout(() => {
-        expect(performSoloActivitySpy).toHaveBeenCalledWith('meet_someone');
+        expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
         expect(createNPCSpy).toHaveBeenCalled();
         expect(getRelationshipSpy).toHaveBeenCalledWith(mockNPC.id);
         done();
@@ -182,7 +182,7 @@ describe('GameHome', () => {
 
     it('should not load relationship if NPC creation fails', (done) => {
       // Arrange
-      const performSoloActivitySpy = jest.spyOn(mockFacade, 'performSoloActivity')
+      const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(of({ success: true } as any));
       const createNPCSpy = jest.spyOn(mockFacade, 'createNPC')
         .mockReturnValue(throwError(() => new Error('Failed to create NPC')));
@@ -193,7 +193,7 @@ describe('GameHome', () => {
 
       // Assert
       setTimeout(() => {
-        expect(performSoloActivitySpy).toHaveBeenCalledWith('meet_someone');
+        expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
         expect(createNPCSpy).toHaveBeenCalled();
         expect(getRelationshipSpy).not.toHaveBeenCalled();
         done();
@@ -202,7 +202,7 @@ describe('GameHome', () => {
 
     it('should not create NPC if activity performance fails', (done) => {
       // Arrange
-      const performSoloActivitySpy = jest.spyOn(mockFacade, 'performSoloActivity')
+      const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(throwError(() => new Error('Failed to perform activity')));
       const createNPCSpy = jest.spyOn(mockFacade, 'createNPC');
       const getRelationshipSpy = jest.spyOn(mockFacade, 'getRelationship');
@@ -212,7 +212,7 @@ describe('GameHome', () => {
 
       // Assert
       setTimeout(() => {
-        expect(performSoloActivitySpy).toHaveBeenCalledWith('meet_someone');
+        expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
         expect(createNPCSpy).not.toHaveBeenCalled();
         expect(getRelationshipSpy).not.toHaveBeenCalled();
         done();
@@ -221,7 +221,7 @@ describe('GameHome', () => {
 
     it('should stay on overview page after meeting new neighbor', (done) => {
       // Arrange
-      jest.spyOn(mockFacade, 'performSoloActivity')
+      jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(of({ success: true } as any));
       jest.spyOn(mockFacade, 'createNPC')
         .mockReturnValue(of(mockNPC));

@@ -12,14 +12,11 @@ import {
   Relationship,
   Activity,
   PerformActivityRequest,
-  PerformActivityResponse,
   ApiResponse,
   PlayerCharacter,
-  SleepResult,
   SleepResultWithStats,
-  SoloActivityResult,
+  ActivityResult,
   ActivityAvailability,
-  Location,
   LocationWithNPCCount,
   TravelRequest,
   TravelResult
@@ -123,38 +120,20 @@ export class GameRepository {
   }
 
   /**
-   * Perform an activity with an NPC
+   * Perform an activity (solo or social)
+   * Unified endpoint for all activity types
+   * For social activities, npcId is required
    */
-  performActivity(npcId: string, activityId: string): Observable<PerformActivityResponse> {
-    const request: PerformActivityRequest = { activityId };
+  performActivity(activityId: string, npcId?: string): Observable<ActivityResult> {
+    const request: PerformActivityRequest = { activityId, npcId };
 
-    return this.http.post<PerformActivityResponse>(
-      `${this.API_URL}/relationships/${npcId}/interact`,
-      request
-    ).pipe(
-      map(response => {
-        if (!response.success) {
-          throw new Error(response.error || 'Failed to perform activity');
-        }
-        return response;
-      })
-    );
-  }
-
-  /**
-   * Perform a solo activity (no NPC required)
-   * Phase 2.5: Returns stat changes and outcome info
-   */
-  performSoloActivity(activityId: string): Observable<SoloActivityResult> {
-    const request: PerformActivityRequest = { activityId };
-
-    return this.http.post<ApiResponse<SoloActivityResult>>(
+    return this.http.post<ApiResponse<ActivityResult>>(
       `${this.API_URL}/activities/perform`,
       request
     ).pipe(
       map(response => {
         if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to perform solo activity');
+          throw new Error(response.error || 'Failed to perform activity');
         }
         return response.data;
       })

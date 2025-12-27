@@ -229,56 +229,55 @@ export class NeighborDetail implements OnInit, OnDestroy {
     const activity = this.activities().find(a => a.id === activityId);
     if (!activity) return;
 
-    const previousRelationship = this.selectedRelationship();
+    this.facade.performActivity(activityId, npcId).subscribe({
+      next: (result) => {
+        // Helper to get outcome description
+        const getOutcomeDescription = (tier: string): string => {
+          switch (tier) {
+            case 'best': return 'Everything went perfectly!';
+            case 'okay': return 'Things went well.';
+            case 'mixed': return 'Some good, some not so good.';
+            case 'catastrophic': return 'Things went wrong...';
+            default: return 'Activity completed.';
+          }
+        };
 
-    this.facade.performActivity(npcId, activityId).subscribe({
-      next: (response) => {
-        // Transform response into ActivitySummary for unified modal
+        // Transform result into ActivitySummary for unified modal
         const summary = {
           activity,
-          activityType: 'social' as const,
-          npc: npc,
-          player: this.player()!,
-          outcome: response.outcome ? {
-            tier: response.outcome.tier,
-            description: response.outcome.description
+          activityType: result.activityType,
+          npc: result.npc,
+          player: result.player,
+          outcome: result.outcome ? {
+            tier: result.outcome.tier,
+            description: getOutcomeDescription(result.outcome.tier)
           } : undefined,
           // Include roll details from the outcome
-          rollDetails: response.outcome ? {
-            roll: response.outcome.roll || 0,
-            adjustedRoll: response.outcome.adjustedRoll || 0,
-            statBonus: response.outcome.statBonus,
-            difficultyPenalty: undefined, // Not used in social activities
-            difficultyClass: response.outcome.dc || 100,
-            statsUsed: response.outcome.statsUsed
+          rollDetails: result.outcome ? {
+            roll: result.outcome.roll,
+            adjustedRoll: result.outcome.adjustedRoll,
+            statBonus: result.outcome.statBonus,
+            difficultyPenalty: result.outcome.difficultyPenalty,
+            difficultyClass: result.difficultyBreakdown?.finalDifficulty || 100,
+            statsUsed: result.outcome.statsUsed
           } : undefined,
-          actualEnergyCost: activity.energyCost,
-          actualMoneyCost: activity.moneyCost,
-          actualTimeCost: activity.timeCost,
-          // Relationship changes
-          relationshipChanges: response.relationship && previousRelationship ? {
-            previousValues: {
-              trust: previousRelationship.trust,
-              affection: previousRelationship.affection,
-              desire: previousRelationship.desire
-            },
-            newValues: {
-              trust: response.relationship.trust,
-              affection: response.relationship.affection,
-              desire: response.relationship.desire
-            },
-            deltas: {
-              trust: response.relationship.trust - previousRelationship.trust,
-              affection: response.relationship.affection - previousRelationship.affection,
-              desire: response.relationship.desire - previousRelationship.desire
-            },
-            stateChanged: response.stateChanged,
-            previousState: response.previousState,
-            newState: response.newState
+          // Stat changes (now included for social activities!)
+          statChanges: result.statChanges,
+          statsTrainedThisActivity: result.statsTrainedThisActivity,
+          // Resource costs
+          actualEnergyCost: result.actualEnergyCost,
+          actualMoneyCost: result.actualMoneyCost,
+          actualTimeCost: result.actualTimeCost,
+          // Relationship changes (directly from result)
+          relationshipChanges: result.relationshipChanges ? {
+            ...result.relationshipChanges,
+            stateChanged: result.stateChanged,
+            previousState: result.previousState,
+            newState: result.newState
           } : undefined,
-          emotionalState: response.emotionalState,
-          discoveredTrait: response.discoveredTrait,
-          difficultyBreakdown: response.difficultyBreakdown
+          emotionalState: result.emotionalState,
+          discoveredTrait: result.discoveredTrait,
+          difficultyBreakdown: result.difficultyBreakdown
         };
 
         // Show result modal with unified summary

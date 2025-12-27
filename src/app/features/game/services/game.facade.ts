@@ -9,7 +9,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { GameStore } from '../store/game.store';
 import { GameRepository } from './game.repository';
-import { NPC, Relationship, Activity, PerformActivityResponse, PlayerCharacter, SleepResult, SleepResultWithStats, SoloActivityResult } from '../../../../../shared/types';
+import { NPC, Relationship, PlayerCharacter, SleepResult, ActivityResult } from '../../../../../shared/types';
 
 @Injectable({
   providedIn: 'root'
@@ -245,60 +245,28 @@ export class GameFacade {
   }
 
   /**
-   * Perform an activity with an NPC (Phase 2: updates player resources)
+   * Perform an activity (solo or social)
+   * Unified method for all activity types
+   * For social activities, provide npcId
    */
-  performActivity(npcId: string, activityId: string): Observable<PerformActivityResponse> {
+  performActivity(activityId: string, npcId?: string): Observable<ActivityResult> {
     this.store.setInteracting(true);
 
-    return this.repository.performActivity(npcId, activityId).pipe(
-      switchMap((response) => {
-        // Update relationship in store
-        if (response.relationship) {
-          this.store.updateRelationship(response.relationship);
+    return this.repository.performActivity(activityId, npcId).pipe(
+      switchMap((result) => {
+        // Update relationship in store for social activities
+        if (result.relationship) {
+          this.store.updateRelationship(result.relationship);
         }
 
         this.store.setInteracting(false);
 
         // Log activity result
         const activity = this.store.activities().find(a => a.id === activityId);
-        console.log(
-          `✅ Activity "${activity?.name}" completed`,
-          response.stateChanged ? `State changed: ${response.previousState} → ${response.newState}` : ''
-        );
-
-        // Reload player to get updated resources and reload activities to get updated availability
-        return this.repository.getPlayer().pipe(
-          tap((player) => this.store.setPlayer(player)),
-          switchMap(() => this.repository.getActivities().pipe(
-            tap((data) => this.store.setActivities(data.activities, data.availability))
-          )),
-          map(() => response)
-        );
-      }),
-      catchError((error) => {
-        const errorMessage = error.message || 'Failed to perform activity';
-        this.store.setInteractionError(errorMessage);
-        console.error('❌ Error performing activity:', error);
-        throw error;
-      })
-    );
-  }
-
-  /**
-   * Perform a solo activity (no NPC required)
-   * Phase 2.5: Returns stat changes and outcome info
-   */
-  performSoloActivity(activityId: string): Observable<SoloActivityResult> {
-    this.store.setInteracting(true);
-
-    return this.repository.performSoloActivity(activityId).pipe(
-      switchMap((result) => {
-        this.store.setInteracting(false);
-
-        // Log activity result with outcome
-        const activity = this.store.activities().find(a => a.id === activityId);
         const outcomeText = result.outcome ? ` (${result.outcome.tier})` : '';
-        console.log(`✅ Solo activity "${activity?.name}" completed${outcomeText}`);
+        const npcText = result.npc ? ` with ${result.npc.name}` : '';
+        const stateText = result.stateChanged ? ` [State: ${result.previousState} → ${result.newState}]` : '';
+        console.log(`✅ Activity "${activity?.name}" completed${outcomeText}${npcText}${stateText}`);
 
         // Reload player to get updated resources and reload activities to get updated availability
         return this.repository.getPlayer().pipe(
@@ -312,7 +280,7 @@ export class GameFacade {
       catchError((error) => {
         const errorMessage = error.message || 'Failed to perform activity';
         this.store.setInteractionError(errorMessage);
-        console.error('❌ Error performing solo activity:', error);
+        console.error('❌ Error performing activity:', error);
         throw error;
       })
     );

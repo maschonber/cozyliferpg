@@ -1,56 +1,170 @@
 /**
- * Activities Routes (Phase 2 + Phase 2.5)
+ * Activities Routes (Unified Endpoint)
  * API endpoints for activity management and execution
+ * Handles both solo and social activities through a single endpoint
  */
 
 import { Router, Response } from 'express';
 import { pool } from '../db';
 import { AuthRequest } from '../auth/auth.middleware';
-import { getActivityById, getAvailableActivities } from '../services/relationship';
+import {
+  getActivityById,
+  getAvailableActivities,
+  calculateRelationshipState,
+  applyRelationshipDelta,
+  getRelationshipDifficultyModifier,
+  updateUnlockedStates,
+  calculateDesireCap
+} from '../services/relationship';
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../services/player';
 import { canPerformActivity, addMinutes } from '../services/time';
 import { rollOutcome, meetsStatRequirements } from '../services/outcome';
 import { applyStatEffects, getBaseStat, getCurrentStat } from '../services/stat';
 import { recordPlayerActivity } from '../services/activity-history';
-import { generateOutcome, generateOutcomeDescription } from '../services/outcome-generator';
+import { generateOutcome } from '../services/outcome-generator';
+import {
+  calculateDynamicDifficulty,
+  getActivityEffects
+} from '../services/social-activity';
+import {
+  getTraitActivityBonus,
+  getTraitActivityBreakdown,
+  getContributingTrait,
+  getTraitDefinition
+} from '../services/trait';
+import { interpretEmotionVectorSlim } from '../services/plutchik-emotion';
+import { ActivityTag } from '../../../shared/types/activity.types';
+import { randomUUID } from 'crypto';
 import {
   ApiResponse,
   PerformActivityRequest,
   Activity,
   ActivityAvailability,
-  requiresNPC,
+  ActivityResult,
   isSocialActivity,
-  ActivityOutcome,
-  OutcomeTier,
   StatName,
   StatChange,
-  PlayerStats,
   DifficultyBreakdown,
-  StatContribution
+  Relationship,
+  NPC,
+  NEUTRAL_EMOTION_VECTOR
 } from '../../../shared/types';
 
 const router = Router();
 
 /**
- * Result of performing an activity (Phase 2.5)
+ * Helper: Build NPC object from database row
  */
-interface ActivityResult {
-  player: any;
-  outcome?: {
-    tier: OutcomeTier;
-    roll: number;
-    adjustedRoll: number;
-    statBonus: number;
-    difficultyPenalty: number;
-    statsUsed?: StatContribution[];
+function buildNPCFromRow(row: any): NPC {
+  // Parse emotion vector (new Plutchik system)
+  const emotionVector = typeof row.emotion_vector === 'string'
+    ? JSON.parse(row.emotion_vector)
+    : (row.emotion_vector || NEUTRAL_EMOTION_VECTOR);
+
+  // Get emotion interpretation for display
+  const emotionInterpretation = interpretEmotionVectorSlim(emotionVector);
+
+  return {
+    id: row.id,
+    name: row.name,
+    traits: row.traits,
+    revealedTraits: row.revealed_traits || [],
+    gender: row.gender,
+    emotionVector,
+    emotionInterpretation,
+    appearance: {
+      hairColor: row.hair_color,
+      hairStyle: row.hair_style,
+      eyeColor: row.eye_color,
+      faceDetails: row.face_details,
+      bodyType: row.body_type,
+      torsoSize: row.torso_size,
+      height: row.height,
+      skinTone: row.skin_tone,
+      upperTrace: row.upper_trace,
+      lowerTrace: row.lower_trace,
+      style: row.style,
+      bodyDetails: row.body_details
+    },
+    loras: row.loras,
+    currentLocation: row.current_location,
+    createdAt: row.created_at.toISOString()
   };
-  statChanges?: StatChange[];
-  statsTrainedThisActivity?: StatName[];
-  // Actual resource costs paid (including outcome effects)
-  actualEnergyCost?: number;
-  actualMoneyCost?: number;
-  actualTimeCost?: number;
-  difficultyBreakdown?: DifficultyBreakdown;
+}
+
+/**
+ * Helper: Map database row to Relationship object
+ */
+function mapRowToRelationship(row: any, npc?: NPC): Relationship {
+  return {
+    id: row.id,
+    playerId: row.player_id,
+    npcId: row.npc_id,
+    trust: row.trust ?? 0,
+    affection: row.affection ?? 0,
+    desire: row.desire ?? 0,
+    desireCap: row.desire_cap,
+    currentState: row.current_state,
+    unlockedStates: row.unlocked_states,
+    firstMet: row.first_met.toISOString(),
+    lastInteraction: row.last_interaction.toISOString(),
+    npc
+  };
+}
+
+/**
+ * Helper: Get or create relationship between player and NPC
+ */
+async function getOrCreateRelationship(
+  client: any,
+  playerId: string,
+  npcId: string
+): Promise<{ relationship: Relationship; isNew: boolean }> {
+  if (!playerId || !npcId) {
+    throw new Error('Invalid player ID or NPC ID');
+  }
+
+  const existing = await client.query(
+    `SELECT * FROM relationships WHERE player_id = $1 AND npc_id = $2`,
+    [playerId, npcId]
+  );
+
+  if (existing.rows.length > 0) {
+    return {
+      relationship: mapRowToRelationship(existing.rows[0]),
+      isNew: false
+    };
+  }
+
+  // Get NPC gender and player preference to calculate desire cap
+  const npcResult = await client.query('SELECT gender FROM npcs WHERE id = $1', [npcId]);
+  if (npcResult.rows.length === 0) {
+    throw new Error(`NPC with ID ${npcId} does not exist`);
+  }
+  const npcGender = npcResult.rows[0].gender;
+
+  const playerResult = await client.query('SELECT sexual_preference FROM player_characters WHERE user_id = $1', [playerId]);
+  const playerPreference = playerResult.rows[0]?.sexual_preference || 'everyone';
+  const desireCap = calculateDesireCap(playerPreference, npcGender);
+
+  // Create new relationship
+  const id = randomUUID();
+  const now = new Date();
+  const initialState = 'stranger';
+
+  const result = await client.query(
+    `INSERT INTO relationships (
+      id, player_id, npc_id, trust, affection, desire, desire_cap,
+      current_state, unlocked_states, first_met, last_interaction
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+    RETURNING *`,
+    [id, playerId, npcId, 0, 0, 0, desireCap, initialState, [initialState], now, now]
+  );
+
+  return {
+    relationship: mapRowToRelationship(result.rows[0]),
+    isNew: true
+  };
 }
 
 /**
@@ -70,11 +184,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<{ activities:
 
   try {
     const activities = getAvailableActivities();
-
-    // Get player character to check availability
     const player = await getOrCreatePlayerCharacter(pool, userId);
-
-    // Check availability for each activity
     const availability = activities.map(activity => canPerformActivity(activity, player));
 
     res.json({
@@ -96,15 +206,14 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<{ activities:
 
 /**
  * POST /api/activities/perform
- * Perform a solo activity (no NPC required)
- * Phase 2.5: Includes stat roll system and stat effects
+ * Perform an activity (solo or social)
+ * For social activities, npcId is required in the request body
  */
 router.post(
   '/perform',
   async (req: AuthRequest, res: Response<ApiResponse<ActivityResult>>) => {
-    const { activityId }: PerformActivityRequest = req.body;
+    const { activityId, npcId }: PerformActivityRequest = req.body;
 
-    // Get user ID from JWT
     if (!req.user || !req.user.userId) {
       res.status(401).json({
         success: false,
@@ -114,11 +223,15 @@ router.post(
     }
 
     const userId = req.user.userId;
+    const client = await pool.connect();
 
     try {
+      await client.query('BEGIN');
+
       // Validate activity
       const activity = getActivityById(activityId);
       if (!activity) {
+        await client.query('ROLLBACK');
         res.status(400).json({
           success: false,
           error: 'Invalid activity'
@@ -126,11 +239,14 @@ router.post(
         return;
       }
 
-      // Verify activity doesn't require NPC
-      if (isSocialActivity(activity)) {
+      const isSocial = isSocialActivity(activity);
+
+      // Validate NPC requirement
+      if (isSocial && !npcId) {
+        await client.query('ROLLBACK');
         res.status(400).json({
           success: false,
-          error: 'This activity requires a neighbor. Use the relationship interaction endpoint instead.'
+          error: 'Social activities require an NPC. Provide npcId in the request.'
         });
         return;
       }
@@ -138,10 +254,32 @@ router.post(
       // Get player character
       const player = await getOrCreatePlayerCharacter(pool, userId);
 
-      // Phase 2.5: Check stat requirements (uses BASE stat)
+      // Fetch NPC data for social activities
+      let npc: NPC | undefined;
+      let relationship: Relationship | undefined;
+
+      if (isSocial && npcId) {
+        const npcResult = await client.query(`SELECT * FROM npcs WHERE id = $1`, [npcId]);
+        if (npcResult.rows.length === 0) {
+          await client.query('ROLLBACK');
+          res.status(404).json({
+            success: false,
+            error: 'NPC not found'
+          });
+          return;
+        }
+        npc = buildNPCFromRow(npcResult.rows[0]);
+
+        // Get or create relationship
+        const relResult = await getOrCreateRelationship(client, userId, npcId);
+        relationship = relResult.relationship;
+      }
+
+      // Check stat requirements (uses BASE stat)
       if ('statRequirements' in activity && activity.statRequirements) {
         const reqCheck = meetsStatRequirements(player.stats, activity.statRequirements);
         if (!reqCheck.meets) {
+          await client.query('ROLLBACK');
           const unmetList = reqCheck.unmet.map(u => `${u.stat}: ${u.actual}/${u.required}`).join(', ');
           res.status(400).json({
             success: false,
@@ -152,8 +290,9 @@ router.post(
       }
 
       // Validate activity can be performed (energy, money, time, location)
-      const availability = canPerformActivity(activity, player);
+      const availability = canPerformActivity(activity, player, npc?.currentLocation);
       if (!availability.available) {
+        await client.query('ROLLBACK');
         res.status(400).json({
           success: false,
           error: availability.reason || 'Activity cannot be performed'
@@ -161,7 +300,7 @@ router.post(
         return;
       }
 
-      // Phase 2.5 & 2.5.3: Roll for outcome if activity has difficulty
+      // Initialize result tracking variables
       let outcome: ActivityResult['outcome'];
       let difficultyBreakdown: DifficultyBreakdown | undefined;
       let statChanges: StatChange[] = [];
@@ -171,12 +310,53 @@ router.post(
       let additionalMoneyCost = 0;
       let additionalTimeCost = 0;
 
+      // Social activity specific variables
+      let relationshipChanges: ActivityResult['relationshipChanges'];
+      let stateChanged = false;
+      let previousState: ActivityResult['previousState'];
+      let newState: ActivityResult['newState'];
+      let discoveredTrait: ActivityResult['discoveredTrait'];
+      let updatedRelationship: Relationship | undefined;
+
+      // Calculate difficulty and roll outcome
       if ('difficulty' in activity && activity.difficulty !== undefined && activity.difficulty > 0) {
-        // Roll using relevant stats
+        let finalDifficulty: number;
+
+        if (isSocial && npc && relationship) {
+          // Social activity: dynamic difficulty with relationship and trait modifiers
+          const activityTags = (activity.tags || []) as ActivityTag[];
+          const traitBonus = getTraitActivityBonus(npc.traits, activityTags);
+          const individualTraits = getTraitActivityBreakdown(npc.traits, activityTags);
+
+          const relationshipModifier = getRelationshipDifficultyModifier(
+            { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
+            relationship.currentState
+          );
+
+          const difficultyCalc = calculateDynamicDifficulty(
+            activity.difficulty,
+            relationshipModifier,
+            traitBonus,
+            individualTraits
+          );
+
+          finalDifficulty = difficultyCalc.finalDifficulty;
+          difficultyBreakdown = difficultyCalc;
+        } else {
+          // Solo activity: simple difficulty
+          finalDifficulty = 100 + activity.difficulty;
+          difficultyBreakdown = {
+            baseDifficulty: 100,
+            activityModifier: activity.difficulty,
+            finalDifficulty
+          };
+        }
+
+        // Roll for outcome
         const rollResult = rollOutcome(
           player.stats,
           ('relevantStats' in activity && activity.relevantStats) ? activity.relevantStats : [],
-          activity.difficulty
+          finalDifficulty
         );
 
         outcome = {
@@ -188,23 +368,14 @@ router.post(
           statsUsed: rollResult.statsUsed
         };
 
-        // Create difficulty breakdown for solo activities
-        difficultyBreakdown = {
-          baseDifficulty: 100,  // BASE_DC constant
-          activityModifier: activity.difficulty,
-          finalDifficulty: 100 + activity.difficulty
-        };
-
-        // Generate outcome from profile
+        // Generate stat effects from outcome profile
         if ('outcomeProfile' in activity && activity.outcomeProfile) {
           const generatedOutcome = generateOutcome(rollResult.tier, activity.outcomeProfile);
 
-          // Apply stat effects from generated outcome
           if (Object.keys(generatedOutcome.statEffects).length > 0) {
             const statResult = applyStatEffects(player.stats, generatedOutcome.statEffects);
             newStats = statResult.newStats;
 
-            // Convert actualChanges to StatChange format
             statChanges = Object.entries(statResult.actualChanges).map(([stat, change]) => {
               const statName = stat as StatName;
               const previousCurrent = getCurrentStat(player.stats, statName);
@@ -222,42 +393,120 @@ router.post(
               };
             });
 
-            // Track which stats were trained (positive gains)
             statsTrainedThisActivity = Object.entries(generatedOutcome.statEffects)
               .filter(([_, value]) => value > 0)
               .map(([stat, _]) => stat as StatName);
           }
 
-          // Apply additional resource costs from outcome
           additionalEnergyCost = generatedOutcome.additionalEnergyCost;
           additionalMoneyCost = generatedOutcome.additionalMoneyCost;
           additionalTimeCost = generatedOutcome.additionalTimeCost;
         }
-      }
-      // Passive activities without difficulty have no stat effects
 
-      // Calculate new resource values (including outcome-based additional costs)
+        // Process social activity relationship effects
+        if (isSocial && npc && relationship) {
+          const effects = getActivityEffects(
+            {
+              trust: activity.relationshipEffects.trust || 0,
+              affection: activity.relationshipEffects.affection || 0,
+              desire: activity.relationshipEffects.desire || 0
+            },
+            rollResult.tier
+          );
+
+          const newAxes = applyRelationshipDelta(
+            { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
+            effects.relationshipEffects,
+            relationship.desireCap
+          );
+
+          previousState = relationship.currentState;
+          newState = calculateRelationshipState(newAxes.trust, newAxes.affection, newAxes.desire);
+          stateChanged = previousState !== newState;
+
+          const unlockedStates = updateUnlockedStates(relationship.unlockedStates, newState);
+
+          // Track relationship changes for response
+          relationshipChanges = {
+            previousValues: {
+              trust: relationship.trust,
+              affection: relationship.affection,
+              desire: relationship.desire
+            },
+            newValues: newAxes,
+            deltas: {
+              trust: effects.relationshipEffects.trust || 0,
+              affection: effects.relationshipEffects.affection || 0,
+              desire: effects.relationshipEffects.desire || 0
+            }
+          };
+
+          // Attempt trait discovery
+          const activityTags = (activity.tags || []) as ActivityTag[];
+          if (activityTags.length > 0) {
+            const discovery = getContributingTrait(npc, activityTags);
+            if (discovery && discovery.isNew) {
+              await client.query(
+                `UPDATE npcs SET revealed_traits = array_append(revealed_traits, $1) WHERE id = $2`,
+                [discovery.trait, npcId]
+              );
+              discoveredTrait = {
+                trait: discovery.trait as any,
+                traitName: getTraitDefinition(discovery.trait as any).name,
+                traitDescription: getTraitDefinition(discovery.trait as any).description,
+                isNew: discovery.isNew
+              };
+            }
+          }
+
+          // Validate axis values before database update
+          const trustValue = Number.isFinite(newAxes.trust) ? newAxes.trust : 0;
+          const affectionValue = Number.isFinite(newAxes.affection) ? newAxes.affection : 0;
+          const desireValue = Number.isFinite(newAxes.desire) ? newAxes.desire : 0;
+
+          // Update relationship in database
+          await client.query(
+            `UPDATE relationships
+             SET trust = $1, affection = $2, desire = $3, current_state = $4,
+                 unlocked_states = $5, last_interaction = $6
+             WHERE id = $7`,
+            [trustValue, affectionValue, desireValue, newState, unlockedStates, new Date(), relationship.id]
+          );
+
+          // Build updated relationship object
+          updatedRelationship = {
+            ...relationship,
+            trust: trustValue,
+            affection: affectionValue,
+            desire: desireValue,
+            currentState: newState,
+            unlockedStates: unlockedStates as any,
+            lastInteraction: new Date().toISOString(),
+            npc: {
+              ...npc,
+              revealedTraits: discoveredTrait?.isNew
+                ? [...npc.revealedTraits, discoveredTrait.trait as any]
+                : npc.revealedTraits
+            }
+          };
+        }
+      }
+
+      // Calculate new resource values
       const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost + additionalEnergyCost));
       const newMoney = player.money + activity.moneyCost + additionalMoneyCost;
       const newTime = addMinutes(player.currentTime, activity.timeCost + additionalTimeCost);
 
-      // Track minimum energy (for defensive stats)
+      // Track minimum energy
       const minEnergy = Math.min(player.tracking.minEnergyToday, newEnergy);
-
-      // Track if this was a work activity
       const workedToday = player.tracking.workedToday || activity.type === 'work';
-
-      // Track if this was a catastrophic failure (for defensive stats)
-      const hadCatastrophicFailure = player.tracking.hadCatastrophicFailureToday ||
-        (outcome?.tier === 'catastrophic');
-
-      // Track stats trained today (merge with existing)
+      const hadCatastrophicFailure = player.tracking.hadCatastrophicFailureToday || (outcome?.tier === 'catastrophic');
       const allStatsTrainedToday = Array.from(new Set([
         ...player.tracking.statsTrainedToday,
         ...statsTrainedThisActivity
       ]));
 
-      // Record activity in history (Phase 2.5.1)
+      // Record activity in history
       await recordPlayerActivity(pool, {
         playerId: player.id,
         activityId: activity.id,
@@ -271,8 +520,14 @@ router.post(
         statEffects: statChanges.length > 0 ? Object.fromEntries(
           statChanges.map(c => [c.stat, c.currentDelta])
         ) : undefined,
+        relationshipEffects: isSocial && relationshipChanges ? {
+          trust: relationshipChanges.deltas.trust,
+          affection: relationshipChanges.deltas.affection,
+          desire: relationshipChanges.deltas.desire
+        } : undefined,
         energyDelta: newEnergy - player.currentEnergy,
-        moneyDelta: newMoney - player.money
+        moneyDelta: newMoney - player.money,
+        npcId: isSocial ? npcId : undefined
       });
 
       // Update player with new stats and tracking
@@ -284,36 +539,58 @@ router.post(
         tracking: {
           ...player.tracking,
           minEnergyToday: minEnergy,
-          endingEnergyToday: newEnergy,  // Track ending energy after this activity
+          endingEnergyToday: newEnergy,
           workedToday,
           hadCatastrophicFailureToday: hadCatastrophicFailure,
           statsTrainedToday: allStatsTrainedToday as StatName[]
         }
       });
 
-      console.log(`✅ User ${userId} performed activity: ${activity.name}${outcome ? ` (${outcome.tier})` : ''}`);
+      await client.query('COMMIT');
+
+      const activityType = isSocial ? 'social' : 'solo';
+      console.log(
+        `✅ User ${userId} performed ${activityType} activity: ${activity.name}` +
+        (outcome ? ` (${outcome.tier})` : '') +
+        (isSocial && npc ? ` with ${npc.name}` : '') +
+        (stateChanged ? ` [State: ${previousState} → ${newState}]` : '') +
+        (discoveredTrait?.isNew ? ` [Discovered: ${discoveredTrait.trait}]` : '')
+      );
 
       res.json({
         success: true,
         data: {
           player: updatedPlayer,
+          activityType,
           outcome,
           statChanges: statChanges.length > 0 ? statChanges : undefined,
           statsTrainedThisActivity: statsTrainedThisActivity.length > 0 ? statsTrainedThisActivity : undefined,
-          // Include actual resource costs (base + additional from outcome)
           actualEnergyCost: activity.energyCost + additionalEnergyCost,
           actualMoneyCost: activity.moneyCost + additionalMoneyCost,
           actualTimeCost: activity.timeCost + additionalTimeCost,
-          difficultyBreakdown
+          difficultyBreakdown,
+
+          // Social activity fields
+          npc,
+          relationship: updatedRelationship,
+          relationshipChanges,
+          stateChanged: isSocial ? stateChanged : undefined,
+          previousState: isSocial ? previousState : undefined,
+          newState: isSocial ? newState : undefined,
+          emotionalState: npc?.emotionInterpretation?.emotion as any,
+          discoveredTrait
         }
       });
     } catch (error) {
+      await client.query('ROLLBACK');
       console.error(`❌ Error performing activity for user ${userId}:`, error);
       const errorMessage = error instanceof Error ? error.message : 'Failed to perform activity';
       res.status(500).json({
         success: false,
         error: errorMessage
       });
+    } finally {
+      client.release();
     }
   }
 );

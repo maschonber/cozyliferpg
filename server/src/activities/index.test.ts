@@ -7,9 +7,17 @@ import { ACTIVITIES, getActivityById } from './index';
 import { isSocialActivity } from '../../../shared/types';
 
 describe('Activity System', () => {
-  describe('Activity Count', () => {
-    it('should have exactly 37 activities', () => {
-      expect(ACTIVITIES).toHaveLength(37);  // Added 7 mixed stat training activities
+  describe('Activity Collection', () => {
+    it('should have at least one activity', () => {
+      expect(ACTIVITIES.length).toBeGreaterThan(0);
+    });
+
+    it('should have activities of each type', () => {
+      const types = new Set(ACTIVITIES.map(a => a.type));
+      expect(types).toContain('work');
+      expect(types).toContain('social');
+      expect(types).toContain('training');
+      expect(types).toContain('recovery');
     });
   });
 

@@ -340,10 +340,12 @@ export {
 } from './types/activity.types';
 
 /**
- * Request to perform an activity with an NPC
+ * Request to perform an activity (solo or social)
+ * For social activities, npcId is required
  */
 export interface PerformActivityRequest {
   activityId: string;
+  npcId?: string;  // Required for social activities
 }
 
 /**
@@ -752,8 +754,59 @@ export interface SoloActivityOutcome {
 }
 
 /**
- * Solo activity result (Phase 2.5)
- * Returned from POST /api/activities/perform
+ * Unified activity result (Phase 2.5 + Unified Endpoints)
+ * Returned from POST /api/activities/perform for both solo and social activities
+ */
+export interface ActivityResult {
+  // Core fields (always present)
+  player: PlayerCharacter;
+  activityType: 'solo' | 'social';
+
+  // Outcome (present for activities with difficulty)
+  outcome?: SoloActivityOutcome;
+  statChanges?: StatChange[];
+  statsTrainedThisActivity?: StatName[];
+
+  // Actual resource costs paid (including outcome effects)
+  actualEnergyCost?: number;
+  actualMoneyCost?: number;
+  actualTimeCost?: number;
+
+  // Difficulty calculation breakdown
+  difficultyBreakdown?: DifficultyBreakdown;
+
+  // ===== Social activity fields (only present when activityType === 'social') =====
+
+  // NPC and relationship info
+  npc?: NPC;
+  relationship?: Relationship;
+
+  // Relationship changes
+  relationshipChanges?: {
+    previousValues: { trust: number; affection: number; desire: number };
+    newValues: { trust: number; affection: number; desire: number };
+    deltas: { trust: number; affection: number; desire: number };
+  };
+  stateChanged?: boolean;
+  previousState?: RelationshipState;
+  newState?: RelationshipState;
+
+  // NPC emotional state (Plutchik)
+  emotionalState?: InterpretedEmotion;
+
+  // Trait discovery
+  discoveredTrait?: {
+    trait: NPCTrait;
+    traitName: string;
+    traitDescription: string;
+    isNew: boolean;
+  };
+}
+
+/**
+ * Solo activity result (Phase 2.5) - DEPRECATED
+ * Use ActivityResult instead. Kept for backwards compatibility.
+ * @deprecated Use ActivityResult
  */
 export interface SoloActivityResult {
   player: PlayerCharacter;

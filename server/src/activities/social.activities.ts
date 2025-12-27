@@ -16,7 +16,7 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
     relevantStats: ['confidence'],
     outcomeProfile: {
       mainStats: ['confidence'],
-      mainStatGain: 0.5,
+      mainStatGain: 1.2,
       secondaryStats: ['wit', 'poise'],
       secondaryStatGain: 0.5,
       negativeEffects: {
@@ -40,7 +40,7 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
     relevantStats: ['confidence'],
     outcomeProfile: {
       mainStats: ['confidence'],
-      mainStatGain: 0.3,
+      mainStatGain: 0.8,
       secondaryStats: ['wit'],
       secondaryStatGain: 0.3,
       negativeEffects: {
@@ -279,6 +279,160 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.3,
         moneyCost: 3,
         timeCost: 10
+      }
+    }
+  }),
+
+  // === General Activities (no location required) ===
+
+  createSocialActivity({
+    id: 'give_compliment',
+    name: 'Give a Compliment',
+    description: 'Say something genuine and kind about them',
+    timeCost: 15,
+    energyCost: -3,
+    moneyCost: 0,
+    tags: ['romantic', 'calm'],
+    relationshipEffects: { affection: 8, desire: 5 },
+    difficulty: 20,
+    relevantStats: ['confidence', 'empathy'],
+    outcomeProfile: {
+      mainStats: ['confidence'],
+      mainStatGain: 1.2,
+      secondaryStats: ['empathy', 'wit'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 1,
+        energyCost: 5
+      }
+    }
+  }),
+
+  createSocialActivity({
+    id: 'tell_story',
+    name: 'Tell a Story',
+    description: 'Share an interesting anecdote from your life',
+    timeCost: 30,
+    energyCost: -6,
+    moneyCost: 0,
+    tags: ['creative', 'calm'],
+    relationshipEffects: { affection: 8, trust: 5 },
+    difficulty: 35,
+    relevantStats: ['wit', 'creativity'],
+    outcomeProfile: {
+      mainStats: ['wit'],
+      mainStatGain: 1,
+      secondaryStats: ['creativity', 'confidence'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['wit', 'confidence'],
+        statPenalty: 0.5,
+        energyCost: 5
+      }
+    }
+  }),
+
+  createSocialActivity({
+    id: 'ask_for_advice',
+    name: 'Ask for Advice',
+    description: 'Seek their opinion on something important to you',
+    timeCost: 25,
+    energyCost: -4,
+    moneyCost: 0,
+    tags: ['intellectual', 'calm'],
+    relationshipEffects: { trust: 12, affection: 5 },
+    difficulty: 15,
+    relevantStats: ['empathy'],
+    outcomeProfile: {
+      mainStats: ['empathy'],
+      mainStatGain: 0.8,
+      secondaryStats: ['knowledge', 'wit'],
+      secondaryStatGain: 0.4,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 0.5
+      }
+    }
+  }),
+
+  // === Location-Specific Activities ===
+
+  createSocialActivity({
+    id: 'feed_ducks',
+    name: 'Feed the Ducks',
+    description: 'Toss breadcrumbs to the ducks at the pond',
+    location: 'park',
+    timeCost: 45,
+    energyCost: -4,
+    moneyCost: -3,
+    allowedTimeSlots: ['morning', 'afternoon'],
+    tags: ['outdoor', 'calm'],
+    relationshipEffects: { affection: 10, trust: 5 },
+    difficulty: 5,
+    relevantStats: ['poise'],
+    outcomeProfile: {
+      mainStats: ['poise'],
+      mainStatGain: 0.5,
+      secondaryStats: ['empathy'],
+      secondaryStatGain: 0.3,
+      negativeEffects: {
+        stats: ['poise'],
+        statPenalty: 0.2,
+        moneyCost: 2
+      }
+    }
+  }),
+
+  createSocialActivity({
+    id: 'study_together',
+    name: 'Study Together',
+    description: 'Share quiet companionship while reading or working',
+    location: 'library',
+    timeCost: 90,
+    energyCost: -8,
+    moneyCost: 0,
+    allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['intellectual', 'calm'],
+    relationshipEffects: { trust: 10, affection: 8 },
+    difficulty: 20,
+    relevantStats: ['knowledge', 'ambition'],
+    outcomeProfile: {
+      mainStats: ['knowledge'],
+      mainStatGain: 1.5,
+      secondaryStats: ['ambition', 'wit'],
+      secondaryStatGain: 0.8,
+      negativeEffects: {
+        stats: ['ambition'],
+        statPenalty: 0.5,
+        energyCost: 5
+      }
+    }
+  }),
+
+  createSocialActivity({
+    id: 'help_pick_outfit',
+    name: 'Help Pick an Outfit',
+    description: 'Give fashion advice while browsing stores together',
+    location: 'shopping_district',
+    timeCost: 60,
+    energyCost: -8,
+    moneyCost: -10,
+    allowedTimeSlots: ['morning', 'afternoon', 'evening'],
+    tags: ['creative'],
+    relationshipEffects: { affection: 12, trust: 8 },
+    difficulty: 25,
+    relevantStats: ['creativity', 'empathy'],
+    outcomeProfile: {
+      mainStats: ['creativity'],
+      mainStatGain: 1,
+      secondaryStats: ['empathy', 'confidence'],
+      secondaryStatGain: 0.5,
+      negativeEffects: {
+        stats: ['confidence'],
+        statPenalty: 0.8,
+        moneyCost: 10,
+        timeCost: 20
       }
     }
   })

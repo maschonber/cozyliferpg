@@ -206,7 +206,7 @@ export class GameHome {
     const activity = this.activities().find(a => a.id === activityId);
     if (!activity) return;
 
-    this.facade.performSoloActivity(activityId).subscribe({
+    this.facade.performActivity(activityId).subscribe({
       next: (result) => {
         // Helper to get outcome description
         const getOutcomeDescription = (tier: string): string => {
@@ -222,7 +222,7 @@ export class GameHome {
         // Transform result into ActivitySummary for unified modal
         const summary = {
           activity,
-          activityType: 'solo' as const,
+          activityType: result.activityType,
           player: result.player,
           outcome: result.outcome ? {
             tier: result.outcome.tier,
@@ -233,7 +233,7 @@ export class GameHome {
             adjustedRoll: result.outcome.adjustedRoll,
             statBonus: result.outcome.statBonus,
             difficultyPenalty: result.outcome.difficultyPenalty,
-            difficultyClass: 100 + (('difficulty' in activity && activity.difficulty) || 0),
+            difficultyClass: result.difficultyBreakdown?.finalDifficulty || 100,
             statsUsed: result.outcome.statsUsed
           } : undefined,
           statChanges: result.statChanges,
@@ -263,7 +263,7 @@ export class GameHome {
    */
   onMeetSomeoneNew(): void {
     // First, perform the activity to consume time/energy
-    this.facade.performSoloActivity('meet_someone').subscribe({
+    this.facade.performActivity('meet_someone').subscribe({
       next: () => {
         // Then create the NPC
         this.facade.createNPC().subscribe({
