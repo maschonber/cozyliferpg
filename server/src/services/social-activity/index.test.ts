@@ -35,41 +35,44 @@ const goodAxes: RelationshipAxes = {
 
 describe('Social Activity Service - Dynamic Difficulty', () => {
   describe('calculateDynamicDifficulty', () => {
-    it('should combine all difficulty modifiers correctly', () => {
+    it('should calculate final DC including BASE_DC (100)', () => {
       const result = calculateDynamicDifficulty(
-        50,              // base difficulty
+        50,              // activity difficulty modifier
         -8,              // relationship modifier (friend bonus)
         5                // NPC trait bonus (positive in config = easier)
       );
 
-      expect(result.baseDifficulty).toBe(50);
+      expect(result.baseDifficulty).toBe(100);              // BASE_DC
+      expect(result.activityModifier).toBe(50);             // Activity difficulty
       expect(result.relationshipModifier).toBe(-8);         // Friend bonus
-      expect(result.traitBonus).toBe(-5);                  // Negated bonus reduces difficulty
-      expect(result.finalDifficulty).toBeLessThan(50);     // Overall easier
+      expect(result.traitBonus).toBe(-5);                   // Negated bonus reduces DC
+      // Final DC = 100 + 50 + (-8) + (-5) = 137
+      expect(result.finalDifficulty).toBe(137);
     });
 
-    it('should increase difficulty with negative factors', () => {
+    it('should increase DC with negative factors', () => {
       const result = calculateDynamicDifficulty(
-        30,              // base difficulty
+        30,              // activity difficulty modifier
         15,              // relationship penalty (rival)
         -5               // NPC trait penalty (negative in config = harder)
       );
 
-      expect(result.relationshipModifier).toBe(15);        // Rival penalty
-      expect(result.traitBonus).toBe(5);                   // Negated negative bonus increases difficulty
-      expect(result.finalDifficulty).toBeGreaterThan(30);  // Overall harder
+      expect(result.relationshipModifier).toBe(15);         // Rival penalty
+      expect(result.traitBonus).toBe(5);                    // Negated negative bonus increases DC
+      // Final DC = 100 + 30 + 15 + 5 = 150
+      expect(result.finalDifficulty).toBe(150);
     });
 
-    it('should allow negative difficulty for very easy activities', () => {
+    it('should allow DC below 100 for very easy activities', () => {
       const result = calculateDynamicDifficulty(
-        10,              // low base
+        10,              // low activity difficulty
         -15,             // big relationship bonus
         20               // big NPC trait bonus (config positive = easier, negated = reduces)
       );
 
-      // Difficulty can go negative, resulting in DC below 100
-      // 10 base + (-15) relationship + (-20) trait = -25
-      expect(result.finalDifficulty).toBeLessThan(0);
+      // DC = 100 + 10 + (-15) + (-20) = 75
+      expect(result.finalDifficulty).toBe(75);
+      expect(result.finalDifficulty).toBeLessThan(100);
     });
 
     it('should include trait breakdown when provided', () => {
@@ -227,14 +230,16 @@ describe('Social Activity Service - Integration', () => {
     const relationshipMod = -8;
     const npcTraitBonus = 5;
 
-    // Calculate difficulty
-    const difficulty = calculateDynamicDifficulty(
+    // Calculate DC
+    const dcCalc = calculateDynamicDifficulty(
       40,
       relationshipMod,
       npcTraitBonus
     );
 
-    expect(difficulty.finalDifficulty).toBeLessThan(40);  // Should be easier
+    // DC = 100 + 40 + (-8) + (-5) = 127 (easier than base 140)
+    expect(dcCalc.finalDifficulty).toBe(127);
+    expect(dcCalc.finalDifficulty).toBeLessThan(140);  // Easier than base
 
     // Apply outcome effects
     const baseEffects: Partial<RelationshipAxes> = {
@@ -252,14 +257,16 @@ describe('Social Activity Service - Integration', () => {
     const relationshipMod = 15;  // Penalty
     const npcTraitBonus = -5;    // Penalty (negative in config = harder)
 
-    // Calculate difficulty
-    const difficulty = calculateDynamicDifficulty(
+    // Calculate DC
+    const dcCalc = calculateDynamicDifficulty(
       30,
       relationshipMod,
       npcTraitBonus
     );
 
-    expect(difficulty.finalDifficulty).toBeGreaterThan(30);  // Much harder
+    // DC = 100 + 30 + 15 + 5 = 150 (harder than base 130)
+    expect(dcCalc.finalDifficulty).toBe(150);
+    expect(dcCalc.finalDifficulty).toBeGreaterThan(130);  // Harder than base
 
     // Mixed outcome should have no relationship change (balanced update)
     const effects = getActivityEffects({ desire: 12 }, 'mixed');

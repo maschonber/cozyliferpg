@@ -124,15 +124,15 @@ describe('Outcome Service', () => {
 
   describe('rollOutcome', () => {
     it('should use provided 2d100 value for deterministic testing', () => {
-      const result = rollOutcome(testStats, ['fitness'], 50, 100);
+      const result = rollOutcome(testStats, ['fitness'], 150, 100);
       expect(result.roll).toBe(100);
     });
 
     it('should calculate total correctly with 2d100 system', () => {
-      // 2d100 roll = 100, fitness bonus = 45 (full stat), DC = 150 (100 + 50)
+      // 2d100 roll = 100, fitness bonus = 45 (full stat), DC = 150
       // Total = 100 + 45 = 145
       // 145 < 150 (DC) but > 100 (DC - 50), so Mixed
-      const result = rollOutcome(testStats, ['fitness'], 50, 100);
+      const result = rollOutcome(testStats, ['fitness'], 150, 100);
       expect(result.statBonus).toBe(45);
       expect(result.dc).toBe(150);
       expect(result.adjustedRoll).toBe(145);
@@ -140,37 +140,37 @@ describe('Outcome Service', () => {
     });
 
     it('should return catastrophic for low total', () => {
-      // 2d100 roll = 20, no bonus, DC = 150 (100 + 50)
+      // 2d100 roll = 20, no bonus, DC = 150
       // Total = 20 + 0 = 20
       // 20 <= 100 (DC - 50), so Catastrophic
-      const result = rollOutcome(testStats, [], 50, 20);
+      const result = rollOutcome(testStats, [], 150, 20);
       expect(result.tier).toBe('catastrophic');
     });
 
     it('should return best for high total', () => {
-      // 2d100 roll = 180, knowledge bonus = 60, DC = 130 (100 + 30)
+      // 2d100 roll = 180, knowledge bonus = 60, DC = 130
       // Total = 180 + 60 = 240
       // 240 >= 180 (DC + 50), so Best
-      const result = rollOutcome(testStats, ['knowledge'], 30, 180);
+      const result = rollOutcome(testStats, ['knowledge'], 130, 180);
       expect(result.tier).toBe('best');
     });
 
     it('should detect crit failure', () => {
       // Roll = 30 (within crit fail range 2-50)
-      const result = rollOutcome(testStats, ['fitness'], 50, 30);
+      const result = rollOutcome(testStats, ['fitness'], 150, 30);
       expect(result.isCritFail).toBe(true);
       expect(result.isCritSuccess).toBe(false);
     });
 
     it('should detect crit success', () => {
       // Roll = 160 (within crit success range 152-200)
-      const result = rollOutcome(testStats, ['fitness'], 50, 160);
+      const result = rollOutcome(testStats, ['fitness'], 150, 160);
       expect(result.isCritSuccess).toBe(true);
       expect(result.isCritFail).toBe(false);
     });
 
     it('should generate random 2d100 roll if not provided', () => {
-      const result = rollOutcome(testStats, ['fitness'], 50);
+      const result = rollOutcome(testStats, ['fitness'], 150);
       expect(result.roll).toBeGreaterThanOrEqual(2);
       expect(result.roll).toBeLessThanOrEqual(200);
     });

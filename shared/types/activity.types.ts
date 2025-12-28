@@ -174,6 +174,18 @@ export function isDiscoveryActivity(activity: Activity): activity is DiscoveryAc
   return activity.type === 'discovery';
 }
 
+/**
+ * Type for activities that have difficulty (all except recovery)
+ */
+export type ActivityWithDifficulty = WorkActivity | SocialActivity | TrainingActivity | LeisureActivity | DiscoveryActivity;
+
+/**
+ * Check if activity has difficulty (all except recovery)
+ */
+export function hasActivityDifficulty(activity: Activity): activity is ActivityWithDifficulty {
+  return activity.type !== 'recovery';
+}
+
 // ===== Helper Functions =====
 
 /**

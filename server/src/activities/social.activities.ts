@@ -417,7 +417,7 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
   createSocialActivity({
     id: 'feed_ducks',
     name: 'Feed the Ducks',
-    description: 'Toss breadcrumbs to the ducks at the pond',
+    description: 'Toss breadcrumbs to the ducks at the pond - great bonding, though it leads to melancholy',
     location: 'park',
     timeCost: 45,
     energyCost: -4,
@@ -426,9 +426,9 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
     tags: ['outdoor', 'calm'],
     relationshipEffects: { affection: 10, trust: 5 },
     difficulty: 5,
-    relevantStats: ['poise'],
+    relevantStats: ['empathy', 'vitality'],
     outcomeProfile: {
-      mainStats: ['poise'],
+      mainStats: ['vitality'],
       mainStatGain: 0.5,
       secondaryStats: ['empathy'],
       secondaryStatGain: 0.3,
@@ -439,8 +439,8 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
       }
     },
     emotionProfile: {
-      successEmotion: 'anticipation',
-      failureEmotion: 'sadness'
+      successEmotion: 'sadness',
+      failureEmotion: 'disgust'
     }
   }),
 
