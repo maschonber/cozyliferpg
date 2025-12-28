@@ -31,6 +31,10 @@ Follow the principles documented in the rule files:
 - @.claude/rules/testing.md - Testing principles
 - @.claude/rules/security.md - Security requirements
 
+In addition, refer to the overarching design document for questions of purpose and tone:
+
+- @.claude/rules/game-design.md - Game Design Considerations
+
 ## Pre-Commit Checklist
 
 Before committing, **ALWAYS** run:
