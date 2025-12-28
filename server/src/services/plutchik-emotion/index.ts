@@ -348,6 +348,14 @@ export { interpretEmotionVector, interpretEmotionVectorSlim } from './interpreta
  */
 export { applyEmotionDecay } from './decay';
 
+/**
+ * Generate emotion pulls for activities based on outcome tier
+ *
+ * Creates varied emotional responses with deterministic primary emotions
+ * (from the activity's emotion profile) and random secondary emotions.
+ */
+export { generateActivityEmotionPulls, hasEmotionProfile } from './activity-emotions';
+
 // ===== Exported for Testing =====
 
 export const _testing = {

@@ -1,7 +1,6 @@
-import { Component, inject, OnInit, OnDestroy, computed, signal } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
-import { HttpClient } from '@angular/common/http';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -13,67 +12,12 @@ import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
 import { Subscription } from 'rxjs';
 import { ActivityButtonComponent } from '../../../../shared/components/activity-button/activity-button.component';
+import { EmotionDisplayComponent } from '../../../../shared/components/emotion-display/emotion-display.component';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
-import { environment } from '../../../../../environments/environment';
 import {
-  EmotionInterpretationResult,
-  BaseEmotion,
-  EmotionDyad,
   requiresNPC,
-  isSocialActivity,
-  SocialActivity
+  isSocialActivity
 } from '../../../../../../shared/types';
-
-/** Full interpretation with descriptors (after joining with config) */
-interface EmotionInterpretation extends EmotionInterpretationResult {
-  noun?: string;
-  adjective?: string;
-  color?: string;
-}
-
-/** Emotion descriptor from config */
-interface EmotionDescriptor {
-  noun: string;
-  adjective: string;
-  color: string;
-}
-
-/** Config response from the API */
-interface EmotionConfig {
-  thresholds: {
-    high: number;
-    medium: number;
-    low: number;
-    proximity: number;
-  };
-  emotions: {
-    base: {
-      [key in BaseEmotion]: {
-        low: EmotionDescriptor;
-        medium: EmotionDescriptor;
-        high: EmotionDescriptor;
-      };
-    };
-    dyads: {
-      [key in EmotionDyad]: {
-        low: EmotionDescriptor;
-        medium: EmotionDescriptor;
-        high: EmotionDescriptor;
-      };
-    };
-    special: {
-      neutral: {
-        noun: string;
-        adjective: string;
-      };
-      mixed: {
-        noun: string;
-        adjective: string;
-      };
-    };
-  };
-  success: boolean;
-}
 
 @Component({
   selector: 'app-neighbor-detail',
@@ -86,7 +30,8 @@ interface EmotionConfig {
     MatDividerModule,
     MatProgressBarModule,
     MatChipsModule,
-    ActivityButtonComponent
+    ActivityButtonComponent,
+    EmotionDisplayComponent
   ],
   templateUrl: './neighbor-detail.html',
   styleUrl: './neighbor-detail.css',
@@ -96,11 +41,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
   private route = inject(ActivatedRoute);
   private router = inject(Router);
   private dialog = inject(MatDialog);
-  private http = inject(HttpClient);
   private subscriptions = new Subscription();
-
-  // Cached emotion config (fetched once)
-  private emotionConfig = signal<EmotionConfig | null>(null);
 
   // Expose Math for template
   Math = Math;
@@ -118,12 +59,8 @@ export class NeighborDetail implements OnInit, OnDestroy {
   isLoading = this.facade.isLoading;
   player = this.facade.player;
 
-  // Enriched emotion interpretation with color/adjective/noun
-  enrichedEmotion = computed(() => {
-    const npc = this.selectedNPC();
-    if (!npc?.emotionInterpretation) return null;
-    return this.enrichInterpretation(npc.emotionInterpretation);
-  });
+  /** NPC's current emotion interpretation (for display component) */
+  npcEmotion = computed(() => this.selectedNPC()?.emotionInterpretation ?? null);
 
   // Filter social activities (require NPC and available at current location)
   socialActivities = computed(() => {
@@ -143,9 +80,6 @@ export class NeighborDetail implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Fetch emotion config once on init
-    this.fetchEmotionConfig();
-
     // Get NPC ID from route params
     const npcId = this.route.snapshot.paramMap.get('id');
     if (npcId) {
@@ -229,6 +163,9 @@ export class NeighborDetail implements OnInit, OnDestroy {
     const activity = this.activities().find(a => a.id === activityId);
     if (!activity) return;
 
+    // Capture previous emotion before performing activity (for transition animation)
+    const previousEmotion = npc.emotionInterpretation;
+
     this.facade.performActivity(activityId, npcId).subscribe({
       next: (result) => {
         // Helper to get outcome description
@@ -276,6 +213,11 @@ export class NeighborDetail implements OnInit, OnDestroy {
             newState: result.newState
           } : undefined,
           emotionalState: result.emotionalState,
+          // Emotion transition for animated display
+          emotionTransition: (previousEmotion && result.npc?.emotionInterpretation) ? {
+            previous: previousEmotion,
+            current: result.npc.emotionInterpretation
+          } : undefined,
           discoveredTrait: result.discoveredTrait,
           difficultyBreakdown: result.difficultyBreakdown
         };
@@ -367,76 +309,6 @@ export class NeighborDetail implements OnInit, OnDestroy {
     if (trust > 0 || affection > 0 || desire > 0) return 'positive';
     if (trust < 0 || affection < 0 || desire < 0) return 'negative';
     return 'default';
-  }
-
-  /**
-   * Fetch emotion config (descriptors, thresholds) - called once on init
-   */
-  private fetchEmotionConfig(): void {
-    this.http.get<{ success: boolean } & EmotionConfig>(
-      `${environment.apiUrl}/emotion-sandbox/config`
-    ).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.emotionConfig.set(response);
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching emotion config:', err);
-        // Non-fatal - we can still function without descriptors
-      }
-    });
-  }
-
-  /**
-   * Join a slim interpretation result with config to get full descriptors
-   */
-  private enrichInterpretation(result: EmotionInterpretationResult): EmotionInterpretation {
-    const config = this.emotionConfig();
-    if (!config) {
-      // No config yet - return without descriptors
-      return result;
-    }
-
-    const { emotion, intensity } = result;
-
-    // Handle special emotions (neutral, mixed) - no color
-    if (emotion === 'neutral' || emotion === 'mixed') {
-      const special = config.emotions.special[emotion];
-      return {
-        ...result,
-        noun: special.noun,
-        adjective: special.adjective,
-      };
-    }
-
-    // For base emotions and dyads, we need an intensity level
-    const level = intensity || 'medium';
-
-    // Check if it's a base emotion
-    if (emotion in config.emotions.base) {
-      const descriptors = config.emotions.base[emotion as BaseEmotion][level];
-      return {
-        ...result,
-        noun: descriptors.noun,
-        adjective: descriptors.adjective,
-        color: descriptors.color,
-      };
-    }
-
-    // Must be a dyad
-    if (emotion in config.emotions.dyads) {
-      const descriptors = config.emotions.dyads[emotion as EmotionDyad][level];
-      return {
-        ...result,
-        noun: descriptors.noun,
-        adjective: descriptors.adjective,
-        color: descriptors.color,
-      };
-    }
-
-    // Fallback - shouldn't happen
-    return result;
   }
 
   /**

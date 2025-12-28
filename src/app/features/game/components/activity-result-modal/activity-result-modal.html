@@ -208,19 +208,21 @@
       }
 
       <!-- Emotion State Section (social activities) -->
-      @if (isSocialActivity && data.summary.emotionalState) {
-        @let emotionInfo = getEmotionInfo();
-        @if (emotionInfo) {
-          <div class="emotion-section">
-            <h3>{{ data.summary.npc?.name }}'s Emotional State</h3>
-            <div class="emotion-display">
-              <mat-icon class="emotion-icon">{{ emotionInfo.icon }}</mat-icon>
-              <span class="emotion-primary">{{ emotionInfo.emotion }}</span>
+      @if (isSocialActivity && hasEmotionTransition) {
+        <div class="emotion-section">
+          <h3>{{ data.summary.npc?.name }}'s Emotional State</h3>
+          @if (emotionChanged()) {
+            <div class="emotion-transition">
+              <app-emotion-display [emotion]="previousEmotion()" />
+              <mat-icon class="transition-arrow">arrow_forward</mat-icon>
+              <app-emotion-display [emotion]="currentEmotion()" />
             </div>
-          </div>
+          } @else {
+            <app-emotion-display [emotion]="currentEmotion()" />
+          }
+        </div>
 
-          <mat-divider></mat-divider>
-        }
+        <mat-divider></mat-divider>
       }
 
       <!-- Trait Discovery Section (social activities) -->

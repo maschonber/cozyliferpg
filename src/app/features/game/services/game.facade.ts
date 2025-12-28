@@ -259,6 +259,11 @@ export class GameFacade {
           this.store.updateRelationship(result.relationship);
         }
 
+        // Update NPC in store (includes updated emotion vector)
+        if (result.npc) {
+          this.store.updateNPC(result.npc);
+        }
+
         this.store.setInteracting(false);
 
         // Log activity result

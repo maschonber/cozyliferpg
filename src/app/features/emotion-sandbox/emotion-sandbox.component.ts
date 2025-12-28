@@ -1,103 +1,29 @@
-import { Component, signal, OnInit } from '@angular/core';
+import { Component, signal, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
-
-interface EmotionVector {
-  joySadness: number;
-  acceptanceDisgust: number;
-  angerFear: number;
-  anticipationSurprise: number;
-}
-
-type BaseEmotion =
-  | 'joy' | 'sadness'
-  | 'acceptance' | 'disgust'
-  | 'anger' | 'fear'
-  | 'anticipation' | 'surprise';
-
-type EmotionIntensity = 'tiny' | 'small' | 'medium' | 'large' | 'huge';
-
-interface EmotionPull {
-  emotion: BaseEmotion;
-  intensity: EmotionIntensity;
-}
-
-type InterpretedIntensity = 'low' | 'medium' | 'high';
-
-type EmotionDyad =
-  | 'love' | 'guilt' | 'delight' | 'pride'
-  | 'submission' | 'curiosity' | 'sentimentality'
-  | 'despair' | 'shame' | 'awe'
-  | 'disappointment' | 'unbelief'
-  | 'envy' | 'pessimism'
-  | 'remorse' | 'contempt' | 'cynicism'
-  | 'dominance' | 'aggression'
-  | 'optimism' | 'anxiety' | 'fatalism';
-
-type SpecialEmotion = 'neutral' | 'mixed';
-
-type InterpretedEmotion = BaseEmotion | EmotionDyad | SpecialEmotion;
-
-/** Slim interpretation result from API (without descriptors) */
-interface EmotionInterpretationResult {
-  emotion: InterpretedEmotion;
-  intensity?: InterpretedIntensity;
-  contributingEmotions?: BaseEmotion[];
-}
-
-/** Full interpretation with descriptors (after joining with config) */
-interface EmotionInterpretation extends EmotionInterpretationResult {
-  noun?: string;
-  adjective?: string;
-  color?: string;
-}
-
-/** Descriptor data for an emotion at a specific intensity */
-interface EmotionDescriptor {
-  noun: string;
-  adjective: string;
-  color: string;
-}
-
-/** Descriptors for all intensity levels */
-interface EmotionDescriptors {
-  low: EmotionDescriptor;
-  medium: EmotionDescriptor;
-  high: EmotionDescriptor;
-}
-
-/** Config response from the API */
-interface EmotionConfig {
-  thresholds: {
-    high: number;
-    medium: number;
-    low: number;
-  };
-  proximityRatio: number;
-  emotions: {
-    base: Record<BaseEmotion, EmotionDescriptors>;
-    dyads: Record<EmotionDyad, EmotionDescriptors>;
-    special: {
-      neutral: { noun: string; adjective: string };
-      mixed: { noun: string; adjective: string };
-    };
-  };
-}
+import { EmotionDisplayComponent } from '../../shared/components/emotion-display/emotion-display.component';
+import { EmotionConfigService } from '../../shared/services/emotion-config.service';
+import {
+  EmotionVector,
+  BaseEmotion,
+  EmotionIntensity,
+  EmotionPull,
+  EmotionInterpretationResult
+} from '../../../../shared/types';
 
 @Component({
   selector: 'app-emotion-sandbox',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, EmotionDisplayComponent],
   templateUrl: './emotion-sandbox.component.html',
   styleUrls: ['./emotion-sandbox.component.css']
 })
 export class EmotionSandboxComponent implements OnInit {
+  private http = inject(HttpClient);
+  private emotionConfigService = inject(EmotionConfigService);
   private apiUrl = `${environment.apiUrl}/emotion-sandbox`;
-
-  // Cached emotion config (fetched once)
-  private emotionConfig = signal<EmotionConfig | null>(null);
 
   // Current emotion vector
   currentVector = signal<EmotionVector>({
@@ -107,11 +33,9 @@ export class EmotionSandboxComponent implements OnInit {
     anticipationSurprise: 0,
   });
 
-  // Current emotion interpretation (starts with neutral/calm)
-  currentInterpretation = signal<EmotionInterpretation>({
+  // Current emotion interpretation (slim, from API)
+  currentInterpretation = signal<EmotionInterpretationResult>({
     emotion: 'neutral',
-    adjective: 'calm',
-    noun: 'neutrality',
   });
 
   // Available options
@@ -137,80 +61,9 @@ export class EmotionSandboxComponent implements OnInit {
   // Expose Math for template
   Math = Math;
 
-  constructor(private http: HttpClient) {}
-
   ngOnInit(): void {
-    this.fetchConfig();
-  }
-
-  /**
-   * Fetch emotion config (descriptors, thresholds) - called once on init
-   */
-  private fetchConfig(): void {
-    this.http.get<{ success: boolean } & EmotionConfig>(
-      `${this.apiUrl}/config`
-    ).subscribe({
-      next: (response) => {
-        if (response.success) {
-          this.emotionConfig.set(response);
-        }
-      },
-      error: (err) => {
-        console.error('Error fetching emotion config:', err);
-        // Non-fatal - we can still function without descriptors
-      }
-    });
-  }
-
-  /**
-   * Join a slim interpretation result with config to get full descriptors
-   */
-  private enrichInterpretation(result: EmotionInterpretationResult): EmotionInterpretation {
-    const config = this.emotionConfig();
-    if (!config) {
-      // No config yet - return without descriptors
-      return result;
-    }
-
-    const { emotion, intensity } = result;
-
-    // Handle special emotions (neutral, mixed) - no color
-    if (emotion === 'neutral' || emotion === 'mixed') {
-      const special = config.emotions.special[emotion];
-      return {
-        ...result,
-        noun: special.noun,
-        adjective: special.adjective,
-      };
-    }
-
-    // For base emotions and dyads, we need an intensity level
-    const level = intensity || 'medium';
-
-    // Check if it's a base emotion
-    if (emotion in config.emotions.base) {
-      const descriptors = config.emotions.base[emotion as BaseEmotion][level];
-      return {
-        ...result,
-        noun: descriptors.noun,
-        adjective: descriptors.adjective,
-        color: descriptors.color,
-      };
-    }
-
-    // Must be a dyad
-    if (emotion in config.emotions.dyads) {
-      const descriptors = config.emotions.dyads[emotion as EmotionDyad][level];
-      return {
-        ...result,
-        noun: descriptors.noun,
-        adjective: descriptors.adjective,
-        color: descriptors.color,
-      };
-    }
-
-    // Fallback - return as-is
-    return result;
+    // Ensure config is loaded for the shared service
+    this.emotionConfigService.ensureLoaded();
   }
 
   /**
@@ -236,8 +89,7 @@ export class EmotionSandboxComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.currentVector.set(response.output);
-          // Enrich slim interpretation with descriptors from cached config
-          this.currentInterpretation.set(this.enrichInterpretation(response.interpretation));
+          this.currentInterpretation.set(response.interpretation);
           this.secondaryPull.set(null); // Clear secondary after applying
         }
         this.loading.set(false);
@@ -292,8 +144,6 @@ export class EmotionSandboxComponent implements OnInit {
     });
     this.currentInterpretation.set({
       emotion: 'neutral',
-      adjective: 'calm',
-      noun: 'neutrality',
     });
     this.error.set(null);
   }
@@ -318,8 +168,7 @@ export class EmotionSandboxComponent implements OnInit {
       next: (response) => {
         if (response.success) {
           this.currentVector.set(response.output);
-          // Enrich slim interpretation with descriptors from cached config
-          this.currentInterpretation.set(this.enrichInterpretation(response.interpretation));
+          this.currentInterpretation.set(response.interpretation);
         }
         this.loading.set(false);
       },
@@ -368,14 +217,15 @@ export class EmotionSandboxComponent implements OnInit {
   /**
    * Get color for an emotion axis.
    *
-   * Uses the color from the interpretation if available, otherwise gray
+   * Uses the color from the enriched interpretation if available, otherwise gray
    */
   getColorForAxis(axis: keyof EmotionVector): string {
-    const interp = this.currentInterpretation();
-    const contributing = interp?.contributingEmotions ?? [];
+    const slim = this.currentInterpretation();
+    const enriched = this.emotionConfigService.enrich(slim);
+    const contributing = slim?.contributingEmotions ?? [];
 
     // No interpretation or no contributing emotions → gray
-    if (contributing.length === 0 || !interp?.color) {
+    if (contributing.length === 0 || !enriched?.color) {
       return '#94a3b8';
     }
 
@@ -390,7 +240,7 @@ export class EmotionSandboxComponent implements OnInit {
     }
 
     // This emotion IS contributing - use the interpretation color
-    return interp.color;
+    return enriched.color;
   }
 
   /**

@@ -24,6 +24,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.5,
         moneyCost: 5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'disgust'
     }
   }),
 
@@ -47,6 +51,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         stats: ['confidence'],
         statPenalty: 0.3
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -73,6 +81,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 1,
         moneyCost: 15
       }
+    },
+    emotionProfile: {
+      successEmotion: 'anticipation',
+      failureEmotion: 'fear'
     }
   }),
 
@@ -99,6 +111,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 1,
         energyCost: 10
       }
+    },
+    emotionProfile: {
+      successEmotion: 'acceptance',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -122,6 +138,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
       negativeEffects: {
         moneyCost: 10
       }
+    },
+    emotionProfile: {
+      successEmotion: 'surprise',
+      failureEmotion: 'disgust'
     }
   }),
 
@@ -148,6 +168,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.5,
         energyCost: 10
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'anger'
     }
   }),
 
@@ -175,6 +199,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         moneyCost: 10,
         timeCost: 30
       }
+    },
+    emotionProfile: {
+      successEmotion: 'anticipation',
+      failureEmotion: 'surprise'
     }
   }),
 
@@ -199,6 +227,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 1.5,
         energyCost: 8
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'disgust'
     }
   }),
 
@@ -226,6 +258,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         moneyCost: 5,
         timeCost: 15
       }
+    },
+    emotionProfile: {
+      successEmotion: 'acceptance',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -253,6 +289,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         moneyCost: 5,
         energyCost: 5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'anger'
     }
   }),
 
@@ -280,6 +320,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         moneyCost: 3,
         timeCost: 10
       }
+    },
+    emotionProfile: {
+      successEmotion: 'acceptance',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -306,6 +350,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 1,
         energyCost: 5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'acceptance',
+      failureEmotion: 'anger'
     }
   }),
 
@@ -330,6 +378,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.5,
         energyCost: 5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'surprise',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -353,6 +405,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         stats: ['confidence'],
         statPenalty: 0.5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'acceptance',
+      failureEmotion: 'disgust'
     }
   }),
 
@@ -381,6 +437,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.2,
         moneyCost: 2
       }
+    },
+    emotionProfile: {
+      successEmotion: 'anticipation',
+      failureEmotion: 'sadness'
     }
   }),
 
@@ -407,6 +467,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         statPenalty: 0.5,
         energyCost: 5
       }
+    },
+    emotionProfile: {
+      successEmotion: 'anticipation',
+      failureEmotion: 'fear'
     }
   }),
 
@@ -434,6 +498,10 @@ export const SOCIAL_ACTIVITIES: SocialActivity[] = [
         moneyCost: 10,
         timeCost: 20
       }
+    },
+    emotionProfile: {
+      successEmotion: 'joy',
+      failureEmotion: 'disgust'
     }
   })
 ];

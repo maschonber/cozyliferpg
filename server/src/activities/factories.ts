@@ -18,7 +18,8 @@ import {
   StatName,
   TimeSlot,
   LocationId,
-  RelationshipState
+  RelationshipState,
+  EmotionProfile
 } from '../../../shared/types';
 
 /**
@@ -67,6 +68,7 @@ export function createSocialActivity(
     difficulty: number;
     relevantStats: StatName[];
     outcomeProfile?: ActivityOutcomeProfile;
+    emotionProfile?: EmotionProfile;
     minRelationship?: RelationshipState;
     statRequirements?: Partial<Record<StatName, number>>;
   }

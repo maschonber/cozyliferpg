@@ -97,6 +97,19 @@ export type BaseEmotion =
   | 'anticipation' | 'surprise';
 
 /**
+ * Intensity levels for emotion pulls (t-shirt sizing)
+ */
+export type EmotionIntensity = 'tiny' | 'small' | 'medium' | 'large' | 'huge';
+
+/**
+ * A request to pull emotions in a specific direction
+ */
+export interface EmotionPull {
+  emotion: BaseEmotion;
+  intensity: EmotionIntensity;
+}
+
+/**
  * Four-dimensional emotion vector
  * Each axis represents two opposing emotions
  * Values range from -1 to +1
@@ -162,6 +175,18 @@ export interface EmotionInterpretationResult {
 
   /** The base emotions contributing to this interpretation (1 for main emotions, 2 for dyads) */
   contributingEmotions?: BaseEmotion[];
+}
+
+/**
+ * Emotion profile for activities
+ * Defines core emotional outcomes for success/failure scenarios
+ * Secondary emotions are randomly selected at runtime for variety
+ */
+export interface EmotionProfile {
+  /** Primary emotion triggered on successful outcomes (best/okay) */
+  successEmotion: BaseEmotion;
+  /** Primary emotion triggered on catastrophic outcomes */
+  failureEmotion: BaseEmotion;
 }
 
 /**
@@ -870,6 +895,12 @@ export interface ActivitySummary {
 
   // Emotional state (social activities only)
   emotionalState?: InterpretedEmotion;
+
+  // Emotion transition data (for animated display in modal)
+  emotionTransition?: {
+    previous: EmotionInterpretationResult;
+    current: EmotionInterpretationResult;
+  };
 
   // Trait discovery (social activities only)
   discoveredTrait?: {

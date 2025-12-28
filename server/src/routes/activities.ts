@@ -32,7 +32,12 @@ import {
   getContributingTrait,
   getTraitDefinition
 } from '../services/trait';
-import { interpretEmotionVectorSlim } from '../services/plutchik-emotion';
+import {
+  interpretEmotionVectorSlim,
+  applyEmotionPulls,
+  generateActivityEmotionPulls,
+  hasEmotionProfile
+} from '../services/plutchik-emotion';
 import { ActivityTag } from '../../../shared/types/activity.types';
 import { randomUUID } from 'crypto';
 import {
@@ -463,6 +468,29 @@ router.post(
           const trustValue = Number.isFinite(newAxes.trust) ? newAxes.trust : 0;
           const affectionValue = Number.isFinite(newAxes.affection) ? newAxes.affection : 0;
           const desireValue = Number.isFinite(newAxes.desire) ? newAxes.desire : 0;
+
+          // Apply emotion effects to NPC based on activity outcome
+          let updatedEmotionVector = npc.emotionVector;
+          if (hasEmotionProfile(activity.emotionProfile)) {
+            const emotionPulls = generateActivityEmotionPulls(
+              activity.emotionProfile,
+              rollResult.tier
+            );
+            updatedEmotionVector = applyEmotionPulls(npc.emotionVector, emotionPulls);
+
+            // Update NPC emotion vector in database
+            await client.query(
+              `UPDATE npcs SET emotion_vector = $1 WHERE id = $2`,
+              [JSON.stringify(updatedEmotionVector), npcId]
+            );
+
+            // Update the npc object with new emotion state for response
+            npc = {
+              ...npc,
+              emotionVector: updatedEmotionVector,
+              emotionInterpretation: interpretEmotionVectorSlim(updatedEmotionVector)
+            };
+          }
 
           // Update relationship in database
           await client.query(

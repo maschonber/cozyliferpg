@@ -152,27 +152,10 @@
   color: rgba(0, 0, 0, 0.6);
 }
 
-/* Emotion Interpretation (Plutchik) */
-.emotion-interpretation {
-  padding: 1.5rem;
-  border-radius: 0.75rem;
+/* Emotion Display wrapper */
+app-emotion-display {
+  display: block;
   margin: 0 16px 16px;
-  color: black;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  text-align: center;
-}
-
-.interpretation-adjective {
-  font-size: 2rem;
-  font-weight: 700;
-  text-transform: capitalize;
-  margin-bottom: 0.5rem;
-}
-
-.interpretation-details {
-  font-size: 0.875rem;
-  opacity: 0.75;
-  text-transform: capitalize;
 }
 
 /* Traits Section */

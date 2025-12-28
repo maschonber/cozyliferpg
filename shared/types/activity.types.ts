@@ -10,7 +10,8 @@ import {
   TimeSlot,
   StatName,
   RelationshipState,
-  ActivityOutcomeProfile
+  ActivityOutcomeProfile,
+  EmotionProfile
 } from '../types';
 
 /**
@@ -69,6 +70,7 @@ export interface SocialActivity extends BaseActivity {
   difficulty: number;
   relevantStats: StatName[];
   outcomeProfile?: ActivityOutcomeProfile;
+  emotionProfile?: EmotionProfile;
   minRelationship?: RelationshipState;
   statRequirements?: Partial<Record<StatName, number>>;
 }

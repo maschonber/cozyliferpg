@@ -10,15 +10,8 @@
 
   <!-- Current Emotion State -->
   <div class="emotion-state">
-    <!-- Emotion Interpretation -->
-    <div class="emotion-interpretation" [style.background-color]="currentInterpretation().color || '#94a3b8'">
-      <!-- Primary: the adjective (e.g., "hostile", "angry") -->
-      <div class="interpretation-adjective">{{ currentInterpretation().adjective || currentInterpretation().emotion }}</div>
-      <!-- Fine print: emotion composition -->
-      <div class="interpretation-details">
-        {{ currentInterpretation().emotion }}@if (currentInterpretation().intensity) { ({{ currentInterpretation().intensity }})}@if (currentInterpretation().contributingEmotions && currentInterpretation().contributingEmotions!.length > 1) { · {{ currentInterpretation().contributingEmotions!.join(' + ') }}}
-      </div>
-    </div>
+    <!-- Emotion Interpretation (using shared component) -->
+    <app-emotion-display [emotion]="currentInterpretation()" />
 
     <div class="emotion-axes">
       @for (axis of axisKeys; track axis) {

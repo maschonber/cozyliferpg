@@ -5,14 +5,19 @@
  * - Social: relationship changes (trust/affection/desire), emotion state, trait discovery
  */
 
-import { Component, inject } from '@angular/core';
+import { Component, inject, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { ActivitySummary, StatChange, OutcomeTier } from '../../../../../../shared/types';
+import {
+  ActivitySummary,
+  StatChange,
+  OutcomeTier
+} from '../../../../../../shared/types';
+import { EmotionDisplayComponent } from '../../../../shared/components/emotion-display/emotion-display.component';
 
 export interface ActivityResultModalData {
   summary: ActivitySummary;
@@ -27,7 +32,8 @@ export interface ActivityResultModalData {
     MatButtonModule,
     MatIconModule,
     MatDividerModule,
-    MatExpansionModule
+    MatExpansionModule,
+    EmotionDisplayComponent
   ],
   templateUrl: './activity-result-modal.html',
   styleUrl: './activity-result-modal.css'
@@ -35,6 +41,20 @@ export interface ActivityResultModalData {
 export class ActivityResultModal {
   private dialogRef = inject(MatDialogRef<ActivityResultModal>);
   data = inject<ActivityResultModalData>(MAT_DIALOG_DATA);
+
+  /** Previous emotion (before activity) */
+  previousEmotion = computed(() => this.data.summary.emotionTransition?.previous ?? null);
+
+  /** Current emotion (after activity) */
+  currentEmotion = computed(() => this.data.summary.emotionTransition?.current ?? null);
+
+  /** Whether emotion actually changed */
+  emotionChanged = computed(() => {
+    const prev = this.previousEmotion();
+    const curr = this.currentEmotion();
+    if (!prev || !curr) return false;
+    return prev.emotion !== curr.emotion || prev.intensity !== curr.intensity;
+  });
 
   /**
    * Get display info for outcome tier
@@ -292,16 +312,12 @@ export class ActivityResultModal {
   }
 
   /**
-   * Get emotion display info
+   * Check if we have emotion transition data
    */
-  getEmotionInfo(): { emotion: string; icon: string } | null {
-    const emotion = this.data.summary.emotionalState;
-
-    return {
-      emotion: emotion || 'neutral',
-      icon: 'sentiment_neutral'
-    };
+  get hasEmotionTransition(): boolean {
+    return !!this.data.summary.emotionTransition;
   }
+
 
   /**
    * Calculate outcome probabilities based on current stat and difficulty

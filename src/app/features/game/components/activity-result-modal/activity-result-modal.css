@@ -489,39 +489,19 @@ mat-dialog-actions {
   color: rgba(0, 0, 0, 0.7);
 }
 
-.emotion-display {
+.emotion-transition {
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 8px;
-  padding: 16px;
-  background: rgba(0, 0, 0, 0.03);
-  border-radius: 8px;
 }
 
-.emotion-icon {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-  color: #ff9800;
+.emotion-transition app-emotion-display {
+  flex: 1;
 }
 
-.emotion-primary {
-  font-weight: 600;
-  font-size: 1.1rem;
-  color: rgba(0, 0, 0, 0.8);
-}
-
-.emotion-label {
-  font-size: 0.9rem;
+.emotion-transition .transition-arrow {
   color: rgba(0, 0, 0, 0.5);
-  font-style: italic;
-}
-
-.emotion-secondary {
-  font-weight: 500;
-  font-size: 1rem;
-  color: rgba(0, 0, 0, 0.6);
+  flex-shrink: 0;
 }
 
 /* Trait Discovery Section (Social Activities) */

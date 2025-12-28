@@ -64,15 +64,8 @@
         </mat-card-header>
 
         <!-- Current Emotion Display (Plutchik) -->
-        @if (enrichedEmotion()) {
-          <div class="emotion-interpretation" [style.background-color]="enrichedEmotion()!.color || '#94a3b8'">
-            <!-- Primary: the adjective (e.g., "hostile", "angry") -->
-            <div class="interpretation-adjective">{{ enrichedEmotion()!.adjective || enrichedEmotion()!.emotion }}</div>
-            <!-- Fine print: emotion composition -->
-            <div class="interpretation-details">
-              {{ enrichedEmotion()!.emotion }}@if (enrichedEmotion()!.intensity) { ({{ enrichedEmotion()!.intensity }})}@if (enrichedEmotion()!.contributingEmotions && enrichedEmotion()!.contributingEmotions!.length > 1) { · {{ enrichedEmotion()!.contributingEmotions!.join(' + ') }}}
-            </div>
-          </div>
+        @if (npcEmotion()) {
+          <app-emotion-display [emotion]="npcEmotion()" />
         }
 
         <mat-card-content>
