@@ -404,4 +404,258 @@ export async function migrateSocialActivitiesConsolidation() {
   }
 }
 
+// NPC/Relationship Consolidation Migration
+// Consolidates npcs and relationships tables into npc_templates and player_npcs
+export async function migrateNpcRelationshipConsolidation() {
+  const client = await pool.connect();
 
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running NPC/Relationship Consolidation migration...');
+
+    // ===== 1. Check if already migrated (player_npcs table exists) =====
+    const playerNpcsCheck = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name='player_npcs'
+    `);
+
+    if (playerNpcsCheck.rows.length > 0) {
+      console.log('  ⏭️  Migration already applied (player_npcs table exists)');
+      await client.query('COMMIT');
+      return;
+    }
+
+    // ===== 2. Create npc_templates table =====
+    console.log('  Creating npc_templates table...');
+    await client.query(`
+      CREATE TABLE npc_templates (
+        id VARCHAR(255) PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        gender VARCHAR(10) NOT NULL CHECK (gender IN ('female', 'male', 'other')),
+        traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        hair_color VARCHAR(50) NOT NULL,
+        hair_style VARCHAR(50) NOT NULL,
+        eye_color VARCHAR(50) NOT NULL,
+        face_details TEXT[] DEFAULT ARRAY[]::TEXT[],
+        body_type VARCHAR(50) NOT NULL,
+        torso_size VARCHAR(50) NOT NULL,
+        height VARCHAR(50) NOT NULL,
+        skin_tone VARCHAR(50) NOT NULL,
+        upper_trace VARCHAR(100) NOT NULL,
+        lower_trace VARCHAR(100) NOT NULL,
+        style VARCHAR(50),
+        body_details TEXT[] DEFAULT ARRAY[]::TEXT[],
+        loras TEXT[] DEFAULT ARRAY[]::TEXT[],
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('  ✅ Created npc_templates table');
+
+    // ===== 3. Create player_npcs table =====
+    console.log('  Creating player_npcs table...');
+    await client.query(`
+      CREATE TABLE player_npcs (
+        id VARCHAR(255) PRIMARY KEY,
+        player_id VARCHAR(255) NOT NULL,
+        npc_template_id VARCHAR(255) NOT NULL,
+        trust INTEGER NOT NULL DEFAULT 0 CHECK (trust >= -100 AND trust <= 100),
+        affection INTEGER NOT NULL DEFAULT 0 CHECK (affection >= -100 AND affection <= 100),
+        desire INTEGER NOT NULL DEFAULT 0 CHECK (desire >= -100 AND desire <= 100),
+        current_state VARCHAR(50) NOT NULL DEFAULT 'stranger',
+        emotion_vector JSONB NOT NULL DEFAULT '{"joySadness":0,"acceptanceDisgust":0,"angerFear":0,"anticipationSurprise":0}',
+        revealed_traits TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[],
+        current_location VARCHAR(50) NOT NULL,
+        first_met INTEGER NOT NULL DEFAULT 360,
+        last_interaction INTEGER NOT NULL DEFAULT 360,
+        FOREIGN KEY (player_id) REFERENCES users(id) ON DELETE CASCADE,
+        FOREIGN KEY (npc_template_id) REFERENCES npc_templates(id) ON DELETE CASCADE,
+        UNIQUE(player_id, npc_template_id)
+      )
+    `);
+    console.log('  ✅ Created player_npcs table');
+
+    // ===== 4. Create indexes =====
+    console.log('  Creating indexes...');
+    await client.query(`CREATE INDEX idx_player_npcs_player ON player_npcs(player_id)`);
+    await client.query(`CREATE INDEX idx_player_npcs_template ON player_npcs(npc_template_id)`);
+    await client.query(`CREATE INDEX idx_player_npcs_location ON player_npcs(player_id, current_location)`);
+    console.log('  ✅ Created indexes');
+
+    // ===== 5. Migrate data from npcs to npc_templates =====
+    const npcsCheck = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name='npcs'
+    `);
+
+    if (npcsCheck.rows.length > 0) {
+      console.log('  Migrating data from npcs to npc_templates...');
+
+      // Check if npcs has any rows
+      const npcsCount = await client.query('SELECT COUNT(*) as count FROM npcs');
+      const count = parseInt(npcsCount.rows[0].count, 10);
+
+      if (count > 0) {
+        // Insert static data into npc_templates
+        await client.query(`
+          INSERT INTO npc_templates (
+            id, name, gender, traits,
+            hair_color, hair_style, eye_color, face_details,
+            body_type, torso_size, height, skin_tone,
+            upper_trace, lower_trace, style, body_details,
+            loras, created_at
+          )
+          SELECT
+            id, name, gender, traits,
+            hair_color, hair_style, eye_color, face_details,
+            body_type, torso_size, height, skin_tone,
+            upper_trace, lower_trace, style, body_details,
+            loras, created_at
+          FROM npcs
+        `);
+        console.log(`  ✅ Migrated ${count} NPC templates`);
+      } else {
+        console.log('  ⏭️  No NPCs to migrate');
+      }
+    }
+
+    // ===== 6. Migrate data from relationships to player_npcs =====
+    const relationshipsCheck = await client.query(`
+      SELECT table_name
+      FROM information_schema.tables
+      WHERE table_name='relationships'
+    `);
+
+    if (relationshipsCheck.rows.length > 0 && npcsCheck.rows.length > 0) {
+      console.log('  Migrating data from relationships + npcs to player_npcs...');
+
+      // Check if relationships has any rows
+      const relsCount = await client.query('SELECT COUNT(*) as count FROM relationships');
+      const count = parseInt(relsCount.rows[0].count, 10);
+
+      if (count > 0) {
+        // Check if trust column exists (new schema) or if we have old friendship/romance columns
+        const trustCheck = await client.query(`
+          SELECT column_name
+          FROM information_schema.columns
+          WHERE table_name='relationships' AND column_name='trust'
+        `);
+
+        if (trustCheck.rows.length > 0) {
+          // New schema with trust/affection/desire
+          await client.query(`
+            INSERT INTO player_npcs (
+              id, player_id, npc_template_id,
+              trust, affection, desire, current_state,
+              emotion_vector, revealed_traits, current_location,
+              first_met, last_interaction
+            )
+            SELECT
+              r.id, r.player_id, r.npc_id,
+              COALESCE(r.trust, 0), COALESCE(r.affection, 0), COALESCE(r.desire, 0), r.current_state,
+              COALESCE(n.emotion_vector, '{"joySadness":0,"acceptanceDisgust":0,"angerFear":0,"anticipationSurprise":0}'::jsonb),
+              COALESCE(n.revealed_traits, ARRAY[]::TEXT[]),
+              COALESCE(n.current_location, 'home'),
+              360, 360
+            FROM relationships r
+            JOIN npcs n ON r.npc_id = n.id
+          `);
+        } else {
+          // Old schema with friendship/romance - convert to new axes
+          await client.query(`
+            INSERT INTO player_npcs (
+              id, player_id, npc_template_id,
+              trust, affection, desire, current_state,
+              emotion_vector, revealed_traits, current_location,
+              first_met, last_interaction
+            )
+            SELECT
+              r.id, r.player_id, r.npc_id,
+              COALESCE(r.friendship, 0), COALESCE(r.friendship, 0), COALESCE(r.romance, 0), r.current_state,
+              COALESCE(n.emotion_vector, '{"joySadness":0,"acceptanceDisgust":0,"angerFear":0,"anticipationSurprise":0}'::jsonb),
+              COALESCE(n.revealed_traits, ARRAY[]::TEXT[]),
+              COALESCE(n.current_location, 'home'),
+              360, 360
+            FROM relationships r
+            JOIN npcs n ON r.npc_id = n.id
+          `);
+        }
+        console.log(`  ✅ Migrated ${count} player NPCs`);
+      } else {
+        console.log('  ⏭️  No relationships to migrate');
+      }
+    }
+
+    // ===== 7. Drop foreign key constraints that reference npcs =====
+    // player_activities may have a foreign key to npcs - we need to drop it before dropping npcs
+    const fkCheck = await client.query(`
+      SELECT conname
+      FROM pg_constraint
+      WHERE conrelid = 'player_activities'::regclass
+      AND contype = 'f'
+      AND confrelid = 'npcs'::regclass
+    `);
+
+    for (const row of fkCheck.rows) {
+      console.log(`  Dropping foreign key constraint ${row.conname}...`);
+      await client.query(`ALTER TABLE player_activities DROP CONSTRAINT ${row.conname}`);
+      console.log(`  ✅ Dropped constraint ${row.conname}`);
+    }
+
+    // Update player_activities.npc_id - the old NPC IDs no longer exist
+    // We need to clear these since they referenced npcs table, not player_npcs
+    // The npc_id in player_npcs comes from relationships.id, not npcs.id
+    const npcIdCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_activities' AND column_name='npc_id'
+    `);
+
+    if (npcIdCheck.rows.length > 0) {
+      // Clear old npc_id values since they reference the old npcs table
+      // which is being dropped - these IDs won't match player_npcs IDs
+      console.log('  Clearing orphaned npc_id references in player_activities...');
+      await client.query('UPDATE player_activities SET npc_id = NULL WHERE npc_id IS NOT NULL');
+      console.log('  ✅ Cleared orphaned npc_id references');
+
+      // Add new foreign key constraint to player_npcs (if player_npcs exists)
+      const playerNpcsCheck = await client.query(`
+        SELECT tablename FROM pg_tables WHERE tablename='player_npcs'
+      `);
+
+      if (playerNpcsCheck.rows.length > 0) {
+        console.log('  Adding foreign key from player_activities to player_npcs...');
+        await client.query(`
+          ALTER TABLE player_activities
+          ADD CONSTRAINT player_activities_npc_id_fkey
+          FOREIGN KEY (npc_id) REFERENCES player_npcs(id) ON DELETE SET NULL
+        `);
+        console.log('  ✅ Added foreign key to player_npcs');
+      }
+    }
+
+    // ===== 8. Drop old tables =====
+    if (relationshipsCheck.rows.length > 0) {
+      console.log('  Dropping relationships table...');
+      await client.query('DROP TABLE relationships');
+      console.log('  ✅ Dropped relationships table');
+    }
+
+    if (npcsCheck.rows.length > 0) {
+      console.log('  Dropping npcs table...');
+      await client.query('DROP TABLE npcs');
+      console.log('  ✅ Dropped npcs table');
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ NPC/Relationship Consolidation migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ NPC/Relationship Consolidation migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}

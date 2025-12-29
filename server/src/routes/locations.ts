@@ -39,7 +39,7 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<Location[] | 
     let locations: Location[] | LocationWithNPCCount[];
 
     if (includeNPCCounts) {
-      locations = await getLocationsWithNPCCounts(pool);
+      locations = await getLocationsWithNPCCounts(pool, req.user.userId);
     } else {
       locations = getAllLocations();
     }

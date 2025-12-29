@@ -5,7 +5,7 @@
       <mat-icon>arrow_back</mat-icon>
       Back to Neighbors
     </button>
-    @if (selectedNPC()) {
+    @if (selectedPlayerNPC()) {
       <button
         mat-button
         color="warn"
@@ -18,7 +18,7 @@
   </div>
 
   <!-- Loading State -->
-  @if (isLoading() && !selectedNPC()) {
+  @if (isLoading() && !selectedPlayerNPC()) {
     <div class="loading-container">
       <mat-spinner diameter="50"></mat-spinner>
       <p>Loading neighbor details...</p>
@@ -26,7 +26,7 @@
   }
 
   <!-- Error State -->
-  @if (!isLoading() && !selectedNPC()) {
+  @if (!isLoading() && !selectedPlayerNPC()) {
     <div class="error-container">
       <mat-icon color="warn">error_outline</mat-icon>
       <p>Could not load neighbor details</p>
@@ -36,8 +36,8 @@
     </div>
   }
 
-  <!-- Content -->
-  @if (selectedNPC() && selectedRelationship()) {
+  <!-- Content - PlayerNPCView contains both NPC and relationship data -->
+  @if (selectedPlayerNPC(); as playerNPC) {
     <div class="content">
       <!-- NPC Card -->
       <mat-card class="npc-card">
@@ -48,13 +48,13 @@
 
         <mat-card-header>
           <mat-card-title>
-            {{ selectedNPC()!.name }}
-            <span class="gender-badge" [class.gender-female]="selectedNPC()!.gender === 'female'"
-                  [class.gender-male]="selectedNPC()!.gender === 'male'"
-                  [class.gender-other]="selectedNPC()!.gender === 'other'">
-              @if (selectedNPC()!.gender === 'female') {
+            {{ playerNPC.name }}
+            <span class="gender-badge" [class.gender-female]="playerNPC.gender === 'female'"
+                  [class.gender-male]="playerNPC.gender === 'male'"
+                  [class.gender-other]="playerNPC.gender === 'other'">
+              @if (playerNPC.gender === 'female') {
                 <mat-icon>female</mat-icon>
-              } @else if (selectedNPC()!.gender === 'male') {
+              } @else if (playerNPC.gender === 'male') {
                 <mat-icon>male</mat-icon>
               } @else {
                 <mat-icon>transgender</mat-icon>
@@ -73,7 +73,7 @@
           <div class="section">
             <h3>Appearance</h3>
             <p class="appearance-text">{{ formatAppearance() }}</p>
-            <p class="style-text">Style: {{ selectedNPC()!.appearance.style }}</p>
+            <p class="style-text">Style: {{ playerNPC.appearance.style }}</p>
           </div>
 
           <mat-divider></mat-divider>
@@ -81,12 +81,12 @@
           <!-- Traits -->
           <div class="section traits-section">
             <h3>Known Traits
-              @if (selectedNPC()!.revealedTraits.length > 0) {
-                <span class="trait-count">({{ selectedNPC()!.revealedTraits.length }})</span>
+              @if (playerNPC.revealedTraits.length > 0) {
+                <span class="trait-count">({{ playerNPC.revealedTraits.length }})</span>
               }
             </h3>
 
-            @if (selectedNPC()!.revealedTraits.length === 0) {
+            @if (playerNPC.revealedTraits.length === 0) {
               <p class="no-traits">No traits discovered yet. Spend time together to learn more!</p>
             } @else {
               <div class="traits-grid">
@@ -112,7 +112,7 @@
         <mat-card-header>
           <mat-card-title>Relationship</mat-card-title>
           <mat-card-subtitle>
-            {{ getStateDisplayName(selectedRelationship()!.currentState) }}
+            {{ getStateDisplayName(playerNPC.currentState) }}
           </mat-card-subtitle>
         </mat-card-header>
 
@@ -122,12 +122,12 @@
             <div class="metric-header">
               <mat-icon color="primary">shield</mat-icon>
               <span class="metric-label">Trust</span>
-              <span class="metric-value">{{ selectedRelationship()!.trust }}</span>
+              <span class="metric-value">{{ playerNPC.trust }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.trust)"
-              [color]="getProgressColor(selectedRelationship()!.trust)">
+              [value]="getProgressValue(playerNPC.trust)"
+              [color]="getProgressColor(playerNPC.trust)">
             </mat-progress-bar>
           </div>
 
@@ -136,12 +136,12 @@
             <div class="metric-header">
               <mat-icon color="primary">favorite</mat-icon>
               <span class="metric-label">Affection</span>
-              <span class="metric-value">{{ selectedRelationship()!.affection }}</span>
+              <span class="metric-value">{{ playerNPC.affection }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.affection)"
-              [color]="getProgressColor(selectedRelationship()!.affection)">
+              [value]="getProgressValue(playerNPC.affection)"
+              [color]="getProgressColor(playerNPC.affection)">
             </mat-progress-bar>
           </div>
 
@@ -150,12 +150,12 @@
             <div class="metric-header">
               <mat-icon color="accent">whatshot</mat-icon>
               <span class="metric-label">Desire</span>
-              <span class="metric-value">{{ selectedRelationship()!.desire }}</span>
+              <span class="metric-value">{{ playerNPC.desire }}</span>
             </div>
             <mat-progress-bar
               mode="determinate"
-              [value]="getProgressValue(selectedRelationship()!.desire)"
-              [color]="getProgressColor(selectedRelationship()!.desire)">
+              [value]="getProgressValue(playerNPC.desire)"
+              [color]="getProgressColor(playerNPC.desire)">
             </mat-progress-bar>
           </div>
 

@@ -178,17 +178,19 @@ export function isLocationOpen(
  * @returns Array of locations with NPC count for each
  */
 export async function getLocationsWithNPCCounts(
-  pool: Pool
+  pool: Pool,
+  playerId: string
 ): Promise<LocationWithNPCCount[]> {
   const client = await pool.connect();
 
   try {
-    // Count NPCs at each location
+    // Count player NPCs at each location for this player
     const result = await client.query(`
       SELECT current_location, COUNT(*) as count
-      FROM npcs
+      FROM player_npcs
+      WHERE player_id = $1
       GROUP BY current_location
-    `);
+    `, [playerId]);
 
     // Create a map of location -> NPC count
     const npcCountMap: Record<string, number> = {};
@@ -209,21 +211,23 @@ export async function getLocationsWithNPCCounts(
 }
 
 /**
- * Get NPC IDs at a specific location
+ * Get player NPC IDs at a specific location for a player
  * @param pool - Database pool
+ * @param playerId - Player to get NPCs for
  * @param locationId - Location to get NPCs for
- * @returns Array of NPC IDs at that location
+ * @returns Array of player NPC IDs at that location
  */
-export async function getNPCsAtLocation(
+export async function getPlayerNPCsAtLocation(
   pool: Pool,
+  playerId: string,
   locationId: LocationId
 ): Promise<string[]> {
   const client = await pool.connect();
 
   try {
     const result = await client.query(
-      'SELECT id FROM npcs WHERE current_location = $1',
-      [locationId]
+      'SELECT id FROM player_npcs WHERE player_id = $1 AND current_location = $2',
+      [playerId, locationId]
     );
 
     return result.rows.map(row => row.id);

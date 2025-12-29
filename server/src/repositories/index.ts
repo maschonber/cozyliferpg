@@ -5,6 +5,6 @@
 
 export * as playerRepository from './player.repository';
 export * as activityRepository from './activity.repository';
-export * as npcRepository from './npc.repository';
-export * as relationshipRepository from './relationship.repository';
+export * as npcTemplateRepository from './npc-template.repository';
+export * as playerNpcRepository from './player-npc.repository';
 export * from './mappers';

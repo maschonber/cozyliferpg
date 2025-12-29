@@ -75,7 +75,7 @@
                   <!-- Operating Hours -->
                   @if (location.openTime && location.closeTime) {
                     <span class="location-hours">
-                      {{ location.openTime }}-{{ location.closeTime }}
+                      {{ location.openTime | timeOfDay }}-{{ location.closeTime | timeOfDay }}
                     </span>
                   }
                 </app-location-marker>

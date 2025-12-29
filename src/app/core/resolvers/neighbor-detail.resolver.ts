@@ -5,8 +5,7 @@
  *
  * Data loading strategy:
  * - Activities: Should be loaded via APP_INITIALIZER, but we ensure they're available here as fallback
- * - NPC: Loaded specifically for this route
- * - Relationship: Loaded specifically for this route
+ * - PlayerNPC: Unified NPC + relationship data loaded specifically for this route
  */
 
 import { inject } from '@angular/core';
@@ -19,8 +18,7 @@ import { GameFacade } from '../../features/game/services/game.facade';
  * Result of neighbor detail resolution
  */
 export interface NeighborDetailData {
-  npcLoaded: boolean;
-  relationshipLoaded: boolean;
+  playerNPCLoaded: boolean;
   activitiesLoaded: boolean;
   error?: string;
 }
@@ -31,30 +29,22 @@ export interface NeighborDetailData {
  */
 export const neighborDetailResolver: ResolveFn<NeighborDetailData> = (route) => {
   const facade = inject(GameFacade);
-  const npcId = route.paramMap.get('id');
+  const playerNPCId = route.paramMap.get('id');
 
-  if (!npcId) {
+  if (!playerNPCId) {
     return of({
-      npcLoaded: false,
-      relationshipLoaded: false,
+      playerNPCLoaded: false,
       activitiesLoaded: false,
-      error: 'No NPC ID provided'
+      error: 'No player NPC ID provided'
     });
   }
 
-  // Load NPC, relationship, and ensure activities are available (all in parallel)
+  // Load player NPC and ensure activities are available (both in parallel)
   return forkJoin({
-    npc: facade.loadNPCById(npcId).pipe(
+    playerNPC: facade.loadPlayerNPCById(playerNPCId).pipe(
       map(() => true),
       catchError((error) => {
-        console.error('Failed to load NPC:', error);
-        return of(false);
-      })
-    ),
-    relationship: facade.getRelationship(npcId).pipe(
-      map(() => true),
-      catchError((error) => {
-        console.error('Failed to load relationship:', error);
+        console.error('Failed to load player NPC:', error);
         return of(false);
       })
     ),
@@ -66,9 +56,8 @@ export const neighborDetailResolver: ResolveFn<NeighborDetailData> = (route) => 
       })
     )
   }).pipe(
-    map(({ npc, relationship, activities }) => ({
-      npcLoaded: npc,
-      relationshipLoaded: relationship,
+    map(({ playerNPC, activities }) => ({
+      playerNPCLoaded: playerNPC,
       activitiesLoaded: activities
     }))
   );

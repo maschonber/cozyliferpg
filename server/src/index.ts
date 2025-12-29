@@ -2,8 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
-import npcsRouter from './routes/npcs';
-import relationshipsRouter from './routes/relationships';
+import playerNpcsRouter from './routes/player-npcs';
 import playerRouter from './routes/player';
 import activitiesRouter from './routes/activities';
 import locationsRouter from './routes/locations';
@@ -11,7 +10,7 @@ import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import emotionSandboxRouter from './routes/emotion-sandbox';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers, migrateSocialActivitiesConsolidation, migrateRemoveNpcArchetype, migrateGameTimeMinutes } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers, migrateSocialActivitiesConsolidation, migrateRemoveNpcArchetype, migrateGameTimeMinutes, migrateNpcRelationshipConsolidation } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -73,8 +72,7 @@ app.use('/api/emotion-sandbox', emotionSandboxRouter);
 
 // Protected routes (authentication required)
 // API Routes - all protected
-app.use('/api/npcs', authenticateToken, npcsRouter);
-app.use('/api/relationships', authenticateToken, relationshipsRouter);
+app.use('/api/player-npcs', authenticateToken, playerNpcsRouter);
 app.use('/api/player', authenticateToken, playerRouter);
 app.use('/api/activities', authenticateToken, activitiesRouter);
 app.use('/api/locations', authenticateToken, locationsRouter);
@@ -87,8 +85,7 @@ app.get('/', (_req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth/login',
-      npcs: '/api/npcs (protected)',
-      relationships: '/api/relationships (protected)',
+      playerNpcs: '/api/player-npcs (protected)',
       activities: '/api/activities (protected)',
       player: '/api/player (protected)',
       locations: '/api/locations (protected)'
@@ -132,6 +129,7 @@ async function startServer() {
         await migrateSocialActivitiesConsolidation();
         await migrateRemoveNpcArchetype();
         await migrateGameTimeMinutes();
+        await migrateNpcRelationshipConsolidation();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }

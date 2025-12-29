@@ -133,12 +133,12 @@ export async function buildPlayerPatternSnapshot(
     // === Fetch Relationships ===
     // Get last contact from player_activities where npc_id matches
     const relationshipsResult = await client.query(
-      `SELECT r.npc_id, r.trust, r.affection, r.desire,
+      `SELECT pn.id as npc_id, pn.trust, pn.affection, pn.desire,
               MAX(pa.performed_at) as last_contact
-       FROM relationships r
-       LEFT JOIN player_activities pa ON pa.npc_id = r.npc_id AND pa.player_id = $2
-       WHERE r.player_id = $1
-       GROUP BY r.npc_id, r.trust, r.affection, r.desire`,
+       FROM player_npcs pn
+       LEFT JOIN player_activities pa ON pa.npc_id = pn.id AND pa.player_id = $2
+       WHERE pn.player_id = $1
+       GROUP BY pn.id, pn.trust, pn.affection, pn.desire`,
       [player.userId, player.id]
     );
 

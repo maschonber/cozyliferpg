@@ -43,7 +43,7 @@
 
         <div class="wake-time">
           <mat-icon>wb_sunny</mat-icon>
-          <span>Woke up at {{ formatTimeOfDay(data.sleepResult.wakeTime) }}</span>
+          <span>Woke up at {{ data.sleepResult.wakeTime | timeOfDay }}</span>
         </div>
       </div>
 

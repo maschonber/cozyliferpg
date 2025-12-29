@@ -207,7 +207,49 @@ export interface EmotionProfile {
 }
 
 /**
+ * NPC Template - Static NPC data shareable across players
+ * Contains immutable characteristics like name, appearance, and full trait list
+ */
+export interface NPCTemplate {
+  id: string;
+  name: string;
+  gender: Gender;
+  appearance: NPCAppearance;
+  loras: string[];
+  traits: NPCTrait[];  // Master list of all traits
+  createdAt: string;
+}
+
+/**
+ * Player NPC View - Unified view of an NPC for a specific player
+ * Combines template data with player-specific mutable data and relationship axes
+ * This is the primary type returned by the /api/player-npcs endpoint
+ */
+export interface PlayerNPCView {
+  id: string;                    // player_npc id
+  templateId: string;            // reference to npc_template
+
+  // From template (static)
+  name: string;
+  gender: Gender;
+  appearance: NPCAppearance;
+
+  // Player-specific mutable data
+  revealedTraits: NPCTrait[];
+  emotionVector: EmotionVector;
+  emotionInterpretation?: EmotionInterpretationResult;
+  currentLocation: LocationId;
+
+  // Relationship axes (-100 to +100)
+  trust: number;
+  affection: number;
+  desire: number;
+  currentState: RelationshipState;
+}
+
+/**
  * NPC (Non-Player Character)
+ * @deprecated Use PlayerNPCView for player-facing data, NPCTemplate for static data
  */
 export interface NPC {
   id: string;

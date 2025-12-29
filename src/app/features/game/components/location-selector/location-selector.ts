@@ -12,6 +12,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { GameFacade } from '../../services/game.facade';
 import { LocationWithNPCCount, District } from '../../../../../../shared/types';
 import { LocationMarkerComponent } from '../../../../shared/components/location-marker/location-marker.component';
+import { TimeOfDayPipe } from '../../../../shared/pipes/time-of-day.pipe';
 import { getLocationDisplayName, getDistrictColors } from '../../../../shared/utils/location.utils';
 
 @Component({
@@ -21,7 +22,8 @@ import { getLocationDisplayName, getDistrictColors } from '../../../../shared/ut
     MatButtonModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    LocationMarkerComponent
+    LocationMarkerComponent,
+    TimeOfDayPipe
   ],
   templateUrl: './location-selector.html',
   styleUrl: './location-selector.css',

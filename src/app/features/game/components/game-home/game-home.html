@@ -92,7 +92,7 @@
     <h2>Your Neighbors</h2>
 
     <!-- Loading State -->
-    @if (relationshipsLoading()) {
+    @if (playerNPCsLoading()) {
       <div class="loading-container">
         <mat-spinner diameter="50"></mat-spinner>
         <p>Loading neighbors...</p>
@@ -100,49 +100,44 @@
     }
 
     <!-- Error State -->
-    @if (relationshipsError()) {
+    @if (playerNPCsError()) {
       <div class="error-container">
         <mat-icon color="warn">error</mat-icon>
-        <p>{{ relationshipsError() }}</p>
+        <p>{{ playerNPCsError() }}</p>
       </div>
     }
 
     <!-- Empty State -->
-    @if (!relationshipsLoading() && !relationshipsError() && npcsWithRelationships().length === 0) {
+    @if (!playerNPCsLoading() && !playerNPCsError() && playerNPCsAtCurrentLocation().length === 0) {
       <div class="empty-state">
         <mat-icon>group</mat-icon>
-        @if (relationships().length === 0) {
-          <p>You haven't met anyone yet.</p>
-          <p class="hint">Click "Meet Someone New" to start discovering neighbors!</p>
-        } @else {
-          <p>No neighbors at this location.</p>
-          <p class="hint">Try traveling to meet your friends, or meet someone new here!</p>
-        }
+        <p>No neighbors at this location.</p>
+        <p class="hint">Try traveling to meet your friends, or meet someone new here!</p>
       </div>
     }
 
     <!-- Neighbors List -->
-    @if (npcsWithRelationships().length > 0) {
+    @if (playerNPCsAtCurrentLocation().length > 0) {
       <div class="neighbors-list">
-        @for (item of npcsWithRelationships(); track item.npc.id) {
+        @for (playerNPC of playerNPCsAtCurrentLocation(); track playerNPC.id) {
           <mat-card
             class="neighbor-card"
-            [class.positive]="getStateColor(item.relationship) === 'positive'"
-            [class.negative]="getStateColor(item.relationship) === 'negative'"
-            [class.neutral]="getStateColor(item.relationship) === 'neutral'"
-            (click)="onViewNeighbor(item.npc.id)">
+            [class.positive]="getStateColor(playerNPC) === 'positive'"
+            [class.negative]="getStateColor(playerNPC) === 'negative'"
+            [class.neutral]="getStateColor(playerNPC) === 'neutral'"
+            (click)="onViewNeighbor(playerNPC.id)">
             <div class="card-layout">
               <div class="card-content">
                 <mat-card-header>
                   <mat-card-title>
-                    {{ item.npc.name }}
+                    {{ playerNPC.name }}
                   </mat-card-title>
                 </mat-card-header>
 
                 <mat-card-content>
                   <div class="relationship-status">
                     <div class="status-badge">
-                      {{ getStateDisplayName(item.relationship.currentState) }}
+                      {{ getStateDisplayName(playerNPC.currentState) }}
                     </div>
                   </div>
                 </mat-card-content>
@@ -155,9 +150,9 @@
                 </mat-card-actions>
               </div>
 
-              <div class="avatar-container" [class.gender-female]="item.npc.gender === 'female'"
-                   [class.gender-male]="item.npc.gender === 'male'"
-                   [class.gender-other]="item.npc.gender === 'other'">
+              <div class="avatar-container" [class.gender-female]="playerNPC.gender === 'female'"
+                   [class.gender-male]="playerNPC.gender === 'male'"
+                   [class.gender-other]="playerNPC.gender === 'other'">
                 <mat-icon>person</mat-icon>
               </div>
             </div>

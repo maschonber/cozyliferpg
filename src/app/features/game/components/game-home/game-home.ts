@@ -9,7 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { Relationship, LocationId, LocationWithNPCCount, Activity, requiresNPC } from '../../../../../../shared/types';
+import { PlayerNPCView, LocationWithNPCCount, requiresNPC } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
 import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-selection-modal';
@@ -47,17 +47,15 @@ export class GameHome {
   Math = Math;
 
   // Expose facade signals
-  npcsWithRelationships = this.facade.npcsWithRelationships;
-  relationshipsLoading = this.facade.relationshipsLoading;
-  npcsLoading = this.facade.npcsLoading;
-  relationshipsError = this.facade.relationshipsError;
+  playerNPCsAtCurrentLocation = this.facade.playerNPCsAtCurrentLocation;
+  playerNPCsLoading = this.facade.playerNPCsLoading;
+  playerNPCsError = this.facade.playerNPCsError;
   activities = this.facade.activities;
   activityAvailability = this.facade.activityAvailability;
   player = this.facade.player;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
   locations = this.facade.locations;
-  relationships = this.facade.relationships;
 
   // Computed signal to check if player is in "new" state (needs archetype selection)
   private isPlayerNew = computed(() => {
@@ -173,9 +171,9 @@ export class GameHome {
   /**
    * Get color for relationship state
    */
-  getStateColor(relationship: Relationship): string {
+  getStateColor(playerNPC: PlayerNPCView): string {
     // Determine color based on relationship axes (trust, affection, desire)
-    const avgPositive = (relationship.trust + relationship.affection + relationship.desire) / 3;
+    const avgPositive = (playerNPC.trust + playerNPC.affection + playerNPC.desire) / 3;
     if (avgPositive >= 30) {
       return 'positive';
     } else if (avgPositive <= -20) {
@@ -265,26 +263,18 @@ export class GameHome {
     // First, perform the activity to consume time/energy
     this.facade.performActivity('meet_someone').subscribe({
       next: () => {
-        // Then create the NPC
-        this.facade.createNPC().subscribe({
-          next: (npc) => {
-            console.log(`✅ Met ${npc.name} at ${npc.currentLocation}`);
-            // Fetch the relationship for the new NPC so they appear in the list
-            this.facade.getRelationship(npc.id).subscribe({
-              next: () => {
-                console.log(`✅ Relationship loaded for ${npc.name}`);
-              },
-              error: (error) => {
-                console.error('Failed to load relationship:', error);
-              }
-            });
+        // Then create the player NPC (generates template + player relationship)
+        this.facade.createPlayerNPC().subscribe({
+          next: (playerNPC) => {
+            console.log(`✅ Met ${playerNPC.name} at ${playerNPC.currentLocation}`);
+            // Player NPC is already added to the store by createPlayerNPC
           },
-          error: (error) => {
+          error: (error: Error) => {
             console.error('Failed to create NPC:', error);
           }
         });
       },
-      error: (error) => {
+      error: (error: Error) => {
         console.error('Failed to perform meet someone activity:', error);
       }
     });

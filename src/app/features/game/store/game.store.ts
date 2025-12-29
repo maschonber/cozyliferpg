@@ -1,36 +1,31 @@
 /**
  * Game Store
  * Manages game state using @ngrx/signals
- * Handles NPCs, relationships, and activities
+ * Handles player NPCs (unified NPC + relationship view) and activities
  */
 
 import { signalStore, withState, withMethods, patchState, withComputed } from '@ngrx/signals';
 import { computed } from '@angular/core';
-import { NPC, Relationship, Activity, PlayerCharacter, ActivityAvailability, LocationWithNPCCount } from '../../../../../shared/types';
+import { PlayerNPCView, Activity, PlayerCharacter, ActivityAvailability, LocationWithNPCCount } from '../../../../../shared/types';
 
 /**
  * Game State
  */
 interface GameState {
-  // Player Character (Phase 2)
+  // Player Character
   player: PlayerCharacter | null;
   playerLoading: boolean;
   playerError: string | null;
 
-  // NPCs
-  npcs: NPC[];
-  npcsLoading: boolean;
-  npcsError: string | null;
+  // Player NPCs (unified NPC + relationship view)
+  playerNPCs: PlayerNPCView[];
+  playerNPCsLoading: boolean;
+  playerNPCsError: string | null;
 
-  // Relationships
-  relationships: Relationship[];
-  relationshipsLoading: boolean;
-  relationshipsError: string | null;
+  // Currently viewed player NPC (for detail view)
+  selectedPlayerNPCId: string | null;
 
-  // Currently viewed NPC (for detail view)
-  selectedNPCId: string | null;
-
-  // Activities (Phase 2: includes availability)
+  // Activities (includes availability)
   activities: Activity[];
   activityAvailability: ActivityAvailability[];
   activitiesLoading: boolean;
@@ -40,7 +35,7 @@ interface GameState {
   interacting: boolean;
   interactionError: string | null;
 
-  // Locations (Phase 3)
+  // Locations
   locations: LocationWithNPCCount[];
   locationsLoading: boolean;
   locationsError: string | null;
@@ -55,15 +50,11 @@ const initialState: GameState = {
   playerLoading: false,
   playerError: null,
 
-  npcs: [],
-  npcsLoading: false,
-  npcsError: null,
+  playerNPCs: [],
+  playerNPCsLoading: false,
+  playerNPCsError: null,
 
-  relationships: [],
-  relationshipsLoading: false,
-  relationshipsError: null,
-
-  selectedNPCId: null,
+  selectedPlayerNPCId: null,
 
   activities: [],
   activityAvailability: [],
@@ -87,29 +78,19 @@ export const GameStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     /**
-     * Get selected NPC
+     * Get selected player NPC
      */
-    selectedNPC: computed(() => {
-      const id = store.selectedNPCId();
+    selectedPlayerNPC: computed(() => {
+      const id = store.selectedPlayerNPCId();
       if (!id) return null;
-      return store.npcs().find(npc => npc.id === id) ?? null;
+      return store.playerNPCs().find(pnpc => pnpc.id === id) ?? null;
     }),
 
     /**
-     * Get relationship for selected NPC
+     * Get player NPCs at current location (for neighbor list)
      */
-    selectedRelationship: computed(() => {
-      const id = store.selectedNPCId();
-      if (!id) return null;
-      return store.relationships().find(rel => rel.npcId === id) ?? null;
-    }),
-
-    /**
-     * Get NPCs with their relationships (for neighbor list)
-     * Only shows neighbors at the player's current location
-     */
-    npcsWithRelationships: computed(() => {
-      const rels = store.relationships();
+    playerNPCsAtCurrentLocation: computed(() => {
+      const playerNPCs = store.playerNPCs();
       const player = store.player();
 
       // If no player or no current location, return empty array
@@ -117,25 +98,20 @@ export const GameStore = signalStore(
         return [];
       }
 
-      // Filter relationships to only include NPCs at the player's current location
-      return rels
-        .filter(rel => rel.npc?.currentLocation === player.currentLocation)
-        .map(rel => ({
-          npc: rel.npc!,
-          relationship: rel
-        }));
+      // Filter to only include NPCs at the player's current location
+      return playerNPCs.filter(pnpc => pnpc.currentLocation === player.currentLocation);
     }),
 
     /**
      * Overall loading state
      */
     isLoading: computed(() => {
-      return store.npcsLoading() || store.relationshipsLoading() ||
+      return store.playerNPCsLoading() ||
              store.activitiesLoading() || store.interacting();
     })
   })),
   withMethods((store) => ({
-    // ===== Player Character Methods (Phase 2) =====
+    // ===== Player Character Methods =====
 
     setPlayerLoading(loading: boolean): void {
       patchState(store, { playerLoading: loading, playerError: null });
@@ -153,66 +129,40 @@ export const GameStore = signalStore(
       patchState(store, { player });
     },
 
-    // ===== NPC Methods =====
+    // ===== Player NPC Methods =====
 
-    setNPCsLoading(loading: boolean): void {
-      patchState(store, { npcsLoading: loading, npcsError: null });
+    setPlayerNPCsLoading(loading: boolean): void {
+      patchState(store, { playerNPCsLoading: loading, playerNPCsError: null });
     },
 
-    setNPCsError(error: string): void {
-      patchState(store, { npcsError: error, npcsLoading: false });
+    setPlayerNPCsError(error: string): void {
+      patchState(store, { playerNPCsError: error, playerNPCsLoading: false });
     },
 
-    setNPCs(npcs: NPC[]): void {
-      patchState(store, { npcs, npcsLoading: false, npcsError: null });
+    setPlayerNPCs(playerNPCs: PlayerNPCView[]): void {
+      patchState(store, { playerNPCs, playerNPCsLoading: false, playerNPCsError: null });
     },
 
-    addNPC(npc: NPC): void {
-      patchState(store, { npcs: [...store.npcs(), npc] });
+    addPlayerNPC(playerNPC: PlayerNPCView): void {
+      patchState(store, { playerNPCs: [...store.playerNPCs(), playerNPC] });
     },
 
-    updateNPC(updated: NPC): void {
-      const npcs = store.npcs().map(npc =>
-        npc.id === updated.id ? updated : npc
+    updatePlayerNPC(updated: PlayerNPCView): void {
+      const playerNPCs = store.playerNPCs().map(pnpc =>
+        pnpc.id === updated.id ? updated : pnpc
       );
-      patchState(store, { npcs });
+      patchState(store, { playerNPCs });
     },
 
-    removeNPC(npcId: string): void {
-      const npcs = store.npcs().filter(npc => npc.id !== npcId);
-      const relationships = store.relationships().filter(rel => rel.npcId !== npcId);
-      patchState(store, { npcs, relationships, selectedNPCId: null });
-    },
-
-    // ===== Relationship Methods =====
-
-    setRelationshipsLoading(loading: boolean): void {
-      patchState(store, { relationshipsLoading: loading, relationshipsError: null });
-    },
-
-    setRelationshipsError(error: string): void {
-      patchState(store, { relationshipsError: error, relationshipsLoading: false });
-    },
-
-    setRelationships(relationships: Relationship[]): void {
-      patchState(store, { relationships, relationshipsLoading: false, relationshipsError: null });
-    },
-
-    updateRelationship(updated: Relationship): void {
-      const relationships = store.relationships().map(rel =>
-        rel.id === updated.id ? updated : rel
-      );
-      patchState(store, { relationships });
-    },
-
-    addRelationship(relationship: Relationship): void {
-      patchState(store, { relationships: [...store.relationships(), relationship] });
+    removePlayerNPC(id: string): void {
+      const playerNPCs = store.playerNPCs().filter(pnpc => pnpc.id !== id);
+      patchState(store, { playerNPCs, selectedPlayerNPCId: null });
     },
 
     // ===== Selection Methods =====
 
-    selectNPC(npcId: string | null): void {
-      patchState(store, { selectedNPCId: npcId });
+    selectPlayerNPC(id: string | null): void {
+      patchState(store, { selectedPlayerNPCId: id });
     },
 
     // ===== Activity Methods =====
@@ -248,7 +198,7 @@ export const GameStore = signalStore(
       patchState(store, { interactionError: null });
     },
 
-    // ===== Location Methods (Phase 3) =====
+    // ===== Location Methods =====
 
     setLocationsLoading(loading: boolean): void {
       patchState(store, { locationsLoading: loading, locationsError: null });

@@ -171,6 +171,44 @@ export function getContributingTrait(
   return null;
 }
 
+/**
+ * Find an unrevealed trait from PlayerNPCView data
+ *
+ * Similar to getContributingTrait but works with separate allTraits and revealedTraits arrays
+ * for use with the new PlayerNPCView model.
+ *
+ * @param allTraits - All NPC traits from the template
+ * @param revealedTraits - Traits already revealed to this player
+ * @param activityTags - Tags on the activity being performed
+ * @returns Object with discovered trait and isNew flag, or null if no discovery
+ */
+export function getContributingTraitFromPlayerNpc(
+  allTraits: NPCTrait[],
+  revealedTraits: NPCTrait[],
+  activityTags: ActivityTag[]
+): { trait: NPCTrait; isNew: boolean } | null {
+  // Only look at unrevealed traits
+  for (const trait of allTraits) {
+    if (revealedTraits.includes(trait)) {
+      continue;
+    }
+
+    // Check if this trait has affinity with any activity tag
+    const tagAffinities = TRAIT_TAG_AFFINITY[trait];
+    if (!tagAffinities) {
+      continue;
+    }
+
+    for (const tag of activityTags) {
+      if (tagAffinities[tag] !== undefined) {
+        return { trait, isNew: true };
+      }
+    }
+  }
+
+  return null;
+}
+
 // ===== Trait Validation =====
 
 /**

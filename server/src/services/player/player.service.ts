@@ -6,16 +6,15 @@
  * and provides higher-level operations like reset with cleanup.
  */
 
-import { Pool, PoolClient } from 'pg';
+import { Pool } from 'pg';
 import {
   PlayerCharacter,
   PlayerArchetype
 } from '../../../../shared/types';
 import {
   playerRepository,
-  npcRepository,
-  relationshipRepository,
-  activityRepository
+  activityRepository,
+  playerNpcRepository
 } from '../../repositories';
 
 /**
@@ -72,11 +71,8 @@ export async function resetPlayerCharacter(
     // Always reset to balanced archetype so player can choose again
     const archetype: PlayerArchetype = 'balanced';
 
-    // Delete all relationships
-    await relationshipRepository.deleteAllForPlayer(client, userId);
-
-    // Delete all NPCs
-    await npcRepository.deleteAll(client);
+    // Delete all player NPCs (this deletes both player-specific data and orphaned templates)
+    await playerNpcRepository.deleteAllForPlayer(client, userId);
 
     // Delete all player activities
     await activityRepository.deleteAllForPlayer(client, player.id);

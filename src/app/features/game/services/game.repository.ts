@@ -8,8 +8,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import {
-  NPC,
-  Relationship,
+  PlayerNPCView,
   Activity,
   PerformActivityRequest,
   ApiResponse,
@@ -31,13 +30,13 @@ export class GameRepository {
 
   constructor(private http: HttpClient) {}
 
-  // ===== NPC Operations =====
+  // ===== Player NPC Operations (Unified NPC + Relationship view) =====
 
   /**
-   * Generate and create a new NPC
+   * Generate and create a new NPC at player's current location
    */
-  createNPC(): Observable<NPC> {
-    return this.http.post<ApiResponse<NPC>>(`${this.API_URL}/npcs`, {}).pipe(
+  createPlayerNPC(): Observable<PlayerNPCView> {
+    return this.http.post<ApiResponse<PlayerNPCView>>(`${this.API_URL}/player-npcs`, {}).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to create NPC');
@@ -48,13 +47,13 @@ export class GameRepository {
   }
 
   /**
-   * Get all NPCs
+   * Get all player NPCs (unified NPC + relationship view)
    */
-  getNPCs(): Observable<NPC[]> {
-    return this.http.get<ApiResponse<NPC[]>>(`${this.API_URL}/npcs`).pipe(
+  getPlayerNPCs(): Observable<PlayerNPCView[]> {
+    return this.http.get<ApiResponse<PlayerNPCView[]>>(`${this.API_URL}/player-npcs`).pipe(
       map(response => {
         if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to fetch NPCs');
+          throw new Error(response.error || 'Failed to fetch player NPCs');
         }
         return response.data;
       })
@@ -62,13 +61,13 @@ export class GameRepository {
   }
 
   /**
-   * Get NPC by ID
+   * Get player NPC by ID
    */
-  getNPCById(npcId: string): Observable<NPC> {
-    return this.http.get<ApiResponse<NPC>>(`${this.API_URL}/npcs/${npcId}`).pipe(
+  getPlayerNPCById(id: string): Observable<PlayerNPCView> {
+    return this.http.get<ApiResponse<PlayerNPCView>>(`${this.API_URL}/player-npcs/${id}`).pipe(
       map(response => {
         if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to fetch NPC');
+          throw new Error(response.error || 'Failed to fetch player NPC');
         }
         return response.data;
       })
@@ -76,45 +75,15 @@ export class GameRepository {
   }
 
   /**
-   * Delete an NPC by ID
+   * Delete a player NPC by ID
    */
-  deleteNPC(npcId: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.API_URL}/npcs/${npcId}`).pipe(
+  deletePlayerNPC(id: string): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.API_URL}/player-npcs/${id}`).pipe(
       map(response => {
         if (!response.success) {
-          throw new Error(response.error || 'Failed to delete NPC');
+          throw new Error(response.error || 'Failed to delete player NPC');
         }
         return;
-      })
-    );
-  }
-
-  // ===== Relationship Operations =====
-
-  /**
-   * Get all relationships for the authenticated user
-   */
-  getRelationships(): Observable<Relationship[]> {
-    return this.http.get<ApiResponse<Relationship[]>>(`${this.API_URL}/relationships`).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to fetch relationships');
-        }
-        return response.data;
-      })
-    );
-  }
-
-  /**
-   * Get or create relationship with specific NPC
-   */
-  getRelationship(npcId: string): Observable<Relationship> {
-    return this.http.get<ApiResponse<Relationship>>(`${this.API_URL}/relationships/${npcId}`).pipe(
-      map(response => {
-        if (!response.success || !response.data) {
-          throw new Error(response.error || 'Failed to fetch relationship');
-        }
-        return response.data;
       })
     );
   }

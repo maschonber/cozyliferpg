@@ -11,22 +11,21 @@ import {
   ActivityResult,
   PlayerCharacter,
   Activity,
-  NPC,
-  Relationship,
+  PlayerNPCView,
   StatName,
   StatChange,
   DifficultyBreakdown,
   RelationshipState,
-  SexualPreference,
   isSocialActivity,
-  NPCTrait
+  NPCTrait,
+  EmotionProfile
 } from '../../../../../shared/types';
 import { ActivityTag, ActivityWithDifficulty, hasActivityDifficulty } from '../../../../../shared/types/activity.types';
 
 // Repositories
 import {
-  npcRepository,
-  relationshipRepository,
+  playerNpcRepository,
+  npcTemplateRepository,
   playerRepository,
   activityRepository
 } from '../../../repositories';
@@ -37,7 +36,6 @@ import {
   calculateRelationshipState,
   applyRelationshipDelta,
   getRelationshipDifficultyModifier,
-  updateUnlockedStates,
   calculateDesireCap
 } from '../../relationship';
 import { canPerformActivity } from '../activity.service';
@@ -49,7 +47,7 @@ import { calculateDynamicDifficulty, getActivityEffects } from '../../social-act
 import {
   getTraitActivityBonus,
   getTraitActivityBreakdown,
-  getContributingTrait,
+  getContributingTraitFromPlayerNpc,
   getTraitDefinition
 } from '../../trait';
 import {
@@ -64,7 +62,7 @@ import {
 export interface ExecuteActivityRequest {
   userId: string;
   activityId: string;
-  npcId?: string;
+  npcId?: string;  // This is now the player_npc ID, not the template ID
 }
 
 export interface ExecuteActivityContext {
@@ -76,46 +74,6 @@ export class ActivityValidationError extends Error {
     super(message);
     this.name = 'ActivityValidationError';
   }
-}
-
-// ===== Helper Functions =====
-
-/**
- * Get or create a relationship between player and NPC
- * Uses repositories for all data access
- */
-async function getOrCreateRelationship(
-  client: PoolClient,
-  playerId: string,
-  npcId: string,
-  playerPreference: SexualPreference
-): Promise<{ relationship: Relationship; isNew: boolean }> {
-  if (!playerId || !npcId) {
-    throw new ActivityValidationError('Invalid player ID or NPC ID');
-  }
-
-  // Check for existing relationship
-  const existing = await relationshipRepository.getByPlayerAndNpc(client, playerId, npcId);
-  if (existing) {
-    return { relationship: existing, isNew: false };
-  }
-
-  // Get NPC gender for desire cap calculation
-  const npcGender = await npcRepository.getGender(client, npcId);
-  if (!npcGender) {
-    throw new ActivityValidationError(`NPC with ID ${npcId} does not exist`, 404);
-  }
-
-  const desireCap = calculateDesireCap(playerPreference, npcGender);
-
-  // Create new relationship
-  const relationship = await relationshipRepository.create(client, {
-    playerId,
-    npcId,
-    desireCap
-  });
-
-  return { relationship, isNew: true };
 }
 
 // ===== Validation =====
@@ -162,11 +120,15 @@ interface OutcomeCalculationResult {
   additionalTimeCost: number;
 }
 
+/**
+ * Calculate outcome for an activity with difficulty
+ * For social activities, uses the PlayerNPCView which contains all needed data
+ */
 function calculateOutcome(
   activity: ActivityWithDifficulty,
   player: PlayerCharacter,
-  relationship?: Relationship,
-  npc?: NPC
+  playerNpc?: PlayerNPCView,
+  allTraits?: NPCTrait[]  // Master traits from template (for difficulty calculation)
 ): OutcomeCalculationResult {
   const isSocial = isSocialActivity(activity);
   let statChanges: StatChange[] = [];
@@ -183,14 +145,14 @@ function calculateOutcome(
   let finalDifficulty: number;
   let difficultyBreakdown: DifficultyBreakdown;
 
-  if (isSocial && npc && relationship) {
+  if (isSocial && playerNpc && allTraits) {
     const activityTags = (activity.tags || []) as ActivityTag[];
-    const traitBonus = getTraitActivityBonus(npc.traits, activityTags);
-    const individualTraits = getTraitActivityBreakdown(npc.traits, activityTags);
+    const traitBonus = getTraitActivityBonus(allTraits, activityTags);
+    const individualTraits = getTraitActivityBreakdown(allTraits, activityTags);
 
     const relationshipModifier = getRelationshipDifficultyModifier(
-      { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
-      relationship.currentState
+      { trust: playerNpc.trust, affection: playerNpc.affection, desire: playerNpc.desire },
+      playerNpc.currentState
     );
 
     const difficultyCalc = calculateDynamicDifficulty(
@@ -280,47 +242,53 @@ function calculateOutcome(
 interface SocialEffectsResult {
   relationshipChanges: ActivityResult['relationshipChanges'];
   stateChanged: boolean;
-  previousState: ActivityResult['previousState'];
-  newState: ActivityResult['newState'];
+  previousState: RelationshipState;
+  newState: RelationshipState;
   discoveredTrait: ActivityResult['discoveredTrait'];
-  updatedRelationship: Relationship;
-  updatedNpc: NPC;
+  updatedPlayerNpc: PlayerNPCView;
   newAxes: { trust: number; affection: number; desire: number };
-  unlockedStates: RelationshipState[];
 }
 
+/**
+ * Process social activity effects on the player-NPC relationship
+ * Updates emotion, traits, and relationship axes in the database
+ */
 async function processSocialEffects(
   client: PoolClient,
-  activity: Activity & { relationshipEffects: { trust?: number; affection?: number; desire?: number }; emotionProfile?: any },
-  npc: NPC,
-  relationship: Relationship,
-  outcomeTier: string
+  activity: Activity & { relationshipEffects: { trust?: number; affection?: number; desire?: number }; emotionProfile?: EmotionProfile },
+  playerNpc: PlayerNPCView,
+  allTraits: NPCTrait[],
+  outcomeTier: string,
+  player: PlayerCharacter,
+  gameTimeMinutes: number
 ): Promise<SocialEffectsResult> {
+  // Calculate desire cap at runtime
+  const desireCap = calculateDesireCap(player.sexualPreference, playerNpc.gender);
+
   const effects = getActivityEffects(
     {
       trust: activity.relationshipEffects.trust || 0,
       affection: activity.relationshipEffects.affection || 0,
       desire: activity.relationshipEffects.desire || 0
     },
-    outcomeTier as any
+    outcomeTier as 'best' | 'okay' | 'mixed' | 'catastrophic'
   );
 
   const newAxes = applyRelationshipDelta(
-    { trust: relationship.trust, affection: relationship.affection, desire: relationship.desire },
+    { trust: playerNpc.trust, affection: playerNpc.affection, desire: playerNpc.desire },
     effects.relationshipEffects,
-    relationship.desireCap
+    desireCap
   );
 
-  const previousState = relationship.currentState;
+  const previousState = playerNpc.currentState;
   const newState = calculateRelationshipState(newAxes.trust, newAxes.affection, newAxes.desire);
   const stateChanged = previousState !== newState;
-  const unlockedStates = updateUnlockedStates(relationship.unlockedStates, newState);
 
   const relationshipChanges: ActivityResult['relationshipChanges'] = {
     previousValues: {
-      trust: relationship.trust,
-      affection: relationship.affection,
-      desire: relationship.desire
+      trust: playerNpc.trust,
+      affection: playerNpc.affection,
+      desire: playerNpc.desire
     },
     newValues: newAxes,
     deltas: {
@@ -332,35 +300,35 @@ async function processSocialEffects(
 
   // Attempt trait discovery
   let discoveredTrait: ActivityResult['discoveredTrait'];
+  let updatedRevealedTraits = playerNpc.revealedTraits;
   const activityTags = (activity.tags || []) as ActivityTag[];
+
   if (activityTags.length > 0) {
-    const discovery = getContributingTrait(npc, activityTags);
+    const discovery = getContributingTraitFromPlayerNpc(allTraits, playerNpc.revealedTraits, activityTags);
     if (discovery && discovery.isNew) {
-      // Use repository to update revealed traits
-      await npcRepository.appendRevealedTrait(client, npc.id, discovery.trait as NPCTrait);
+      // Update revealed traits in database
+      await playerNpcRepository.appendRevealedTrait(client, playerNpc.id, discovery.trait as NPCTrait);
+      updatedRevealedTraits = [...playerNpc.revealedTraits, discovery.trait as NPCTrait];
       discoveredTrait = {
-        trait: discovery.trait as any,
-        traitName: getTraitDefinition(discovery.trait as any).name,
-        traitDescription: getTraitDefinition(discovery.trait as any).description,
+        trait: discovery.trait as NPCTrait,
+        traitName: getTraitDefinition(discovery.trait as NPCTrait).name,
+        traitDescription: getTraitDefinition(discovery.trait as NPCTrait).description,
         isNew: discovery.isNew
       };
     }
   }
 
   // Apply emotion effects
-  let updatedNpc = npc;
+  let updatedEmotionVector = playerNpc.emotionVector;
+  let updatedEmotionInterpretation = playerNpc.emotionInterpretation;
+
   if (hasEmotionProfile(activity.emotionProfile)) {
-    const emotionPulls = generateActivityEmotionPulls(activity.emotionProfile, outcomeTier as any);
-    const updatedEmotionVector = applyEmotionPulls(npc.emotionVector, emotionPulls);
+    const emotionPulls = generateActivityEmotionPulls(activity.emotionProfile, outcomeTier as 'best' | 'okay' | 'mixed' | 'catastrophic');
+    updatedEmotionVector = applyEmotionPulls(playerNpc.emotionVector, emotionPulls);
 
-    // Use repository to update emotion vector
-    await npcRepository.updateEmotionVector(client, npc.id, updatedEmotionVector);
-
-    updatedNpc = {
-      ...npc,
-      emotionVector: updatedEmotionVector,
-      emotionInterpretation: interpretEmotionVectorSlim(updatedEmotionVector)
-    };
+    // Update emotion vector in database
+    await playerNpcRepository.updateEmotionVector(client, playerNpc.id, updatedEmotionVector);
+    updatedEmotionInterpretation = interpretEmotionVectorSlim(updatedEmotionVector);
   }
 
   // Validate axis values
@@ -368,29 +336,24 @@ async function processSocialEffects(
   const affectionValue = Number.isFinite(newAxes.affection) ? newAxes.affection : 0;
   const desireValue = Number.isFinite(newAxes.desire) ? newAxes.desire : 0;
 
-  // Use repository to update relationship
-  await relationshipRepository.update(client, relationship.id, {
+  // Update player NPC with new axes and state
+  await playerNpcRepository.update(client, playerNpc.id, {
     trust: trustValue,
     affection: affectionValue,
     desire: desireValue,
     currentState: newState,
-    unlockedStates: unlockedStates as RelationshipState[]
+    lastInteraction: gameTimeMinutes
   });
 
-  const updatedRelationship: Relationship = {
-    ...relationship,
+  const updatedPlayerNpc: PlayerNPCView = {
+    ...playerNpc,
     trust: trustValue,
     affection: affectionValue,
     desire: desireValue,
     currentState: newState,
-    unlockedStates: unlockedStates as RelationshipState[],
-    lastInteraction: new Date().toISOString(),
-    npc: {
-      ...updatedNpc,
-      revealedTraits: discoveredTrait?.isNew
-        ? [...updatedNpc.revealedTraits, discoveredTrait.trait as any]
-        : updatedNpc.revealedTraits
-    }
+    revealedTraits: updatedRevealedTraits,
+    emotionVector: updatedEmotionVector,
+    emotionInterpretation: updatedEmotionInterpretation
   };
 
   return {
@@ -399,10 +362,8 @@ async function processSocialEffects(
     previousState,
     newState,
     discoveredTrait,
-    updatedRelationship,
-    updatedNpc,
-    newAxes: { trust: trustValue, affection: affectionValue, desire: desireValue },
-    unlockedStates: unlockedStates as RelationshipState[]
+    updatedPlayerNpc,
+    newAxes: { trust: trustValue, affection: affectionValue, desire: desireValue }
   };
 }
 
@@ -433,30 +394,29 @@ export async function executeActivity(
       player = await playerRepository.create(client, userId);
     }
 
-    // Fetch NPC and relationship for social activities
-    let npc: NPC | undefined;
-    let relationship: Relationship | undefined;
+    // Fetch player NPC and template traits for social activities
+    let playerNpc: PlayerNPCView | undefined;
+    let allTraits: NPCTrait[] | undefined;
 
     if (isSocial && npcId) {
-      // Use repository to get NPC with all traits (showAllTraits for internal use)
-      const npcResult = await npcRepository.getById(client, npcId, { showAllTraits: true });
-      if (!npcResult) {
+      // Get player NPC (which contains template data via JOIN)
+      const playerNpcResult = await playerNpcRepository.getById(client, npcId);
+      if (!playerNpcResult) {
         throw new ActivityValidationError('NPC not found', 404);
       }
-      npc = npcResult;
+      playerNpc = playerNpcResult;
 
-      const relResult = await getOrCreateRelationship(
-        client,
-        userId,
-        npcId,
-        player.sexualPreference
-      );
-      relationship = relResult.relationship;
+      // Get full traits from template for difficulty calculation
+      const template = await npcTemplateRepository.getById(client, playerNpc.templateId);
+      if (!template) {
+        throw new ActivityValidationError('NPC template not found', 404);
+      }
+      allTraits = template.traits;
     }
 
     // Validate requirements
     validateStatRequirements(player, activity);
-    validateAvailability(activity, player, npc?.currentLocation);
+    validateAvailability(activity, player, playerNpc?.currentLocation);
 
     // Initialize result variables
     let outcome: ActivityResult['outcome'];
@@ -471,15 +431,17 @@ export async function executeActivity(
     // Social activity specific
     let relationshipChanges: ActivityResult['relationshipChanges'];
     let stateChanged = false;
-    let previousState: ActivityResult['previousState'];
-    let newState: ActivityResult['newState'];
+    let previousState: RelationshipState | undefined;
+    let newState: RelationshipState | undefined;
     let discoveredTrait: ActivityResult['discoveredTrait'];
-    let updatedRelationship: Relationship | undefined;
-    let updatedNpc: NPC | undefined = npc;
+    let updatedPlayerNpc: PlayerNPCView | undefined = playerNpc;
+
+    // Calculate new game time (needed for last_interaction update)
+    const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, activity.timeCost + additionalTimeCost);
 
     // Calculate outcome if activity has difficulty
     if (hasActivityDifficulty(activity) && activity.difficulty && activity.difficulty > 0) {
-      const outcomeResult = calculateOutcome(activity, player, relationship, npc);
+      const outcomeResult = calculateOutcome(activity, player, playerNpc, allTraits);
 
       outcome = outcomeResult.outcome;
       difficultyBreakdown = outcomeResult.difficultyBreakdown;
@@ -491,13 +453,15 @@ export async function executeActivity(
       additionalTimeCost = outcomeResult.additionalTimeCost;
 
       // Process social effects
-      if (isSocial && npc && relationship && outcome) {
+      if (isSocial && playerNpc && allTraits && outcome) {
         const socialResult = await processSocialEffects(
           client,
-          activity as any,
-          npc,
-          relationship,
-          outcome.tier
+          activity as Activity & { relationshipEffects: { trust?: number; affection?: number; desire?: number }; emotionProfile?: EmotionProfile },
+          playerNpc,
+          allTraits,
+          outcome.tier,
+          player,
+          newGameTimeMinutes
         );
 
         relationshipChanges = socialResult.relationshipChanges;
@@ -505,15 +469,14 @@ export async function executeActivity(
         previousState = socialResult.previousState;
         newState = socialResult.newState;
         discoveredTrait = socialResult.discoveredTrait;
-        updatedRelationship = socialResult.updatedRelationship;
-        updatedNpc = socialResult.updatedNpc;
+        updatedPlayerNpc = socialResult.updatedPlayerNpc;
       }
     }
 
     // Calculate new resource values
     const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost + additionalEnergyCost));
     const newMoney = player.money + activity.moneyCost + additionalMoneyCost;
-    const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, activity.timeCost + additionalTimeCost);
+    const finalGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, activity.timeCost + additionalTimeCost);
 
     // Update tracking
     const minEnergy = Math.min(player.tracking.minEnergyToday, newEnergy);
@@ -552,7 +515,7 @@ export async function executeActivity(
     const updatedPlayer = await playerRepository.update(client, player.id, {
       currentEnergy: newEnergy,
       money: newMoney,
-      gameTimeMinutes: newGameTimeMinutes,
+      gameTimeMinutes: finalGameTimeMinutes,
       stats: newStats,
       tracking: {
         ...player.tracking,
@@ -571,10 +534,40 @@ export async function executeActivity(
     console.log(
       `✅ User ${userId} performed ${activityType} activity: ${activity.name}` +
       (outcome ? ` (${outcome.tier})` : '') +
-      (isSocial && updatedNpc ? ` with ${updatedNpc.name}` : '') +
+      (isSocial && updatedPlayerNpc ? ` with ${updatedPlayerNpc.name}` : '') +
       (stateChanged ? ` [State: ${previousState} → ${newState}]` : '') +
       (discoveredTrait?.isNew ? ` [Discovered: ${discoveredTrait.trait}]` : '')
     );
+
+    // Build result - convert PlayerNPCView back to NPC/Relationship for API compatibility
+    // TODO: Update ActivityResult type to use PlayerNPCView directly
+    const npcForResult = updatedPlayerNpc ? {
+      id: updatedPlayerNpc.id,
+      name: updatedPlayerNpc.name,
+      gender: updatedPlayerNpc.gender,
+      traits: updatedPlayerNpc.revealedTraits,  // Only show revealed traits
+      revealedTraits: updatedPlayerNpc.revealedTraits,
+      emotionVector: updatedPlayerNpc.emotionVector,
+      emotionInterpretation: updatedPlayerNpc.emotionInterpretation,
+      appearance: updatedPlayerNpc.appearance,
+      loras: [],  // Not needed for result
+      currentLocation: updatedPlayerNpc.currentLocation,
+      createdAt: ''  // Not needed for result
+    } : undefined;
+
+    const relationshipForResult = updatedPlayerNpc ? {
+      id: updatedPlayerNpc.id,
+      playerId: userId,
+      npcId: updatedPlayerNpc.templateId,
+      trust: updatedPlayerNpc.trust,
+      affection: updatedPlayerNpc.affection,
+      desire: updatedPlayerNpc.desire,
+      currentState: updatedPlayerNpc.currentState,
+      unlockedStates: [updatedPlayerNpc.currentState],  // Simplified
+      firstMet: '',  // Not needed for result
+      lastInteraction: '',  // Not needed for result
+      npc: npcForResult
+    } : undefined;
 
     return {
       player: updatedPlayer,
@@ -587,14 +580,14 @@ export async function executeActivity(
       actualTimeCost: activity.timeCost + additionalTimeCost,
       difficultyBreakdown,
 
-      // Social activity fields
-      npc: updatedNpc,
-      relationship: updatedRelationship,
+      // Social activity fields - use compatibility wrappers
+      npc: npcForResult,
+      relationship: relationshipForResult,
       relationshipChanges,
       stateChanged: isSocial ? stateChanged : undefined,
       previousState: isSocial ? previousState : undefined,
       newState: isSocial ? newState : undefined,
-      emotionalState: updatedNpc?.emotionInterpretation?.emotion as any,
+      emotionalState: updatedPlayerNpc?.emotionInterpretation?.emotion,
       discoveredTrait
     };
   } catch (error) {
