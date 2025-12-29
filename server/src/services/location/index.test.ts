@@ -80,34 +80,34 @@ describe('Location Service', () => {
       expect(calculateTravelTime('park', 'park')).toBe(0);
     });
 
-    test('returns 5 minutes within same district (residential)', () => {
-      expect(calculateTravelTime('home', 'park')).toBe(5);
-      expect(calculateTravelTime('park', 'coffee_shop')).toBe(5);
-      expect(calculateTravelTime('coffee_shop', 'home')).toBe(5);
+    test('returns 10 minutes within same district (residential)', () => {
+      expect(calculateTravelTime('home', 'park')).toBe(10);
+      expect(calculateTravelTime('park', 'coffee_shop')).toBe(10);
+      expect(calculateTravelTime('coffee_shop', 'home')).toBe(10);
     });
 
     test('returns 5 minutes within same district (downtown)', () => {
-      expect(calculateTravelTime('library', 'gym')).toBe(5);
-      expect(calculateTravelTime('shopping_district', 'movie_theater')).toBe(5);
+      expect(calculateTravelTime('library', 'gym')).toBe(10);
+      expect(calculateTravelTime('shopping_district', 'movie_theater')).toBe(10);
     });
 
     test('returns 5 minutes within same district (waterfront)', () => {
-      expect(calculateTravelTime('beach', 'boardwalk')).toBe(5);
-      expect(calculateTravelTime('boardwalk', 'bar')).toBe(5);
+      expect(calculateTravelTime('beach', 'boardwalk')).toBe(10);
+      expect(calculateTravelTime('boardwalk', 'bar')).toBe(10);
     });
 
     test('returns 15 minutes between different districts', () => {
       // Residential to Downtown
-      expect(calculateTravelTime('home', 'library')).toBe(15);
-      expect(calculateTravelTime('park', 'gym')).toBe(15);
+      expect(calculateTravelTime('home', 'library')).toBe(30);
+      expect(calculateTravelTime('park', 'gym')).toBe(30);
 
       // Residential to Waterfront
-      expect(calculateTravelTime('home', 'beach')).toBe(15);
-      expect(calculateTravelTime('coffee_shop', 'bar')).toBe(15);
+      expect(calculateTravelTime('home', 'beach')).toBe(30);
+      expect(calculateTravelTime('coffee_shop', 'bar')).toBe(30);
 
       // Downtown to Waterfront
-      expect(calculateTravelTime('library', 'beach')).toBe(15);
-      expect(calculateTravelTime('gym', 'boardwalk')).toBe(15);
+      expect(calculateTravelTime('library', 'beach')).toBe(30);
+      expect(calculateTravelTime('gym', 'boardwalk')).toBe(30);
     });
   });
 

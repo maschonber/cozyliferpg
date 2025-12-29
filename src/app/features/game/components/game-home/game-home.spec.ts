@@ -2,21 +2,22 @@ import { TestBed, ComponentFixture } from '@angular/core/testing';
 import { Router } from '@angular/router';
 import { signal, WritableSignal, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { MatDialog } from '@angular/material/dialog';
 import { GameHome } from './game-home';
 import { GameFacade } from '../../services/game.facade';
-import { NPC, Relationship, PlayerCharacter, Activity, ActivityAvailability, LocationWithNPCCount } from '../../../../../../shared/types';
+import { NpcView, PlayerCharacter, Activity, ActivityAvailability, LocationWithNPCCount } from '../../../../../../shared/types';
 
 describe('GameHome', () => {
   let component: GameHome;
   let fixture: ComponentFixture<GameHome>;
   let mockFacade: Partial<GameFacade>;
   let mockRouter: jest.Mocked<Router>;
+  let mockDialog: jest.Mocked<MatDialog>;
 
   // Mock signals
-  let npcsWithRelationshipsSignal: WritableSignal<Array<{ npc: NPC; relationship: Relationship }>>;
-  let relationshipsLoadingSignal: WritableSignal<boolean>;
+  let npcsAtCurrentLocationSignal: WritableSignal<NpcView[]>;
   let npcsLoadingSignal: WritableSignal<boolean>;
-  let relationshipsErrorSignal: WritableSignal<string | null>;
+  let npcsErrorSignal: WritableSignal<string | null>;
   let activitiesSignal: WritableSignal<Activity[]>;
   let activityAvailabilitySignal: WritableSignal<ActivityAvailability[]>;
   let playerSignal: WritableSignal<PlayerCharacter | null>;
@@ -24,7 +25,7 @@ describe('GameHome', () => {
   let interactingSignal: WritableSignal<boolean>;
   let interactionErrorSignal: WritableSignal<string | null>;
   let locationsSignal: WritableSignal<LocationWithNPCCount[]>;
-  let relationshipsSignal: WritableSignal<Relationship[]>;
+  let npcsSignal: WritableSignal<NpcView[]>;
 
   const mockPlayer: PlayerCharacter = {
     id: 'player-1',
@@ -36,7 +37,7 @@ describe('GameHome', () => {
     currentTime: '09:00',
     lastSleptAt: '00:00',
     currentLocation: 'park',
-    archetype: 'balanced',
+    archetype: 'social_butterfly',
     stats: {
       baseFitness: 50,
       baseVitality: 50,
@@ -66,11 +67,10 @@ describe('GameHome', () => {
     updatedAt: '2024-01-01T00:00:00Z'
   };
 
-  const mockNPC: NPC = {
+  const mockNpcView: NpcView = {
     id: 'npc-1',
+    templateId: 'template-1',
     name: 'Alice',
-    archetype: 'Artist',
-    traits: ['Creative', 'Friendly'],
     gender: 'female',
     appearance: {
       hairColor: 'Brown',
@@ -86,31 +86,21 @@ describe('GameHome', () => {
       style: 'Casual',
       bodyDetails: []
     },
-    loras: [],
     currentLocation: 'park',
-    createdAt: '2024-01-01T00:00:00Z'
-  };
-
-  const mockRelationship: Relationship = {
-    id: 'rel-1',
-    npcId: 'npc-1',
-    playerId: 'player-1',
     trust: 0,
     affection: 0,
     desire: 0,
     currentState: 'stranger',
-    unlockedStates: ['stranger'],
-    firstMet: '2024-01-01T00:00:00Z',
-    lastInteraction: '2024-01-01T00:00:00Z',
-    npc: mockNPC
+    revealedTraits: [],
+    emotionVector: { joySadness: 0, acceptanceDisgust: 0, angerFear: 0, anticipationSurprise: 0 },
+    emotionInterpretation: { emotion: 'neutral' }
   };
 
   beforeEach(async () => {
     // Initialize mock signals
-    npcsWithRelationshipsSignal = signal([]);
-    relationshipsLoadingSignal = signal(false);
+    npcsAtCurrentLocationSignal = signal([]);
     npcsLoadingSignal = signal(false);
-    relationshipsErrorSignal = signal(null);
+    npcsErrorSignal = signal(null);
     activitiesSignal = signal([]);
     activityAvailabilitySignal = signal([]);
     playerSignal = signal(mockPlayer);
@@ -118,14 +108,14 @@ describe('GameHome', () => {
     interactingSignal = signal(false);
     interactionErrorSignal = signal(null);
     locationsSignal = signal([]);
-    relationshipsSignal = signal([]);
+    npcsSignal = signal([]);
 
     // Mock facade
     mockFacade = {
-      npcsWithRelationships: npcsWithRelationshipsSignal,
-      relationshipsLoading: relationshipsLoadingSignal,
+      npcsAtCurrentLocation: npcsAtCurrentLocationSignal,
       npcsLoading: npcsLoadingSignal,
-      relationshipsError: relationshipsErrorSignal,
+      npcsError: npcsErrorSignal,
+      npcs: npcsSignal,
       activities: activitiesSignal,
       activityAvailability: activityAvailabilitySignal,
       player: playerSignal,
@@ -133,11 +123,9 @@ describe('GameHome', () => {
       interacting: interactingSignal,
       interactionError: interactionErrorSignal,
       locations: locationsSignal,
-      relationships: relationshipsSignal,
       initialize: jest.fn(),
       performActivity: jest.fn(),
-      createNPC: jest.fn(),
-      getRelationship: jest.fn()
+      createNpc: jest.fn()
     };
 
     // Mock router
@@ -145,11 +133,19 @@ describe('GameHome', () => {
       navigate: jest.fn()
     } as any;
 
+    // Mock dialog
+    mockDialog = {
+      open: jest.fn().mockReturnValue({
+        afterClosed: () => of(null)
+      })
+    } as any;
+
     await TestBed.configureTestingModule({
       imports: [GameHome],
       providers: [
         { provide: GameFacade, useValue: mockFacade },
-        { provide: Router, useValue: mockRouter }
+        { provide: Router, useValue: mockRouter },
+        { provide: MatDialog, useValue: mockDialog }
       ],
       schemas: [CUSTOM_ELEMENTS_SCHEMA]
     }).compileComponents();
@@ -159,14 +155,12 @@ describe('GameHome', () => {
   });
 
   describe('onMeetSomeoneNew', () => {
-    it('should load relationship after creating NPC', (done) => {
+    it('should create NPC after performing meet_someone activity', (done) => {
       // Arrange
       const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(of({ success: true } as any));
-      const createNPCSpy = jest.spyOn(mockFacade, 'createNPC')
-        .mockReturnValue(of(mockNPC));
-      const getRelationshipSpy = jest.spyOn(mockFacade, 'getRelationship')
-        .mockReturnValue(of(mockRelationship));
+      const createNpcSpy = jest.spyOn(mockFacade, 'createNpc')
+        .mockReturnValue(of(mockNpcView));
 
       // Act
       component.onMeetSomeoneNew();
@@ -174,28 +168,7 @@ describe('GameHome', () => {
       // Assert
       setTimeout(() => {
         expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
-        expect(createNPCSpy).toHaveBeenCalled();
-        expect(getRelationshipSpy).toHaveBeenCalledWith(mockNPC.id);
-        done();
-      }, 100);
-    });
-
-    it('should not load relationship if NPC creation fails', (done) => {
-      // Arrange
-      const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
-        .mockReturnValue(of({ success: true } as any));
-      const createNPCSpy = jest.spyOn(mockFacade, 'createNPC')
-        .mockReturnValue(throwError(() => new Error('Failed to create NPC')));
-      const getRelationshipSpy = jest.spyOn(mockFacade, 'getRelationship');
-
-      // Act
-      component.onMeetSomeoneNew();
-
-      // Assert
-      setTimeout(() => {
-        expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
-        expect(createNPCSpy).toHaveBeenCalled();
-        expect(getRelationshipSpy).not.toHaveBeenCalled();
+        expect(createNpcSpy).toHaveBeenCalled();
         done();
       }, 100);
     });
@@ -204,8 +177,7 @@ describe('GameHome', () => {
       // Arrange
       const performActivitySpy = jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(throwError(() => new Error('Failed to perform activity')));
-      const createNPCSpy = jest.spyOn(mockFacade, 'createNPC');
-      const getRelationshipSpy = jest.spyOn(mockFacade, 'getRelationship');
+      const createNpcSpy = jest.spyOn(mockFacade, 'createNpc');
 
       // Act
       component.onMeetSomeoneNew();
@@ -213,8 +185,7 @@ describe('GameHome', () => {
       // Assert
       setTimeout(() => {
         expect(performActivitySpy).toHaveBeenCalledWith('meet_someone');
-        expect(createNPCSpy).not.toHaveBeenCalled();
-        expect(getRelationshipSpy).not.toHaveBeenCalled();
+        expect(createNpcSpy).not.toHaveBeenCalled();
         done();
       }, 100);
     });
@@ -223,10 +194,8 @@ describe('GameHome', () => {
       // Arrange
       jest.spyOn(mockFacade, 'performActivity')
         .mockReturnValue(of({ success: true } as any));
-      jest.spyOn(mockFacade, 'createNPC')
-        .mockReturnValue(of(mockNPC));
-      jest.spyOn(mockFacade, 'getRelationship')
-        .mockReturnValue(of(mockRelationship));
+      jest.spyOn(mockFacade, 'createNpc')
+        .mockReturnValue(of(mockNpcView));
 
       // Act
       component.onMeetSomeoneNew();
@@ -239,31 +208,24 @@ describe('GameHome', () => {
     });
   });
 
-  describe('empty state messaging', () => {
-    it('should show "You haven\'t met anyone yet" when no relationships exist', () => {
+  describe('empty state', () => {
+    it('should have empty npcsAtCurrentLocation when no NPCs at current location', () => {
       // Arrange
-      relationshipsSignal.set([]);
-      npcsWithRelationshipsSignal.set([]);
+      npcsAtCurrentLocationSignal.set([]);
       fixture.detectChanges();
 
       // Assert
-      expect(component.relationships().length).toBe(0);
-      expect(component.npcsWithRelationships().length).toBe(0);
+      expect(component.npcsAtCurrentLocation().length).toBe(0);
     });
 
-    it('should show different message when neighbors exist elsewhere', () => {
+    it('should show NPCs when they are at current location', () => {
       // Arrange
-      const neighborElsewhere = {
-        ...mockRelationship,
-        npc: { ...mockNPC, currentLocation: 'library' }
-      };
-      relationshipsSignal.set([neighborElsewhere]);
-      npcsWithRelationshipsSignal.set([]); // Filtered out because at different location
+      npcsAtCurrentLocationSignal.set([mockNpcView]);
       fixture.detectChanges();
 
       // Assert
-      expect(component.relationships().length).toBe(1);
-      expect(component.npcsWithRelationships().length).toBe(0);
+      expect(component.npcsAtCurrentLocation().length).toBe(1);
+      expect(component.npcsAtCurrentLocation()[0].name).toBe('Alice');
     });
   });
 

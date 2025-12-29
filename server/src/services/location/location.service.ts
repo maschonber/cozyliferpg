@@ -142,10 +142,10 @@ export function calculateTravelTime(
   const toLocation = LOCATIONS[to];
 
   if (fromLocation.district === toLocation.district) {
-    return 5; // Within same district
+    return 10; // Within same district
   }
 
-  return 15; // Between different districts
+  return 30; // Between different districts
 }
 
 /**

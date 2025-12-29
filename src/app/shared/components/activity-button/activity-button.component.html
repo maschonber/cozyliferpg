@@ -4,9 +4,7 @@
   [class.positive]="variant === 'positive'"
   [class.negative]="variant === 'negative'"
   [class.unavailable]="!isAvailable()"
-  [class.has-requirements]="hasStatRequirements()"
   [disabled]="disabled || !isAvailable()"
-  [matTooltip]="getTooltip()"
   (click)="onClick()">
   <div class="activity-content">
     <div class="activity-header">
@@ -36,26 +34,6 @@
       }
     </div>
 
-    <!-- Stat Requirements (Phase 2.5) -->
-    @if (hasStatRequirements()) {
-      <div class="stat-requirements">
-        <span class="requirements-label">
-          <mat-icon>lock</mat-icon>
-          Requires:
-        </span>
-        @for (req of getStatRequirements(); track req.stat) {
-          <mat-chip
-            class="requirement-chip"
-            [class.met]="req.met"
-            [class.unmet]="!req.met"
-            [matTooltip]="req.stat + ': ' + req.current + '/' + req.required">
-            <mat-icon>{{ getStatIcon(req.stat) }}</mat-icon>
-            {{ req.label }} {{ req.required }}
-          </mat-chip>
-        }
-      </div>
-    }
-
     <!-- Optional Effects (for social activities) -->
     @if (effects && (effects.trust || effects.affection || effects.desire)) {
       <div class="activity-effects">
@@ -78,6 +56,11 @@
           </span>
         }
       </div>
+    }
+
+    <!-- Unavailability reason -->
+    @if (!isAvailable() && availability && availability.reason) {
+      <div class="unavailable-reason">{{ availability.reason }}</div>
     }
   </div>
 </button>

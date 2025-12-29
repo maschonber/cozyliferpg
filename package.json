@@ -11,6 +11,7 @@
     "test:backend": "jest --config=jest.server.config.js",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:all": "npm run test:backend && npm test",
     "server": "cd server && railway run npm run dev",
     "server:install": "cd server && npm install",
     "dev": "concurrently \"npm start\" \"npm run server\" --names \"frontend,backend\" --prefix-colors \"cyan,magenta\"",

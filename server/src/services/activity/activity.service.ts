@@ -17,7 +17,8 @@ import {
   requiresNPC,
 } from '../../../../shared/types';
 import { isLocationOpen, LOCATIONS } from '../location';
-import { getTimeSlot, checkActivityEndTime, getMinutesOfDay, toMinutesOfDay } from '../time/game-time.service';
+import { getTimeSlot, checkActivityEndTime } from '../time/game-time.service';
+import { meetsStatRequirements } from '../outcome';
 import { activityRepository } from '../../repositories';
 
 /**
@@ -97,8 +98,24 @@ export async function deletePlayerActivities(
 // ===== Activity Validation =====
 
 /**
+ * Format opening time for display (e.g., "Opens at 8:00")
+ */
+function formatOpeningTime(openTime: { hours: number; minutes?: number }): string {
+  const hours = openTime.hours;
+  const minutes = openTime.minutes ?? 0;
+  const timeStr = `${hours}:${String(minutes).padStart(2, '0')}`;
+  return `Opens at ${timeStr}`;
+}
+
+/**
  * Check if an activity can be performed based on player state.
  * Uses minutes-based time internally.
+ *
+ * Priority order for unavailability reasons:
+ * 1. Stat requirements (highest priority)
+ * 2. Location/venue constraints
+ * 3. Resource constraints (energy, money)
+ * 4. Time constraints
  *
  * @param activity - The activity to check
  * @param player - Current player state
@@ -110,6 +127,21 @@ export function canPerformActivity(
   player: PlayerCharacter,
   npcLocation?: string
 ): ActivityAvailability {
+  // Check stat requirements first (highest priority)
+  if ('statRequirements' in activity && activity.statRequirements) {
+    const reqCheck = meetsStatRequirements(player.stats, activity.statRequirements);
+    if (!reqCheck.meets) {
+      // Show the first unmet requirement
+      const first = reqCheck.unmet[0];
+      const statLabel = first.stat.charAt(0).toUpperCase() + first.stat.slice(1);
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: `Requires ${first.required} ${statLabel}`,
+      };
+    }
+  }
+
   // Check location requirement
   if (activity.location) {
     if (player.currentLocation !== activity.location) {
@@ -156,7 +188,7 @@ export function canPerformActivity(
         return {
           activityId: activity.id,
           available: false,
-          reason: `${location.name} is closed at this time`,
+          reason: formatOpeningTime(location.openTime),
         };
       }
 

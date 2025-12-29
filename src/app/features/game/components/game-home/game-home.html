@@ -47,7 +47,6 @@
         <app-activity-button
           [activity]="activity"
           [availability]="getActivityAvailability(activity.id)"
-          [playerStats]="player()?.stats"
           [disabled]="interacting()"
           (activityClick)="onPerformSoloActivity($event)">
         </app-activity-button>
