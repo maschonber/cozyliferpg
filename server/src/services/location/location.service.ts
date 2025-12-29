@@ -5,6 +5,7 @@
 
 import { Location, LocationId, District, LocationWithNPCCount } from '../../../../shared/types';
 import { Pool } from 'pg';
+import { toMinutesOfDay, getMinutesOfDay, isWithinOperatingHours } from '../time/game-time.service';
 
 /**
  * All locations in the game
@@ -33,8 +34,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Corner Coffee Shop',
     description: 'A cozy local cafe with warm atmosphere',
     district: 'residential',
-    openTime: '06:00',
-    closeTime: '22:00',
+    openTime: { hours: 6 },
+    closeTime: { hours: 22 },
   },
 
   // ===== DISTRICT 2: TOWN CENTER (DOWNTOWN) =====
@@ -43,8 +44,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Public Library',
     description: 'Quiet study spaces with extensive book collections',
     district: 'downtown',
-    openTime: '08:00',
-    closeTime: '20:00',
+    openTime: { hours: 8 },
+    closeTime: { hours: 20 },
   },
 
   shopping_district: {
@@ -52,8 +53,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Shopping District',
     description: 'Main street with shops, boutiques, and services',
     district: 'downtown',
-    openTime: '09:00',
-    closeTime: '21:00',
+    openTime: { hours: 9 },
+    closeTime: { hours: 21 },
   },
 
   gym: {
@@ -61,8 +62,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Fitness Center',
     description: 'Modern gym with equipment and fitness classes',
     district: 'downtown',
-    openTime: '05:00',
-    closeTime: '23:00',
+    openTime: { hours: 5 },
+    closeTime: { hours: 23 },
   },
 
   movie_theater: {
@@ -70,8 +71,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Movie Theater',
     description: 'Small cinema showing the latest films',
     district: 'downtown',
-    openTime: '12:00',
-    closeTime: '23:00',
+    openTime: { hours: 12 },
+    closeTime: { hours: 23 },
   },
 
   // ===== DISTRICT 3: WATERFRONT (SEASIDE) =====
@@ -88,8 +89,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Boardwalk',
     description: 'Wooden pier with shops, arcade, and attractions',
     district: 'waterfront',
-    openTime: '10:00',
-    closeTime: '23:00',
+    openTime: { hours: 10 },
+    closeTime: { hours: 23 },
   },
 
   bar: {
@@ -97,8 +98,8 @@ export const LOCATIONS: Record<LocationId, Location> = {
     name: 'Seaside Bar & Grill',
     description: 'Casual restaurant and bar with ocean views',
     district: 'waterfront',
-    openTime: '11:00',
-    closeTime: '02:00', // Closes at 2 AM (next day)
+    openTime: { hours: 11 },
+    closeTime: { hours: 2 }, // Closes at 2 AM (next day)
   },
 };
 
@@ -150,12 +151,12 @@ export function calculateTravelTime(
 /**
  * Check if a location is open at a given time
  * @param locationId - The location to check
- * @param time - Current time in "HH:MM" format
+ * @param gameTimeMinutes - Current game time in total minutes
  * @returns true if location is open (or has no operating hours), false otherwise
  */
 export function isLocationOpen(
   locationId: LocationId,
-  time: string
+  gameTimeMinutes: number
 ): boolean {
   const location = LOCATIONS[locationId];
 
@@ -164,26 +165,11 @@ export function isLocationOpen(
     return true;
   }
 
-  const currentMinutes = timeToMinutes(time);
-  const openMinutes = timeToMinutes(location.openTime);
-  const closeMinutes = timeToMinutes(location.closeTime);
+  const currentMinutesOfDay = getMinutesOfDay(gameTimeMinutes);
+  const openMinutes = toMinutesOfDay(location.openTime);
+  const closeMinutes = toMinutesOfDay(location.closeTime);
 
-  // Handle locations that close after midnight (e.g., bar closes at 02:00)
-  if (closeMinutes < openMinutes) {
-    // Location is open from openTime until midnight, then from midnight until closeTime
-    return currentMinutes >= openMinutes || currentMinutes < closeMinutes;
-  }
-
-  // Normal operating hours
-  return currentMinutes >= openMinutes && currentMinutes < closeMinutes;
-}
-
-/**
- * Convert time string to minutes since midnight
- */
-function timeToMinutes(time: string): number {
-  const [hours, minutes] = time.split(':').map(Number);
-  return hours * 60 + minutes;
+  return isWithinOperatingHours(currentMinutesOfDay, openMinutes, closeMinutes);
 }
 
 /**

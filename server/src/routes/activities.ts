@@ -8,7 +8,7 @@ import { pool } from '../db';
 import { AuthRequest } from '../auth/auth.middleware';
 import { getAvailableActivities } from '../services/relationship';
 import { getOrCreatePlayerCharacter } from '../services/player';
-import { canPerformActivity } from '../services/time';
+import { canPerformActivity } from '../services/activity';
 import {
   executeActivity,
   ActivityValidationError

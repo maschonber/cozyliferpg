@@ -40,7 +40,8 @@ import {
   updateUnlockedStates,
   calculateDesireCap
 } from '../../relationship';
-import { canPerformActivity, addMinutes } from '../../time';
+import { canPerformActivity } from '../activity.service';
+import { addGameMinutes } from '../../time/game-time.service';
 import { rollOutcome, meetsStatRequirements, BASE_DC } from '../../outcome';
 import { applyStatEffects, getBaseStat, getCurrentStat } from '../../stat';
 import { generateOutcome } from '../../outcome-generator';
@@ -512,7 +513,7 @@ export async function executeActivity(
     // Calculate new resource values
     const newEnergy = Math.max(0, Math.min(100, player.currentEnergy + activity.energyCost + additionalEnergyCost));
     const newMoney = player.money + activity.moneyCost + additionalMoneyCost;
-    const newTime = addMinutes(player.currentTime, activity.timeCost + additionalTimeCost);
+    const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, activity.timeCost + additionalTimeCost);
 
     // Update tracking
     const minEnergy = Math.min(player.tracking.minEnergyToday, newEnergy);
@@ -551,7 +552,7 @@ export async function executeActivity(
     const updatedPlayer = await playerRepository.update(client, player.id, {
       currentEnergy: newEnergy,
       money: newMoney,
-      currentTime: newTime,
+      gameTimeMinutes: newGameTimeMinutes,
       stats: newStats,
       tracking: {
         ...player.tracking,

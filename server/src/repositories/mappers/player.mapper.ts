@@ -10,6 +10,7 @@ import {
   LocationId,
   StatName
 } from '../../../../shared/types';
+import { getDay, getTimeString } from '../../services/time';
 
 /**
  * Database row structure for PlayerCharacter
@@ -20,9 +21,7 @@ export interface PlayerCharacterRow {
   current_energy: number;
   max_energy: number;
   money: number;
-  current_day: number;
-  time_of_day: string;
-  last_slept_at: string;
+  game_time_minutes: number;
   current_location: string | null;
   sexual_preference: string | null;
   archetype: string | null;
@@ -78,9 +77,9 @@ export function mapRowToPlayerCharacter(row: PlayerCharacterRow): PlayerCharacte
     currentEnergy: row.current_energy,
     maxEnergy: row.max_energy,
     money: row.money,
-    currentDay: row.current_day,
-    currentTime: row.time_of_day,
-    lastSleptAt: row.last_slept_at,
+    gameTimeMinutes: row.game_time_minutes,
+    currentDay: getDay(row.game_time_minutes),
+    currentTime: getTimeString(row.game_time_minutes),
     currentLocation: (row.current_location || 'home') as LocationId,
 
     // Relationship preferences

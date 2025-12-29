@@ -5,7 +5,7 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
-import { SleepResultWithStats, StatChange, StatChangeBreakdown, StatChangeComponent } from '../../../../../../shared/types';
+import { SleepResultWithStats, StatChange, StatChangeBreakdown, StatChangeComponent, TimeOfDay } from '../../../../../../shared/types';
 
 export interface SleepModalData {
   sleepResult: SleepResultWithStats;
@@ -100,6 +100,15 @@ export class SleepModal {
    */
   isPositiveChange(value: number): boolean {
     return value > 0;
+  }
+
+  /**
+   * Format TimeOfDay to display string (HH:MM)
+   */
+  formatTimeOfDay(time: TimeOfDay): string {
+    const hours = String(time.hours).padStart(2, '0');
+    const minutes = String(time.minutes ?? 0).padStart(2, '0');
+    return `${hours}:${minutes}`;
   }
 
   onContinue(): void {

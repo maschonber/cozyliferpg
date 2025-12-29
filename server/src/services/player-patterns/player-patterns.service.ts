@@ -10,27 +10,13 @@ import { PlayerCharacter, PlayerActivity, StatName, ActivityTypeValue, OutcomeTi
 import { PlayerPatternSnapshot, ActivityWindow, RelationshipSummary } from './types';
 import { calculateRelationshipState } from '../relationship';
 import { getActivityById } from '../../activities';
+import { isBeforeMidnight, isAfter2AM } from '../time/game-time.service';
 
 // === Time Window Constants ===
 const TIME_WINDOWS = {
   SHORT: 3,   // days
   MEDIUM: 7,  // days
 } as const;
-
-// === Bedtime Helpers ===
-function parseHour(time: string): number {
-  return parseInt(time.split(':')[0], 10);
-}
-
-function isBeforeMidnight(bedtime: string): boolean {
-  const hour = parseHour(bedtime);
-  return hour >= 20 && hour < 24;
-}
-
-function isAfter2AM(bedtime: string): boolean {
-  const hour = parseHour(bedtime);
-  return hour >= 2 && hour < 6;
-}
 
 // === Activity Window Builder ===
 function buildActivityWindow(activities: PlayerActivity[]): ActivityWindow {
@@ -59,11 +45,13 @@ function buildActivityWindow(activities: PlayerActivity[]): ActivityWindow {
  * This performs exactly 2 database queries:
  * 1. Activities for last 7 days
  * 2. Relationships with interaction history
+ *
+ * @param bedtimeMinutes - Bedtime as minutes within day (0-1439)
  */
 export async function buildPlayerPatternSnapshot(
   pool: Pool,
   player: PlayerCharacter,
-  bedtime: string
+  bedtimeMinutes: number
 ): Promise<PlayerPatternSnapshot> {
   const client = await pool.connect();
 
@@ -80,7 +68,7 @@ export async function buildPlayerPatternSnapshot(
     const burnoutStreak = hitZeroToday
       ? player.tracking.burnoutStreak + 1
       : 0;
-    const sleptLate = isAfter2AM(bedtime);
+    const sleptLate = isAfter2AM(bedtimeMinutes);
     const lateNightStreak = sleptLate
       ? player.tracking.lateNightStreak + 1
       : 0;
@@ -189,7 +177,7 @@ export async function buildPlayerPatternSnapshot(
     // === Build Snapshot ===
     return {
       currentDay: player.currentDay,
-      bedtime,
+      bedtimeMinutes,
       playerStats: player.stats,
 
       energy: {
@@ -205,7 +193,7 @@ export async function buildPlayerPatternSnapshot(
       },
 
       sleep: {
-        sleptBeforeMidnight: isBeforeMidnight(bedtime),
+        sleptBeforeMidnight: isBeforeMidnight(bedtimeMinutes),
         sleptAfter2AM: sleptLate,
         lateNightStreak,
         burnoutStreak,

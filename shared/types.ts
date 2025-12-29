@@ -35,6 +35,23 @@ export interface AuthResponse {
 
 // ===== CozyLife RPG - Game Data Types =====
 
+// ===== Time Types =====
+
+/**
+ * Human-readable time for game data definitions.
+ * Used by designers to define times in a readable format,
+ * converted to minutes internally for calculations.
+ *
+ * @example
+ * { hours: 6 }              // 06:00
+ * { hours: 22, minutes: 30 } // 22:30
+ * { hours: 1, minutes: 30 } // 1h 30m duration
+ */
+export interface TimeOfDay {
+  hours: number;
+  minutes?: number;
+}
+
 /**
  * NPC Appearance for AI image generation and visualization API
  */
@@ -461,8 +478,8 @@ export interface Location {
   district: District;
 
   // Operating hours (optional - undefined means 24/7)
-  openTime?: string;    // "06:00"
-  closeTime?: string;   // "22:00"
+  openTime?: TimeOfDay;
+  closeTime?: TimeOfDay;
 
   // Future: Background image
   imageUrl?: string;
@@ -480,10 +497,10 @@ export interface PlayerCharacter {
   maxEnergy: number;          // 100 (fixed for Phase 2, variable in future)
   money: number;              // Starting: $200
 
-  // Time tracking
-  currentDay: number;         // 1, 2, 3...
-  currentTime: string;        // "HH:MM" format (e.g., "14:30")
-  lastSleptAt: string;        // "HH:MM" - for calculating sleep duration
+  // Time tracking (stored as minutes since Day 1, 00:00)
+  gameTimeMinutes: number;    // Total minutes since epoch (Day 1, 00:00 = 0)
+  currentDay: number;         // Computed from gameTimeMinutes for display
+  currentTime: string;        // Computed from gameTimeMinutes as "HH:MM"
 
   // Location tracking (Phase 3)
   currentLocation: LocationId; // Where the player currently is
@@ -515,7 +532,7 @@ export interface ActivityAvailability {
  * Sleep result (Phase 2 + Phase 3)
  */
 export interface SleepResult {
-  wakeTime: string;
+  wakeTime: TimeOfDay;
   energyRestored: number;
   hoursSlept: number;
   newDay: number;

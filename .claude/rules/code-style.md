@@ -99,4 +99,4 @@ function calculate(a: number, b: number, c: string, d: boolean): Result
 - Configuration value meanings, if not clear from variables (which should be preferred)
 
 **Comment antipatterns:**
-- Historical context ("this was implemented in phase 2.5.1") is irrelevant and should be removed
+- Historical context ("this was implemented in phase 2.5.1") is irrelevant: avoid this, and remove it on refactorings

@@ -1,13 +1,23 @@
 /**
  * Activity Service
- * Manages player activity history for tracking and defensive stat calculations.
+ * Manages player activity history, validation, and tracking.
  *
  * This service provides a high-level interface for activity operations,
  * delegating to the activity repository for data access.
  */
 
 import { Pool } from 'pg';
-import { PlayerActivity, StatName, OutcomeTier } from '../../../../shared/types';
+import {
+  PlayerActivity,
+  StatName,
+  OutcomeTier,
+  Activity,
+  PlayerCharacter,
+  ActivityAvailability,
+  requiresNPC,
+} from '../../../../shared/types';
+import { isLocationOpen, LOCATIONS } from '../location';
+import { getTimeSlot, checkActivityEndTime, getMinutesOfDay, toMinutesOfDay } from '../time/game-time.service';
 import { activityRepository } from '../../repositories';
 
 /**
@@ -82,4 +92,131 @@ export async function deletePlayerActivities(
   playerId: string
 ): Promise<void> {
   return activityRepository.deleteAllForPlayer(pool, playerId);
+}
+
+// ===== Activity Validation =====
+
+/**
+ * Check if an activity can be performed based on player state.
+ * Uses minutes-based time internally.
+ *
+ * @param activity - The activity to check
+ * @param player - Current player state
+ * @param npcLocation - Optional NPC location (for social activities)
+ * @returns Availability result with reason if not available
+ */
+export function canPerformActivity(
+  activity: Activity,
+  player: PlayerCharacter,
+  npcLocation?: string
+): ActivityAvailability {
+  // Check location requirement
+  if (activity.location) {
+    if (player.currentLocation !== activity.location) {
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: `Must be at ${activity.location.replace('_', ' ')}`,
+      };
+    }
+  }
+
+  // Check if NPC is at same location (for social activities)
+  if (requiresNPC(activity) && npcLocation) {
+    if (player.currentLocation !== npcLocation) {
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: 'Must be at same location as NPC',
+      };
+    }
+  }
+
+  // Special case: "Meet Someone New" blocked at home
+  if (activity.id === 'meet_someone' && player.currentLocation === 'home') {
+    return {
+      activityId: activity.id,
+      available: false,
+      reason: 'Cannot meet new people at home',
+    };
+  }
+
+  // Check venue opening hours (if activity has a location)
+  if (activity.location) {
+    const location = LOCATIONS[activity.location];
+
+    if (location.openTime && location.closeTime) {
+      const startTimeMinutes = player.gameTimeMinutes;
+      const endTimeMinutes = startTimeMinutes + activity.timeCost;
+
+      const openAtStart = isLocationOpen(activity.location, startTimeMinutes);
+      const openAtEnd = isLocationOpen(activity.location, endTimeMinutes);
+
+      if (!openAtStart) {
+        return {
+          activityId: activity.id,
+          available: false,
+          reason: `${location.name} is closed at this time`,
+        };
+      }
+
+      if (!openAtEnd) {
+        return {
+          activityId: activity.id,
+          available: false,
+          reason: `${location.name} would close before activity ends`,
+        };
+      }
+    }
+  }
+
+  // Check energy
+  if (player.currentEnergy + activity.energyCost < 0) {
+    return {
+      activityId: activity.id,
+      available: false,
+      reason: 'Not enough energy',
+    };
+  }
+
+  // Check money
+  if (player.money + activity.moneyCost < 0) {
+    return {
+      activityId: activity.id,
+      available: false,
+      reason: 'Not enough money',
+    };
+  }
+
+  // Check time slot restriction
+  if (activity.allowedTimeSlots) {
+    const currentSlot = getTimeSlot(player.gameTimeMinutes);
+    if (!activity.allowedTimeSlots.includes(currentSlot)) {
+      return {
+        activityId: activity.id,
+        available: false,
+        reason: 'Not available at this time',
+      };
+    }
+  }
+
+  // Check if activity would end after 4 AM (forbidden)
+  const { after4am, afterMidnight } = checkActivityEndTime(
+    player.gameTimeMinutes,
+    activity.timeCost
+  );
+
+  if (after4am) {
+    return {
+      activityId: activity.id,
+      available: false,
+      reason: 'Would end too late (after 4 AM)',
+    };
+  }
+
+  return {
+    activityId: activity.id,
+    available: true,
+    endsAfterMidnight: afterMidnight,
+  };
 }

@@ -20,7 +20,12 @@ import {
 
 // Domain services
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../../player';
-import { calculateSleepResults, addMinutes } from '../../time';
+import {
+  addGameMinutes,
+  getMinutesOfDay,
+  calculateSleep,
+  getDay,
+} from '../../time/game-time.service';
 import { calculateTravelTime } from '../../location';
 import { processDailyStatChanges, setCurrentStat, getBaseStat, getCurrentStat } from '../../stat';
 import { buildPlayerPatternSnapshot } from '../../player-patterns';
@@ -47,19 +52,19 @@ const ALL_STATS: StatName[] = [
 // ===== Helper Functions =====
 
 /**
- * Calculate travel time home and adjusted bedtime
+ * Calculate travel time home and adjusted bedtime in minutes
  */
-function calculateBedtime(
+function calculateBedtimeMinutes(
   player: PlayerCharacter
-): { bedtime: string; travelTimeHome: number } {
+): { bedtimeMinutes: number; travelTimeHome: number } {
   if (player.currentLocation === 'home') {
-    return { bedtime: player.currentTime, travelTimeHome: 0 };
+    return { bedtimeMinutes: player.gameTimeMinutes, travelTimeHome: 0 };
   }
 
   const travelTimeHome = calculateTravelTime(player.currentLocation, 'home');
-  const bedtime = addMinutes(player.currentTime, travelTimeHome);
+  const bedtimeMinutes = addGameMinutes(player.gameTimeMinutes, travelTimeHome);
 
-  return { bedtime, travelTimeHome };
+  return { bedtimeMinutes, travelTimeHome };
 }
 
 /**
@@ -140,16 +145,22 @@ export async function processSleep(
   // Get player
   const player = await getOrCreatePlayerCharacter(pool, userId);
 
-  // Calculate travel home if needed
-  const { bedtime, travelTimeHome } = calculateBedtime(player);
+  // Calculate travel home if needed (in minutes)
+  const { bedtimeMinutes, travelTimeHome } = calculateBedtimeMinutes(player);
 
-  // Calculate sleep results
-  const sleepResults = calculateSleepResults(bedtime);
-  const newDay = player.currentDay + 1;
-  const newEnergy = Math.min(100, player.currentEnergy + sleepResults.energyRestored);
+  // Calculate sleep results using minutes
+  const bedtimeMinutesOfDay = getMinutesOfDay(bedtimeMinutes);
+  const sleepCalc = calculateSleep(bedtimeMinutesOfDay);
+
+  // Calculate new game time in minutes
+  const newDay = getDay(bedtimeMinutes) + 1;
+  const newGameTimeMinutes = (newDay - 1) * 1440 + sleepCalc.wakeTimeMinutes;
+
+  const newEnergy = Math.min(100, player.currentEnergy + sleepCalc.energyRestored);
 
   // Build player pattern snapshot for lifestyle evaluation
-  const snapshot = await buildPlayerPatternSnapshot(pool, player, bedtime);
+  // Note: buildPlayerPatternSnapshot still takes bedtime in minutes
+  const snapshot = await buildPlayerPatternSnapshot(pool, player, bedtimeMinutesOfDay);
 
   // Evaluate lifestyle patterns
   const lifestyleResult = evaluateAllPatterns(snapshot);
@@ -177,10 +188,8 @@ export async function processSleep(
 
   // Update player with new state
   await updatePlayerCharacter(pool, player.id, {
-    currentTime: sleepResults.wakeTime,
-    currentDay: newDay,
+    gameTimeMinutes: newGameTimeMinutes,
     currentEnergy: newEnergy,
-    lastSleptAt: bedtime,
     currentLocation: 'home',
     stats: finalStats,
     tracking: {
@@ -196,8 +205,14 @@ export async function processSleep(
     }
   });
 
+  // Convert wake time to TimeOfDay for API response
+  const wakeHours = Math.floor(sleepCalc.wakeTimeMinutes / 60);
+  const wakeMinutesRemainder = sleepCalc.wakeTimeMinutes % 60;
+
   return {
-    ...sleepResults,
+    wakeTime: { hours: wakeHours, minutes: wakeMinutesRemainder },
+    energyRestored: sleepCalc.energyRestored,
+    hoursSlept: sleepCalc.hoursSlept,
     newDay,
     traveledHome: travelTimeHome > 0,
     travelTime: travelTimeHome,

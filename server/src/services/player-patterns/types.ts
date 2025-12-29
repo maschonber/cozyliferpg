@@ -46,7 +46,7 @@ export interface RelationshipSummary {
 export interface PlayerPatternSnapshot {
   // === Time Context ===
   currentDay: number;
-  bedtime: string;  // HH:MM format
+  bedtimeMinutes: number;  // Minutes within day (0-1439)
 
   // === Player Stats ===
   /** Current player stats (needed for difficulty/comfort level calculations) */

@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { formatGameTime } from '../../time/game-time.service';
 
 const BASE_PENALTY = -2.5;
 const STREAK_MULTIPLIER = 0.2;
@@ -19,6 +20,7 @@ export class LateNightEvaluator implements PatternEvaluator {
 
   getComponent(snapshot: PlayerPatternSnapshot, value: number): StatChangeComponent {
     const streak = snapshot.sleep.lateNightStreak;
+    const bedtimeStr = formatGameTime(snapshot.bedtimeMinutes).time;
     return {
       source: this.id,
       category: 'Lifestyle (Vitality)',
@@ -26,7 +28,7 @@ export class LateNightEvaluator implements PatternEvaluator {
       value,
       details: streak > 1
         ? `Late night streak: ${streak} days`
-        : `Bedtime: ${snapshot.bedtime}`,
+        : `Bedtime: ${bedtimeStr}`,
     };
   }
 }

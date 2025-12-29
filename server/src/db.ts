@@ -55,10 +55,8 @@ export async function initDatabase() {
         max_energy INTEGER NOT NULL DEFAULT 100,
         money INTEGER NOT NULL DEFAULT 200,
 
-        -- Time tracking
-        current_day INTEGER NOT NULL DEFAULT 1 CHECK (current_day >= 1),
-        time_of_day VARCHAR(5) NOT NULL DEFAULT '06:00',
-        last_slept_at VARCHAR(5) NOT NULL DEFAULT '06:00',
+        -- Time tracking (unified minutes since Day 1, 00:00)
+        game_time_minutes INTEGER NOT NULL DEFAULT 360,
 
         -- Timestamps
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -225,6 +223,78 @@ export async function migrateRemoveNpcArchetype() {
   } catch (error) {
     await client.query('ROLLBACK');
     console.error('❌ NPC Archetype Removal migration failed:', error);
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+// Game Time Minutes Migration
+// Converts player time storage from separate day/time columns to unified minutes
+export async function migrateGameTimeMinutes() {
+  const client = await pool.connect();
+
+  try {
+    await client.query('BEGIN');
+
+    console.log('🔄 Running Game Time Minutes migration...');
+
+    // ===== 1. Add game_time_minutes column if not exists =====
+    const gameTimeCheck = await client.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name='player_characters' AND column_name='game_time_minutes'
+    `);
+
+    if (gameTimeCheck.rows.length === 0) {
+      console.log('  Adding game_time_minutes column...');
+      await client.query(`
+        ALTER TABLE player_characters
+        ADD COLUMN game_time_minutes INTEGER
+      `);
+
+      // Backfill from existing data: (day - 1) * 1440 + hours * 60 + minutes
+      console.log('  Backfilling game_time_minutes from existing data...');
+      await client.query(`
+        UPDATE player_characters
+        SET game_time_minutes = (current_day - 1) * 1440 +
+          CAST(SPLIT_PART(time_of_day, ':', 1) AS INTEGER) * 60 +
+          CAST(SPLIT_PART(time_of_day, ':', 2) AS INTEGER)
+      `);
+
+      // Set NOT NULL and default after backfill
+      await client.query(`
+        ALTER TABLE player_characters
+        ALTER COLUMN game_time_minutes SET NOT NULL,
+        ALTER COLUMN game_time_minutes SET DEFAULT 360
+      `);
+
+      console.log('  ✅ Added and populated game_time_minutes column');
+    } else {
+      console.log('  ⏭️  game_time_minutes column already exists');
+    }
+
+    // ===== 2. Drop old columns =====
+    const columnsToRemove = ['current_day', 'time_of_day', 'last_slept_at'];
+    for (const col of columnsToRemove) {
+      const colCheck = await client.query(`
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name='player_characters' AND column_name=$1
+      `, [col]);
+
+      if (colCheck.rows.length > 0) {
+        console.log(`  Dropping column ${col}...`);
+        await client.query(`ALTER TABLE player_characters DROP COLUMN ${col}`);
+        console.log(`  ✅ Dropped ${col} column`);
+      }
+    }
+
+    await client.query('COMMIT');
+    console.log('✅ Game Time Minutes migration completed');
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('❌ Game Time Minutes migration failed:', error);
     throw error;
   } finally {
     client.release();

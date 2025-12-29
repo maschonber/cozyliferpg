@@ -394,9 +394,6 @@ export class GameFacade {
 
     return this.repository.sleep().pipe(
       switchMap((result) => {
-        console.log(`✅ Slept ${result.hoursSlept} hours, gained ${result.energyRestored} energy`);
-        console.log(`🌅 Day ${result.newDay} begins at ${result.wakeTime}`);
-
         // Reload player to get updated state
         return this.repository.getPlayer().pipe(
           tap((player) => this.store.setPlayer(player)),

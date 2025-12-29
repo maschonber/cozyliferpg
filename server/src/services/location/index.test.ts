@@ -12,6 +12,12 @@ import {
   isLocationOpen,
 } from './index';
 
+// Helper to convert "HH:MM" to minutes for tests
+function timeToMinutes(time: string): number {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+}
+
 describe('Location Service', () => {
   describe('getLocation', () => {
     test('returns correct location by ID', () => {
@@ -108,53 +114,53 @@ describe('Location Service', () => {
   describe('isLocationOpen', () => {
     test('24/7 locations are always open', () => {
       // Home, Park, Beach are always open
-      expect(isLocationOpen('home', '03:00')).toBe(true);
-      expect(isLocationOpen('park', '23:30')).toBe(true);
-      expect(isLocationOpen('beach', '04:00')).toBe(true);
+      expect(isLocationOpen('home', timeToMinutes('03:00'))).toBe(true);
+      expect(isLocationOpen('park', timeToMinutes('23:30'))).toBe(true);
+      expect(isLocationOpen('beach', timeToMinutes('04:00'))).toBe(true);
     });
 
     test('coffee shop (06:00-22:00) operating hours', () => {
-      expect(isLocationOpen('coffee_shop', '05:59')).toBe(false);
-      expect(isLocationOpen('coffee_shop', '06:00')).toBe(true);
-      expect(isLocationOpen('coffee_shop', '12:00')).toBe(true);
-      expect(isLocationOpen('coffee_shop', '21:59')).toBe(true);
-      expect(isLocationOpen('coffee_shop', '22:00')).toBe(false);
-      expect(isLocationOpen('coffee_shop', '23:00')).toBe(false);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('05:59'))).toBe(false);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('06:00'))).toBe(true);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('12:00'))).toBe(true);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('21:59'))).toBe(true);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('22:00'))).toBe(false);
+      expect(isLocationOpen('coffee_shop', timeToMinutes('23:00'))).toBe(false);
     });
 
     test('library (08:00-20:00) operating hours', () => {
-      expect(isLocationOpen('library', '07:59')).toBe(false);
-      expect(isLocationOpen('library', '08:00')).toBe(true);
-      expect(isLocationOpen('library', '14:00')).toBe(true);
-      expect(isLocationOpen('library', '19:59')).toBe(true);
-      expect(isLocationOpen('library', '20:00')).toBe(false);
+      expect(isLocationOpen('library', timeToMinutes('07:59'))).toBe(false);
+      expect(isLocationOpen('library', timeToMinutes('08:00'))).toBe(true);
+      expect(isLocationOpen('library', timeToMinutes('14:00'))).toBe(true);
+      expect(isLocationOpen('library', timeToMinutes('19:59'))).toBe(true);
+      expect(isLocationOpen('library', timeToMinutes('20:00'))).toBe(false);
     });
 
     test('bar (11:00-02:00) operates past midnight', () => {
-      expect(isLocationOpen('bar', '10:59')).toBe(false);
-      expect(isLocationOpen('bar', '11:00')).toBe(true);
-      expect(isLocationOpen('bar', '18:00')).toBe(true);
-      expect(isLocationOpen('bar', '23:30')).toBe(true);
-      expect(isLocationOpen('bar', '00:30')).toBe(true); // After midnight
-      expect(isLocationOpen('bar', '01:59')).toBe(true);
-      expect(isLocationOpen('bar', '02:00')).toBe(false);
-      expect(isLocationOpen('bar', '03:00')).toBe(false);
+      expect(isLocationOpen('bar', timeToMinutes('10:59'))).toBe(false);
+      expect(isLocationOpen('bar', timeToMinutes('11:00'))).toBe(true);
+      expect(isLocationOpen('bar', timeToMinutes('18:00'))).toBe(true);
+      expect(isLocationOpen('bar', timeToMinutes('23:30'))).toBe(true);
+      expect(isLocationOpen('bar', timeToMinutes('00:30'))).toBe(true); // After midnight
+      expect(isLocationOpen('bar', timeToMinutes('01:59'))).toBe(true);
+      expect(isLocationOpen('bar', timeToMinutes('02:00'))).toBe(false);
+      expect(isLocationOpen('bar', timeToMinutes('03:00'))).toBe(false);
     });
 
     test('gym (05:00-23:00) early morning hours', () => {
-      expect(isLocationOpen('gym', '04:59')).toBe(false);
-      expect(isLocationOpen('gym', '05:00')).toBe(true);
-      expect(isLocationOpen('gym', '06:00')).toBe(true);
-      expect(isLocationOpen('gym', '22:59')).toBe(true);
-      expect(isLocationOpen('gym', '23:00')).toBe(false);
+      expect(isLocationOpen('gym', timeToMinutes('04:59'))).toBe(false);
+      expect(isLocationOpen('gym', timeToMinutes('05:00'))).toBe(true);
+      expect(isLocationOpen('gym', timeToMinutes('06:00'))).toBe(true);
+      expect(isLocationOpen('gym', timeToMinutes('22:59'))).toBe(true);
+      expect(isLocationOpen('gym', timeToMinutes('23:00'))).toBe(false);
     });
 
     test('movie theater (12:00-23:00) matinee and evening', () => {
-      expect(isLocationOpen('movie_theater', '11:59')).toBe(false);
-      expect(isLocationOpen('movie_theater', '12:00')).toBe(true);
-      expect(isLocationOpen('movie_theater', '20:00')).toBe(true);
-      expect(isLocationOpen('movie_theater', '22:59')).toBe(true);
-      expect(isLocationOpen('movie_theater', '23:00')).toBe(false);
+      expect(isLocationOpen('movie_theater', timeToMinutes('11:59'))).toBe(false);
+      expect(isLocationOpen('movie_theater', timeToMinutes('12:00'))).toBe(true);
+      expect(isLocationOpen('movie_theater', timeToMinutes('20:00'))).toBe(true);
+      expect(isLocationOpen('movie_theater', timeToMinutes('22:59'))).toBe(true);
+      expect(isLocationOpen('movie_theater', timeToMinutes('23:00'))).toBe(false);
     });
   });
 });

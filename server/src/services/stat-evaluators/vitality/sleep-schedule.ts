@@ -1,6 +1,7 @@
 import { PatternEvaluator } from '../types';
 import { PlayerPatternSnapshot } from '../../player-patterns/types';
 import { StatChangeComponent } from '../../../../../shared/types';
+import { formatGameTime } from '../../time/game-time.service';
 
 const BONUS = 1.5;
 
@@ -14,12 +15,13 @@ export class SleepScheduleEvaluator implements PatternEvaluator {
   }
 
   getComponent(snapshot: PlayerPatternSnapshot, value: number): StatChangeComponent {
+    const bedtimeStr = formatGameTime(snapshot.bedtimeMinutes).time;
     return {
       source: this.id,
       category: 'Lifestyle (Vitality)',
       description: 'Slept before midnight',
       value,
-      details: `Bedtime: ${snapshot.bedtime}`,
+      details: `Bedtime: ${bedtimeStr}`,
     };
   }
 }

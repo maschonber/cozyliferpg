@@ -14,7 +14,7 @@ import {
 
 // Domain services
 import { getOrCreatePlayerCharacter, updatePlayerCharacter } from '../../player';
-import { addMinutes } from '../../time';
+import { addGameMinutes, getTimeString } from '../../time';
 import { calculateTravelTime } from '../../location';
 
 // ===== Types =====
@@ -71,13 +71,13 @@ export async function travel(
     };
   }
 
-  // Calculate new time after travel
-  const newTime = addMinutes(player.currentTime, travelTime);
+  // Calculate new time after travel (in minutes)
+  const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, travelTime);
 
   // Update player location and time
   const updatedPlayer = await updatePlayerCharacter(pool, player.id, {
     currentLocation: destinationId,
-    currentTime: newTime
+    gameTimeMinutes: newGameTimeMinutes
   });
 
   console.log(`✅ User ${userId} traveled from ${player.currentLocation} to ${destinationId} (${travelTime} min)`);
@@ -87,7 +87,7 @@ export async function travel(
     travelResult: {
       newLocation: destinationId,
       travelTime,
-      arrivedAt: newTime
+      arrivedAt: getTimeString(newGameTimeMinutes)
     }
   };
 }
@@ -120,13 +120,13 @@ export async function goHome(
   // Calculate travel time to home
   const travelTime = calculateTravelTime(player.currentLocation, 'home');
 
-  // Calculate new time after travel
-  const newTime = addMinutes(player.currentTime, travelTime);
+  // Calculate new time after travel (in minutes)
+  const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, travelTime);
 
   // Update player location and time
   const updatedPlayer = await updatePlayerCharacter(pool, player.id, {
     currentLocation: 'home',
-    currentTime: newTime
+    gameTimeMinutes: newGameTimeMinutes
   });
 
   console.log(`✅ User ${userId} went home from ${player.currentLocation} (${travelTime} min)`);
@@ -136,7 +136,7 @@ export async function goHome(
     travelResult: {
       newLocation: 'home',
       travelTime,
-      arrivedAt: newTime
+      arrivedAt: getTimeString(newGameTimeMinutes)
     }
   };
 }

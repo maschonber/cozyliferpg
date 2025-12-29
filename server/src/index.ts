@@ -11,7 +11,7 @@ import adminRouter from './routes/admin';
 import authRouter from './auth/auth.routes';
 import emotionSandboxRouter from './routes/emotion-sandbox';
 import { authenticateToken } from './auth/auth.middleware';
-import { testConnection, initDatabase, seedDatabase, seedUsers, migrateSocialActivitiesConsolidation, migrateRemoveNpcArchetype } from './db';
+import { testConnection, initDatabase, seedDatabase, seedUsers, migrateSocialActivitiesConsolidation, migrateRemoveNpcArchetype, migrateGameTimeMinutes } from './db';
 
 // Load environment variables
 dotenv.config();
@@ -131,6 +131,7 @@ async function startServer() {
         console.log('🔄 Running migrations...');
         await migrateSocialActivitiesConsolidation();
         await migrateRemoveNpcArchetype();
+        await migrateGameTimeMinutes();
       } else {
         console.warn('⚠️  Database connection failed, but server will start anyway');
       }

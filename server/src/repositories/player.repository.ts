@@ -11,6 +11,7 @@ import {
 } from '../../../shared/types';
 import { mapRowToPlayerCharacter } from './mappers/player.mapper';
 import { getStartingStats, getDefaultTracking } from '../services/stat';
+import { PLAYER_START_TIME } from '../services/time';
 
 type DBConnection = Pool | PoolClient;
 
@@ -69,7 +70,7 @@ export async function create(
     `
     INSERT INTO player_characters (
       id, user_id, current_energy, max_energy, money,
-      current_day, time_of_day, last_slept_at,
+      game_time_minutes,
       archetype,
       base_fitness, base_vitality, base_poise,
       base_knowledge, base_creativity, base_ambition,
@@ -83,16 +84,17 @@ export async function create(
       stats_trained_today,
       created_at, updated_at
     ) VALUES (
-      $1, $2, $3, $4, $5, $6, $7, $8, $9,
-      $10, $11, $12, $13, $14, $15, $16, $17, $18,
-      $19, $20, $21, $22, $23, $24, $25, $26, $27,
-      $28, $29, $30, $31, $32, $33, $34, $35, $36,
-      $37, $38, $39
+      $1, $2, $3, $4, $5, $6, $7,
+      $8, $9, $10, $11, $12, $13, $14, $15, $16,
+      $17, $18, $19, $20, $21, $22, $23, $24, $25,
+      $26, $27, $28, $29, $30, $31, $32, $33, $34,
+      $35, $36
     )
     RETURNING *
     `,
     [
-      id, userId, 100, 100, 200, 1, '06:00', '06:00',
+      id, userId, 100, 100, 200,
+      PLAYER_START_TIME,
       archetype,
       stats.baseFitness, stats.baseVitality, stats.basePoise,
       stats.baseKnowledge, stats.baseCreativity, stats.baseAmbition,
@@ -138,17 +140,9 @@ export async function update(
     updateFields.push(`money = $${paramCount++}`);
     values.push(updates.money);
   }
-  if (updates.currentDay !== undefined) {
-    updateFields.push(`current_day = $${paramCount++}`);
-    values.push(updates.currentDay);
-  }
-  if (updates.currentTime !== undefined) {
-    updateFields.push(`time_of_day = $${paramCount++}`);
-    values.push(updates.currentTime);
-  }
-  if (updates.lastSleptAt !== undefined) {
-    updateFields.push(`last_slept_at = $${paramCount++}`);
-    values.push(updates.lastSleptAt);
+  if (updates.gameTimeMinutes !== undefined) {
+    updateFields.push(`game_time_minutes = $${paramCount++}`);
+    values.push(updates.gameTimeMinutes);
   }
   if (updates.currentLocation !== undefined) {
     updateFields.push(`current_location = $${paramCount++}`);
@@ -252,26 +246,25 @@ export async function resetToInitialState(
     SET current_energy = 100,
         max_energy = 100,
         money = 200,
-        current_day = 1,
-        time_of_day = '06:00',
-        last_slept_at = '06:00',
+        game_time_minutes = $1,
         current_location = 'home',
-        archetype = $1,
-        base_fitness = $2, base_vitality = $3, base_poise = $4,
-        base_knowledge = $5, base_creativity = $6, base_ambition = $7,
-        base_confidence = $8, base_wit = $9, base_empathy = $10,
-        current_fitness = $11, current_vitality = $12, current_poise = $13,
-        current_knowledge = $14, current_creativity = $15, current_ambition = $16,
-        current_confidence = $17, current_wit = $18, current_empathy = $19,
-        min_energy_today = $20, ending_energy_today = $21, work_streak = $22, rest_streak = $23,
-        burnout_streak = $24, late_night_streak = $25,
-        worked_today = $26, had_catastrophic_failure_today = $27,
-        stats_trained_today = $28,
-        updated_at = $29
-    WHERE id = $30
+        archetype = $2,
+        base_fitness = $3, base_vitality = $4, base_poise = $5,
+        base_knowledge = $6, base_creativity = $7, base_ambition = $8,
+        base_confidence = $9, base_wit = $10, base_empathy = $11,
+        current_fitness = $12, current_vitality = $13, current_poise = $14,
+        current_knowledge = $15, current_creativity = $16, current_ambition = $17,
+        current_confidence = $18, current_wit = $19, current_empathy = $20,
+        min_energy_today = $21, ending_energy_today = $22, work_streak = $23, rest_streak = $24,
+        burnout_streak = $25, late_night_streak = $26,
+        worked_today = $27, had_catastrophic_failure_today = $28,
+        stats_trained_today = $29,
+        updated_at = $30
+    WHERE id = $31
     RETURNING *
     `,
     [
+      PLAYER_START_TIME,
       archetype,
       stats.baseFitness, stats.baseVitality, stats.basePoise,
       stats.baseKnowledge, stats.baseCreativity, stats.baseAmbition,
