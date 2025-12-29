@@ -7,20 +7,20 @@ import { Router, Response } from 'express';
 import { pool } from '../db';
 import { AuthRequest } from '../auth/auth.middleware';
 import { generateNPC } from '../services/npc-generator';
-import { PlayerNPCView, ApiResponse } from '../../../shared/types';
+import { NpcView, ApiResponse } from '../../../shared/types';
 import {
   npcTemplateRepository,
-  playerNpcRepository,
+  npcRepository,
   playerRepository
 } from '../repositories';
 
 const router = Router();
 
 /**
- * GET /api/player-npcs
+ * GET /api/npcs
  * Get all NPCs for the authenticated player (unified view)
  */
-router.get('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCView[]>>) => {
+router.get('/', async (req: AuthRequest, res: Response<ApiResponse<NpcView[]>>) => {
   if (!req.user || !req.user.userId) {
     res.status(401).json({
       success: false,
@@ -32,11 +32,11 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCView
   const userId = req.user.userId;
 
   try {
-    const playerNpcs = await playerNpcRepository.getAllForPlayer(pool, userId);
+    const npcs = await npcRepository.getAllForPlayer(pool, userId);
 
     res.json({
       success: true,
-      data: playerNpcs
+      data: npcs
     });
   } catch (error) {
     console.error('Error fetching player NPCs for user', userId, ':', error);
@@ -49,10 +49,10 @@ router.get('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCView
 });
 
 /**
- * GET /api/player-npcs/:id
+ * GET /api/npcs/:id
  * Get a specific player NPC by ID
  */
-router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCView>>) => {
+router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<NpcView>>) => {
   const { id } = req.params;
 
   if (!req.user || !req.user.userId) {
@@ -64,9 +64,9 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCV
   }
 
   try {
-    const playerNpc = await playerNpcRepository.getById(pool, id);
+    const npc = await npcRepository.getById(pool, id);
 
-    if (!playerNpc) {
+    if (!npc) {
       res.status(404).json({
         success: false,
         error: 'Player NPC not found'
@@ -76,7 +76,7 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCV
 
     res.json({
       success: true,
-      data: playerNpc
+      data: npc
     });
   } catch (error) {
     console.error('Error fetching player NPC:', error);
@@ -89,11 +89,11 @@ router.get('/:id', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCV
 });
 
 /**
- * POST /api/player-npcs
+ * POST /api/npcs
  * Generate and create a new NPC at player's current location
  * Creates both the template and the player-NPC entry
  */
-router.post('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCView>>) => {
+router.post('/', async (req: AuthRequest, res: Response<ApiResponse<NpcView>>) => {
   if (!req.user || !req.user.userId) {
     res.status(401).json({
       success: false,
@@ -127,7 +127,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCVie
     });
 
     // Create player NPC entry
-    const playerNpc = await playerNpcRepository.create(client, {
+    const npc = await npcRepository.create(client, {
       playerId: userId,
       templateId: template.id,
       currentLocation: player.currentLocation,
@@ -140,7 +140,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCVie
 
     res.json({
       success: true,
-      data: playerNpc
+      data: npc
     });
   } catch (error) {
     await client.query('ROLLBACK');
@@ -155,7 +155,7 @@ router.post('/', async (req: AuthRequest, res: Response<ApiResponse<PlayerNPCVie
 });
 
 /**
- * DELETE /api/player-npcs/:id
+ * DELETE /api/npcs/:id
  * Delete a player NPC (and potentially the template if no other players use it)
  */
 router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse<void>>) => {
@@ -175,8 +175,8 @@ router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse<void>>)
     await client.query('BEGIN');
 
     // Get the player NPC to find template ID
-    const playerNpc = await playerNpcRepository.getById(client, id);
-    if (!playerNpc) {
+    const npc = await npcRepository.getById(client, id);
+    if (!npc) {
       await client.query('ROLLBACK');
       res.status(404).json({
         success: false,
@@ -185,23 +185,10 @@ router.delete('/:id', async (req: AuthRequest, res: Response<ApiResponse<void>>)
       return;
     }
 
-    const templateId = playerNpc.templateId;
+    const templateId = npc.templateId;
 
     // Delete the player NPC
-    await playerNpcRepository.deleteById(client, id);
-
-    // Check if template is still used by other players
-    const result = await client.query(
-      'SELECT COUNT(*) as count FROM player_npcs WHERE npc_template_id = $1',
-      [templateId]
-    );
-    const usageCount = parseInt(result.rows[0].count, 10);
-
-    // If no other players use this template, delete it
-    if (usageCount === 0) {
-      await npcTemplateRepository.deleteById(client, templateId);
-      console.log(`Deleted orphaned template: ${templateId}`);
-    }
+    await npcRepository.deleteById(client, id);
 
     await client.query('COMMIT');
 

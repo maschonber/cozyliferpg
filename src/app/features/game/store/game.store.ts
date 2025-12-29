@@ -1,12 +1,12 @@
 /**
  * Game Store
  * Manages game state using @ngrx/signals
- * Handles player NPCs (unified NPC + relationship view) and activities
+ * Handles NPCs (unified NPC + relationship view) and activities
  */
 
 import { signalStore, withState, withMethods, patchState, withComputed } from '@ngrx/signals';
 import { computed } from '@angular/core';
-import { PlayerNPCView, Activity, PlayerCharacter, ActivityAvailability, LocationWithNPCCount } from '../../../../../shared/types';
+import { NpcView, Activity, PlayerCharacter, ActivityAvailability, LocationWithNPCCount } from '../../../../../shared/types';
 
 /**
  * Game State
@@ -17,13 +17,13 @@ interface GameState {
   playerLoading: boolean;
   playerError: string | null;
 
-  // Player NPCs (unified NPC + relationship view)
-  playerNPCs: PlayerNPCView[];
-  playerNPCsLoading: boolean;
-  playerNPCsError: string | null;
+  // NPCs (unified NPC + relationship view)
+  npcs: NpcView[];
+  npcsLoading: boolean;
+  npcsError: string | null;
 
-  // Currently viewed player NPC (for detail view)
-  selectedPlayerNPCId: string | null;
+  // Currently viewed NPC (for detail view)
+  selectedNpcId: string | null;
 
   // Activities (includes availability)
   activities: Activity[];
@@ -50,11 +50,11 @@ const initialState: GameState = {
   playerLoading: false,
   playerError: null,
 
-  playerNPCs: [],
-  playerNPCsLoading: false,
-  playerNPCsError: null,
+  npcs: [],
+  npcsLoading: false,
+  npcsError: null,
 
-  selectedPlayerNPCId: null,
+  selectedNpcId: null,
 
   activities: [],
   activityAvailability: [],
@@ -78,19 +78,19 @@ export const GameStore = signalStore(
   withState(initialState),
   withComputed((store) => ({
     /**
-     * Get selected player NPC
+     * Get selected NPC
      */
-    selectedPlayerNPC: computed(() => {
-      const id = store.selectedPlayerNPCId();
+    selectedNpc: computed(() => {
+      const id = store.selectedNpcId();
       if (!id) return null;
-      return store.playerNPCs().find(pnpc => pnpc.id === id) ?? null;
+      return store.npcs().find(npc => npc.id === id) ?? null;
     }),
 
     /**
-     * Get player NPCs at current location (for neighbor list)
+     * Get NPCs at current location (for neighbor list)
      */
-    playerNPCsAtCurrentLocation: computed(() => {
-      const playerNPCs = store.playerNPCs();
+    npcsAtCurrentLocation: computed(() => {
+      const npcs = store.npcs();
       const player = store.player();
 
       // If no player or no current location, return empty array
@@ -99,14 +99,14 @@ export const GameStore = signalStore(
       }
 
       // Filter to only include NPCs at the player's current location
-      return playerNPCs.filter(pnpc => pnpc.currentLocation === player.currentLocation);
+      return npcs.filter(npc => npc.currentLocation === player.currentLocation);
     }),
 
     /**
      * Overall loading state
      */
     isLoading: computed(() => {
-      return store.playerNPCsLoading() ||
+      return store.npcsLoading() ||
              store.activitiesLoading() || store.interacting();
     })
   })),
@@ -129,40 +129,40 @@ export const GameStore = signalStore(
       patchState(store, { player });
     },
 
-    // ===== Player NPC Methods =====
+    // ===== NPC Methods =====
 
-    setPlayerNPCsLoading(loading: boolean): void {
-      patchState(store, { playerNPCsLoading: loading, playerNPCsError: null });
+    setNpcsLoading(loading: boolean): void {
+      patchState(store, { npcsLoading: loading, npcsError: null });
     },
 
-    setPlayerNPCsError(error: string): void {
-      patchState(store, { playerNPCsError: error, playerNPCsLoading: false });
+    setNpcsError(error: string): void {
+      patchState(store, { npcsError: error, npcsLoading: false });
     },
 
-    setPlayerNPCs(playerNPCs: PlayerNPCView[]): void {
-      patchState(store, { playerNPCs, playerNPCsLoading: false, playerNPCsError: null });
+    setNpcs(npcs: NpcView[]): void {
+      patchState(store, { npcs, npcsLoading: false, npcsError: null });
     },
 
-    addPlayerNPC(playerNPC: PlayerNPCView): void {
-      patchState(store, { playerNPCs: [...store.playerNPCs(), playerNPC] });
+    addNpc(npc: NpcView): void {
+      patchState(store, { npcs: [...store.npcs(), npc] });
     },
 
-    updatePlayerNPC(updated: PlayerNPCView): void {
-      const playerNPCs = store.playerNPCs().map(pnpc =>
-        pnpc.id === updated.id ? updated : pnpc
+    updateNpc(updated: NpcView): void {
+      const npcs = store.npcs().map(npc =>
+        npc.id === updated.id ? updated : npc
       );
-      patchState(store, { playerNPCs });
+      patchState(store, { npcs });
     },
 
-    removePlayerNPC(id: string): void {
-      const playerNPCs = store.playerNPCs().filter(pnpc => pnpc.id !== id);
-      patchState(store, { playerNPCs, selectedPlayerNPCId: null });
+    removeNpc(id: string): void {
+      const npcs = store.npcs().filter(npc => npc.id !== id);
+      patchState(store, { npcs, selectedNpcId: null });
     },
 
     // ===== Selection Methods =====
 
-    selectPlayerNPC(id: string | null): void {
-      patchState(store, { selectedPlayerNPCId: id });
+    selectNpc(id: string | null): void {
+      patchState(store, { selectedNpcId: id });
     },
 
     // ===== Activity Methods =====

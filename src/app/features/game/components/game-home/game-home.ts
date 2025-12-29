@@ -9,7 +9,7 @@ import { MatDividerModule } from '@angular/material/divider';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatDialog } from '@angular/material/dialog';
 import { GameFacade } from '../../services/game.facade';
-import { PlayerNPCView, LocationWithNPCCount, requiresNPC } from '../../../../../../shared/types';
+import { NpcView, LocationWithNPCCount, requiresNPC } from '../../../../../../shared/types';
 import { SleepModal } from '../sleep-modal/sleep-modal';
 import { ActivityResultModal } from '../activity-result-modal/activity-result-modal';
 import { ArchetypeSelectionModal } from '../archetype-selection-modal/archetype-selection-modal';
@@ -47,9 +47,9 @@ export class GameHome {
   Math = Math;
 
   // Expose facade signals
-  playerNPCsAtCurrentLocation = this.facade.playerNPCsAtCurrentLocation;
-  playerNPCsLoading = this.facade.playerNPCsLoading;
-  playerNPCsError = this.facade.playerNPCsError;
+  npcsAtCurrentLocation = this.facade.npcsAtCurrentLocation;
+  npcsLoading = this.facade.npcsLoading;
+  npcsError = this.facade.npcsError;
   activities = this.facade.activities;
   activityAvailability = this.facade.activityAvailability;
   player = this.facade.player;
@@ -171,9 +171,9 @@ export class GameHome {
   /**
    * Get color for relationship state
    */
-  getStateColor(playerNPC: PlayerNPCView): string {
+  getStateColor(npc: NpcView): string {
     // Determine color based on relationship axes (trust, affection, desire)
-    const avgPositive = (playerNPC.trust + playerNPC.affection + playerNPC.desire) / 3;
+    const avgPositive = (npc.trust + npc.affection + npc.desire) / 3;
     if (avgPositive >= 30) {
       return 'positive';
     } else if (avgPositive <= -20) {
@@ -263,11 +263,11 @@ export class GameHome {
     // First, perform the activity to consume time/energy
     this.facade.performActivity('meet_someone').subscribe({
       next: () => {
-        // Then create the player NPC (generates template + player relationship)
-        this.facade.createPlayerNPC().subscribe({
-          next: (playerNPC) => {
-            console.log(`✅ Met ${playerNPC.name} at ${playerNPC.currentLocation}`);
-            // Player NPC is already added to the store by createPlayerNPC
+        // Then create the NPC (generates template + player relationship)
+        this.facade.createNpc().subscribe({
+          next: (npc) => {
+            console.log(`✅ Met ${npc.name} at ${npc.currentLocation}`);
+            // NPC is already added to the store by createNpc
           },
           error: (error: Error) => {
             console.error('Failed to create NPC:', error);

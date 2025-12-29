@@ -9,7 +9,7 @@ import { Observable, of } from 'rxjs';
 import { tap, map, catchError, switchMap } from 'rxjs/operators';
 import { GameStore } from '../store/game.store';
 import { GameRepository } from './game.repository';
-import { PlayerNPCView, PlayerCharacter, SleepResult, ActivityResult } from '../../../../../shared/types';
+import { NpcView, PlayerCharacter, SleepResult, ActivityResult } from '../../../../../shared/types';
 
 @Injectable({
   providedIn: 'root'
@@ -23,14 +23,14 @@ export class GameFacade {
   playerLoading = this.store.playerLoading;
   playerError = this.store.playerError;
 
-  playerNPCs = this.store.playerNPCs;
-  playerNPCsLoading = this.store.playerNPCsLoading;
-  playerNPCsError = this.store.playerNPCsError;
+  npcs = this.store.npcs;
+  npcsLoading = this.store.npcsLoading;
+  npcsError = this.store.npcsError;
 
-  selectedPlayerNPC = this.store.selectedPlayerNPC;
-  selectedPlayerNPCId = this.store.selectedPlayerNPCId;
+  selectedNpc = this.store.selectedNpc;
+  selectedNpcId = this.store.selectedNpcId;
 
-  playerNPCsAtCurrentLocation = this.store.playerNPCsAtCurrentLocation;
+  npcsAtCurrentLocation = this.store.npcsAtCurrentLocation;
 
   activities = this.store.activities;
   activityAvailability = this.store.activityAvailability;
@@ -50,11 +50,11 @@ export class GameFacade {
 
   /**
    * Initialize game data on startup
-   * Loads player, player NPCs, activities, and locations
+   * Loads player, NPCs, activities, and locations
    */
   initialize(): void {
     this.loadPlayer();
-    this.loadPlayerNPCs();
+    this.loadNpcs();
     this.loadActivities();
     this.loadLocations();
   }
@@ -87,29 +87,29 @@ export class GameFacade {
     );
   }
 
-  // ===== Player NPC Operations =====
+  // ===== NPC Operations =====
 
   /**
    * Generate and create a new NPC (Meet Someone New)
    */
-  createPlayerNPC(): Observable<PlayerNPCView> {
-    this.store.setPlayerNPCsLoading(true);
+  createNpc(): Observable<NpcView> {
+    this.store.setNpcsLoading(true);
 
-    return this.repository.createPlayerNPC().pipe(
-      switchMap((playerNPC) => {
-        this.store.addPlayerNPC(playerNPC);
-        this.store.setPlayerNPCsLoading(false);
-        console.log('✅ Created NPC:', playerNPC.name);
+    return this.repository.createNpcForPlayer().pipe(
+      switchMap((npc) => {
+        this.store.addNpc(npc);
+        this.store.setNpcsLoading(false);
+        console.log('✅ Created NPC:', npc.name);
 
         // Reload locations to update NPC counts
         return this.repository.getLocations(true).pipe(
           tap((locations) => this.store.setLocations(locations)),
-          map(() => playerNPC)
+          map(() => npc)
         );
       }),
       catchError((error) => {
         const errorMessage = error.message || 'Failed to create NPC';
-        this.store.setPlayerNPCsError(errorMessage);
+        this.store.setNpcsError(errorMessage);
         console.error('❌ Error creating NPC:', error);
         throw error;
       })
@@ -117,70 +117,70 @@ export class GameFacade {
   }
 
   /**
-   * Load all player NPCs
+   * Load all NPCs
    */
-  loadPlayerNPCs(): void {
-    this.store.setPlayerNPCsLoading(true);
+  loadNpcs(): void {
+    this.store.setNpcsLoading(true);
 
-    this.repository.getPlayerNPCs().subscribe({
-      next: (playerNPCs) => {
-        this.store.setPlayerNPCs(playerNPCs);
-        console.log(`✅ Loaded ${playerNPCs.length} player NPCs`);
+    this.repository.getNpcsForPlayer().subscribe({
+      next: (npcs) => {
+        this.store.setNpcs(npcs);
+        console.log(`✅ Loaded ${npcs.length} NPCs`);
       },
       error: (error) => {
-        const errorMessage = error.message || 'Failed to load player NPCs';
-        this.store.setPlayerNPCsError(errorMessage);
-        console.error('❌ Error loading player NPCs:', error);
+        const errorMessage = error.message || 'Failed to load NPCs';
+        this.store.setNpcsError(errorMessage);
+        console.error('❌ Error loading NPCs:', error);
       }
     });
   }
 
   /**
-   * Load a specific player NPC by ID
+   * Load a specific NPC by ID
    * Useful for deep links when NPC is not yet in store
    */
-  loadPlayerNPCById(id: string): Observable<PlayerNPCView> {
-    this.store.setPlayerNPCsLoading(true);
+  loadNpcById(id: string): Observable<NpcView> {
+    this.store.setNpcsLoading(true);
 
-    return this.repository.getPlayerNPCById(id).pipe(
+    return this.repository.getNpcById(id).pipe(
       tap({
-        next: (playerNPC) => {
-          // Check if player NPC already exists in store
-          const existing = this.store.playerNPCs().find(pnpc => pnpc.id === playerNPC.id);
+        next: (npc) => {
+          // Check if NPC already exists in store
+          const existing = this.store.npcs().find(n => n.id === npc.id);
           if (existing) {
-            this.store.updatePlayerNPC(playerNPC);
+            this.store.updateNpc(npc);
           } else {
-            this.store.addPlayerNPC(playerNPC);
+            this.store.addNpc(npc);
           }
-          this.store.setPlayerNPCsLoading(false);
-          console.log('✅ Loaded player NPC:', playerNPC.name);
+          this.store.setNpcsLoading(false);
+          console.log('✅ Loaded NPC:', npc.name);
         },
         error: (error) => {
-          const errorMessage = error.message || 'Failed to load player NPC';
-          this.store.setPlayerNPCsError(errorMessage);
-          console.error('❌ Error loading player NPC:', error);
+          const errorMessage = error.message || 'Failed to load NPC';
+          this.store.setNpcsError(errorMessage);
+          console.error('❌ Error loading NPC:', error);
         }
       })
     );
   }
 
   /**
-   * Delete a player NPC by ID
+   * Delete an NPC by ID
    */
-  deletePlayerNPC(id: string): Observable<void> {
-    this.store.setPlayerNPCsLoading(true);
+  deleteNpc(id: string): Observable<void> {
+    this.store.setNpcsLoading(true);
 
-    return this.repository.deletePlayerNPC(id).pipe(
+    return this.repository.deleteNpcForPlayer(id).pipe(
       tap({
         next: () => {
-          this.store.removePlayerNPC(id);
-          this.store.setPlayerNPCsLoading(false);
-          console.log('✅ Deleted player NPC:', id);
+          this.store.removeNpc(id);
+          this.store.setNpcsLoading(false);
+          console.log('✅ Deleted NPC:', id);
         },
         error: (error) => {
-          const errorMessage = error.message || 'Failed to delete player NPC';
-          this.store.setPlayerNPCsError(errorMessage);
-          console.error('❌ Error deleting player NPC:', error);
+          const errorMessage = error.message || 'Failed to delete NPC';
+          this.store.setNpcsError(errorMessage);
+          console.error('❌ Error deleting NPC:', error);
         }
       })
     );
@@ -189,21 +189,21 @@ export class GameFacade {
   /**
    * Perform an activity (solo or social)
    * Unified method for all activity types
-   * For social activities, provide npcId (player_npc ID)
+   * For social activities, provide npcId
    */
   performActivity(activityId: string, npcId?: string): Observable<ActivityResult> {
     this.store.setInteracting(true);
 
     return this.repository.performActivity(activityId, npcId).pipe(
       switchMap((result) => {
-        // Update player NPC in store if this was a social activity
+        // Update NPC in store if this was a social activity
         // The result contains NPC/relationship data that we need to convert
         if (npcId && result.npc) {
-          // Find and update the player NPC with new data from result
-          const existingPlayerNPC = this.store.playerNPCs().find(pnpc => pnpc.id === npcId);
-          if (existingPlayerNPC && result.relationship) {
-            const updatedPlayerNPC: PlayerNPCView = {
-              ...existingPlayerNPC,
+          // Find and update the NPC with new data from result
+          const existingNpc = this.store.npcs().find(n => n.id === npcId);
+          if (existingNpc && result.relationship) {
+            const updatedNpc: NpcView = {
+              ...existingNpc,
               trust: result.relationship.trust,
               affection: result.relationship.affection,
               desire: result.relationship.desire,
@@ -212,7 +212,7 @@ export class GameFacade {
               emotionInterpretation: result.npc.emotionInterpretation,
               revealedTraits: result.npc.revealedTraits
             };
-            this.store.updatePlayerNPC(updatedPlayerNPC);
+            this.store.updateNpc(updatedNpc);
           }
         }
 
@@ -317,8 +317,8 @@ export class GameFacade {
     return this.repository.resetPlayer().pipe(
       switchMap((player) => {
         this.store.setPlayer(player);
-        // Also reset player NPCs since they're deleted
-        this.store.setPlayerNPCs([]);
+        // Also reset NPCs since they're deleted
+        this.store.setNpcs([]);
         console.log('✅ Player reset to initial state');
 
         // Reload locations to update NPC counts (should all be 0 now)
@@ -365,10 +365,10 @@ export class GameFacade {
   // ===== Selection Operations =====
 
   /**
-   * Select a player NPC to view details
+   * Select an NPC to view details
    */
-  selectPlayerNPC(id: string | null): void {
-    this.store.selectPlayerNPC(id);
+  selectNpc(id: string | null): void {
+    this.store.selectNpc(id);
   }
 
   // ===== Location Operations =====

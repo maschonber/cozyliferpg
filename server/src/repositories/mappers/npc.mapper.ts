@@ -4,7 +4,7 @@
  */
 
 import {
-  PlayerNPCView,
+  NpcView,
   EmotionVector,
   NEUTRAL_EMOTION_VECTOR,
   NPCTrait,
@@ -54,7 +54,7 @@ export interface PlayerNPCRow {
 /**
  * Map database row (joined with template) to PlayerNPCView domain object
  */
-export function mapRowToPlayerNPCView(row: PlayerNPCRow): PlayerNPCView {
+export function mapRowToNpcView(row: PlayerNPCRow): NpcView {
   // Parse emotion vector (handles both string and object formats)
   const emotionVector: EmotionVector = typeof row.emotion_vector === 'string'
     ? JSON.parse(row.emotion_vector)

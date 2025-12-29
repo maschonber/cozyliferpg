@@ -5,4 +5,4 @@
 
 export * from './player.mapper';
 export * from './npc-template.mapper';
-export * from './player-npc.mapper';
+export * from './npc.mapper';

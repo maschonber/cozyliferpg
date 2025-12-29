@@ -46,19 +46,19 @@ export class NeighborDetail implements OnInit, OnDestroy {
   // Expose Math for template
   Math = Math;
 
-  // Expose facade signals - unified PlayerNPCView contains both NPC and relationship data
-  selectedPlayerNPC = this.facade.selectedPlayerNPC;
+  // Expose facade signals - unified NpcView contains both NPC and relationship data
+  selectedNpc = this.facade.selectedNpc;
   activities = this.facade.activities;
   activityAvailability = this.facade.activityAvailability;
   activitiesLoading = this.facade.activitiesLoading;
   interacting = this.facade.interacting;
   interactionError = this.facade.interactionError;
-  playerNPCsLoading = this.facade.playerNPCsLoading;
+  npcsLoading = this.facade.npcsLoading;
   isLoading = this.facade.isLoading;
   player = this.facade.player;
 
   /** NPC's current emotion interpretation (for display component) */
-  npcEmotion = computed(() => this.selectedPlayerNPC()?.emotionInterpretation ?? null);
+  npcEmotion = computed(() => this.selectedNpc()?.emotionInterpretation ?? null);
 
   // Filter social activities (require NPC and available at current location)
   socialActivities = computed(() => {
@@ -78,18 +78,18 @@ export class NeighborDetail implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Get player NPC ID from route params
-    const playerNPCId = this.route.snapshot.paramMap.get('id');
-    if (playerNPCId) {
-      // Resolver has already loaded player NPC and activities data
-      // Just select the player NPC to update the store's selectedPlayerNPCId
-      this.facade.selectPlayerNPC(playerNPCId);
+    // Get NPC ID from route params
+    const npcId = this.route.snapshot.paramMap.get('id');
+    if (npcId) {
+      // Resolver has already loaded NPC and activities data
+      // Just select the NPC to update the store's selectedNpcId
+      this.facade.selectNpc(npcId);
 
       // Check if resolver succeeded by verifying data in route
       const resolverData = this.route.snapshot.data['data'];
       if (resolverData) {
-        if (!resolverData.playerNPCLoaded) {
-          console.warn('⚠️ Failed to load player NPC via resolver');
+        if (!resolverData.npcLoaded) {
+          console.warn('⚠️ Failed to load NPC via resolver');
         }
         if (!resolverData.activitiesLoaded) {
           console.warn('⚠️ Activities not loaded via resolver, attempting fallback...');
@@ -106,14 +106,14 @@ export class NeighborDetail implements OnInit, OnDestroy {
         }
       }
     } else {
-      console.error('No player NPC ID in route parameters');
+      console.error('No NPC ID in route parameters');
       this.router.navigate(['/game']);
     }
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
-    this.facade.selectPlayerNPC(null);
+    this.facade.selectNpc(null);
   }
 
   /**
@@ -124,24 +124,24 @@ export class NeighborDetail implements OnInit, OnDestroy {
   }
 
   /**
-   * Delete the current player NPC
+   * Delete the current NPC
    */
   onDeleteNPC(): void {
-    const playerNPC = this.selectedPlayerNPC();
-    if (!playerNPC) return;
+    const npc = this.selectedNpc();
+    if (!npc) return;
 
     // Confirm before deleting
-    if (!confirm(`Are you sure you want to delete ${playerNPC.name}? This action cannot be undone.`)) {
+    if (!confirm(`Are you sure you want to delete ${npc.name}? This action cannot be undone.`)) {
       return;
     }
 
-    this.facade.deletePlayerNPC(playerNPC.id).subscribe({
+    this.facade.deleteNpc(npc.id).subscribe({
       next: () => {
-        console.log('✅ Player NPC deleted successfully');
+        console.log('✅ NPC deleted successfully');
         this.router.navigate(['/game']);
       },
       error: (error: Error) => {
-        console.error('Failed to delete player NPC:', error);
+        console.error('Failed to delete NPC:', error);
         alert('Failed to delete character. Please try again.');
       }
     });
@@ -151,17 +151,17 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Perform an activity
    */
   onPerformActivity(activityId: string): void {
-    const playerNPC = this.selectedPlayerNPC();
-    const playerNPCId = playerNPC?.id;
-    if (!playerNPCId || !playerNPC) return;
+    const npc = this.selectedNpc();
+    const npcId = npc?.id;
+    if (!npcId || !npc) return;
 
     const activity = this.activities().find(a => a.id === activityId);
     if (!activity) return;
 
     // Capture previous emotion before performing activity (for transition animation)
-    const previousEmotion = playerNPC.emotionInterpretation;
+    const previousEmotion = npc.emotionInterpretation;
 
-    this.facade.performActivity(activityId, playerNPCId).subscribe({
+    this.facade.performActivity(activityId, npcId).subscribe({
       next: (result) => {
         // Helper to get outcome description
         const getOutcomeDescription = (tier: string): string => {
@@ -259,7 +259,7 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Format appearance description
    */
   formatAppearance(): string {
-    const npc = this.selectedPlayerNPC();
+    const npc = this.selectedNpc();
     if (!npc) return '';
 
     const { appearance } = npc;
@@ -369,20 +369,20 @@ export class NeighborDetail implements OnInit, OnDestroy {
    * Get all revealed traits for display
    */
   getRevealedTraits(): string[] {
-    const playerNPC = this.selectedPlayerNPC();
-    if (!playerNPC) return [];
-    return playerNPC.revealedTraits;
+    const npc = this.selectedNpc();
+    if (!npc) return [];
+    return npc.revealedTraits;
   }
 
   /**
    * Check if NPC has hidden traits
-   * Note: PlayerNPCView doesn't expose total trait count, only revealed traits
+   * Note: NpcView doesn't expose total trait count, only revealed traits
    * We know NPCs have 1-3 traits total, so if revealed < 3, there may be more
    */
   hasHiddenTraits(): boolean {
-    const playerNPC = this.selectedPlayerNPC();
-    if (!playerNPC) return false;
-    // PlayerNPCView doesn't include allTraits count, so we hint if revealed < max possible (3)
-    return playerNPC.revealedTraits.length < 3;
+    const npc = this.selectedNpc();
+    if (!npc) return false;
+    // NpcView doesn't include allTraits count, so we hint if revealed < max possible (3)
+    return npc.revealedTraits.length < 3;
   }
 }

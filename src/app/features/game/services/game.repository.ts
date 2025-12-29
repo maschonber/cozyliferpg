@@ -8,7 +8,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 import {
-  PlayerNPCView,
+  NpcView,
   Activity,
   PerformActivityRequest,
   ApiResponse,
@@ -35,8 +35,8 @@ export class GameRepository {
   /**
    * Generate and create a new NPC at player's current location
    */
-  createPlayerNPC(): Observable<PlayerNPCView> {
-    return this.http.post<ApiResponse<PlayerNPCView>>(`${this.API_URL}/player-npcs`, {}).pipe(
+  createNpcForPlayer(): Observable<NpcView> {
+    return this.http.post<ApiResponse<NpcView>>(`${this.API_URL}/npcs`, {}).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to create NPC');
@@ -49,8 +49,8 @@ export class GameRepository {
   /**
    * Get all player NPCs (unified NPC + relationship view)
    */
-  getPlayerNPCs(): Observable<PlayerNPCView[]> {
-    return this.http.get<ApiResponse<PlayerNPCView[]>>(`${this.API_URL}/player-npcs`).pipe(
+  getNpcsForPlayer(): Observable<NpcView[]> {
+    return this.http.get<ApiResponse<NpcView[]>>(`${this.API_URL}/npcs`).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to fetch player NPCs');
@@ -63,8 +63,8 @@ export class GameRepository {
   /**
    * Get player NPC by ID
    */
-  getPlayerNPCById(id: string): Observable<PlayerNPCView> {
-    return this.http.get<ApiResponse<PlayerNPCView>>(`${this.API_URL}/player-npcs/${id}`).pipe(
+  getNpcById(id: string): Observable<NpcView> {
+    return this.http.get<ApiResponse<NpcView>>(`${this.API_URL}/npcs/${id}`).pipe(
       map(response => {
         if (!response.success || !response.data) {
           throw new Error(response.error || 'Failed to fetch player NPC');
@@ -77,8 +77,8 @@ export class GameRepository {
   /**
    * Delete a player NPC by ID
    */
-  deletePlayerNPC(id: string): Observable<void> {
-    return this.http.delete<ApiResponse<void>>(`${this.API_URL}/player-npcs/${id}`).pipe(
+  deleteNpcForPlayer(id: string): Observable<void> {
+    return this.http.delete<ApiResponse<void>>(`${this.API_URL}/npcs/${id}`).pipe(
       map(response => {
         if (!response.success) {
           throw new Error(response.error || 'Failed to delete player NPC');

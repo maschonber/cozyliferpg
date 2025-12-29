@@ -6,14 +6,14 @@
 import { Pool, PoolClient } from 'pg';
 import { randomUUID } from 'crypto';
 import {
-  PlayerNPCView,
+  NpcView,
   EmotionVector,
   NPCTrait,
   RelationshipState,
   LocationId,
   NEUTRAL_EMOTION_VECTOR
 } from '../../../shared/types';
-import { mapRowToPlayerNPCView } from './mappers/player-npc.mapper';
+import { mapRowToNpcView } from './mappers/npc.mapper';
 
 type DBConnection = Pool | PoolClient;
 
@@ -60,7 +60,7 @@ const SELECT_WITH_TEMPLATE = `
 export async function getById(
   db: DBConnection,
   id: string
-): Promise<PlayerNPCView | null> {
+): Promise<NpcView | null> {
   const result = await db.query(
     `${SELECT_WITH_TEMPLATE} WHERE pn.id = $1`,
     [id]
@@ -70,7 +70,7 @@ export async function getById(
     return null;
   }
 
-  return mapRowToPlayerNPCView(result.rows[0]);
+  return mapRowToNpcView(result.rows[0]);
 }
 
 /**
@@ -80,7 +80,7 @@ export async function getByPlayerAndTemplate(
   db: DBConnection,
   playerId: string,
   templateId: string
-): Promise<PlayerNPCView | null> {
+): Promise<NpcView | null> {
   const result = await db.query(
     `${SELECT_WITH_TEMPLATE} WHERE pn.player_id = $1 AND pn.npc_template_id = $2`,
     [playerId, templateId]
@@ -90,7 +90,7 @@ export async function getByPlayerAndTemplate(
     return null;
   }
 
-  return mapRowToPlayerNPCView(result.rows[0]);
+  return mapRowToNpcView(result.rows[0]);
 }
 
 /**
@@ -99,13 +99,13 @@ export async function getByPlayerAndTemplate(
 export async function getAllForPlayer(
   db: DBConnection,
   playerId: string
-): Promise<PlayerNPCView[]> {
+): Promise<NpcView[]> {
   const result = await db.query(
     `${SELECT_WITH_TEMPLATE} WHERE pn.player_id = $1 ORDER BY pn.last_interaction DESC`,
     [playerId]
   );
 
-  return result.rows.map(row => mapRowToPlayerNPCView(row));
+  return result.rows.map(row => mapRowToNpcView(row));
 }
 
 /**
@@ -115,13 +115,13 @@ export async function getAllForPlayerAtLocation(
   db: DBConnection,
   playerId: string,
   locationId: LocationId
-): Promise<PlayerNPCView[]> {
+): Promise<NpcView[]> {
   const result = await db.query(
     `${SELECT_WITH_TEMPLATE} WHERE pn.player_id = $1 AND pn.current_location = $2 ORDER BY pn.last_interaction DESC`,
     [playerId, locationId]
   );
 
-  return result.rows.map(row => mapRowToPlayerNPCView(row));
+  return result.rows.map(row => mapRowToNpcView(row));
 }
 
 /**
@@ -156,7 +156,7 @@ export interface CreatePlayerNPCData {
 export async function create(
   db: DBConnection,
   data: CreatePlayerNPCData
-): Promise<PlayerNPCView> {
+): Promise<NpcView> {
   const id = randomUUID();
   const initialState: RelationshipState = 'stranger';
 
@@ -187,7 +187,7 @@ export async function create(
   );
 
   // Fetch with template data for complete PlayerNPCView
-  return getById(db, result.rows[0].id) as Promise<PlayerNPCView>;
+  return getById(db, result.rows[0].id) as Promise<NpcView>;
 }
 
 /**
@@ -211,7 +211,7 @@ export async function update(
   db: DBConnection,
   id: string,
   data: UpdatePlayerNPCData
-): Promise<PlayerNPCView> {
+): Promise<NpcView> {
   const updateFields: string[] = [];
   const values: unknown[] = [];
   let paramCount = 1;

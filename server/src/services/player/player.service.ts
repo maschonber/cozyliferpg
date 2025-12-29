@@ -14,7 +14,7 @@ import {
 import {
   playerRepository,
   activityRepository,
-  playerNpcRepository
+  npcRepository
 } from '../../repositories';
 
 /**
@@ -72,7 +72,7 @@ export async function resetPlayerCharacter(
     const archetype: PlayerArchetype = 'balanced';
 
     // Delete all player NPCs (this deletes both player-specific data and orphaned templates)
-    await playerNpcRepository.deleteAllForPlayer(client, userId);
+    await npcRepository.deleteAllForPlayer(client, userId);
 
     // Delete all player activities
     await activityRepository.deleteAllForPlayer(client, player.id);

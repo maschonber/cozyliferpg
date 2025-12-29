@@ -11,7 +11,7 @@ import {
   ActivityResult,
   PlayerCharacter,
   Activity,
-  PlayerNPCView,
+  NpcView,
   StatName,
   StatChange,
   DifficultyBreakdown,
@@ -24,7 +24,7 @@ import { ActivityTag, ActivityWithDifficulty, hasActivityDifficulty } from '../.
 
 // Repositories
 import {
-  playerNpcRepository,
+  npcRepository,
   npcTemplateRepository,
   playerRepository,
   activityRepository
@@ -127,7 +127,7 @@ interface OutcomeCalculationResult {
 function calculateOutcome(
   activity: ActivityWithDifficulty,
   player: PlayerCharacter,
-  playerNpc?: PlayerNPCView,
+  playerNpc?: NpcView,
   allTraits?: NPCTrait[]  // Master traits from template (for difficulty calculation)
 ): OutcomeCalculationResult {
   const isSocial = isSocialActivity(activity);
@@ -245,7 +245,7 @@ interface SocialEffectsResult {
   previousState: RelationshipState;
   newState: RelationshipState;
   discoveredTrait: ActivityResult['discoveredTrait'];
-  updatedPlayerNpc: PlayerNPCView;
+  updatedPlayerNpc: NpcView;
   newAxes: { trust: number; affection: number; desire: number };
 }
 
@@ -256,7 +256,7 @@ interface SocialEffectsResult {
 async function processSocialEffects(
   client: PoolClient,
   activity: Activity & { relationshipEffects: { trust?: number; affection?: number; desire?: number }; emotionProfile?: EmotionProfile },
-  playerNpc: PlayerNPCView,
+  playerNpc: NpcView,
   allTraits: NPCTrait[],
   outcomeTier: string,
   player: PlayerCharacter,
@@ -307,7 +307,7 @@ async function processSocialEffects(
     const discovery = getContributingTraitFromPlayerNpc(allTraits, playerNpc.revealedTraits, activityTags);
     if (discovery && discovery.isNew) {
       // Update revealed traits in database
-      await playerNpcRepository.appendRevealedTrait(client, playerNpc.id, discovery.trait as NPCTrait);
+      await npcRepository.appendRevealedTrait(client, playerNpc.id, discovery.trait as NPCTrait);
       updatedRevealedTraits = [...playerNpc.revealedTraits, discovery.trait as NPCTrait];
       discoveredTrait = {
         trait: discovery.trait as NPCTrait,
@@ -327,7 +327,7 @@ async function processSocialEffects(
     updatedEmotionVector = applyEmotionPulls(playerNpc.emotionVector, emotionPulls);
 
     // Update emotion vector in database
-    await playerNpcRepository.updateEmotionVector(client, playerNpc.id, updatedEmotionVector);
+    await npcRepository.updateEmotionVector(client, playerNpc.id, updatedEmotionVector);
     updatedEmotionInterpretation = interpretEmotionVectorSlim(updatedEmotionVector);
   }
 
@@ -337,7 +337,7 @@ async function processSocialEffects(
   const desireValue = Number.isFinite(newAxes.desire) ? newAxes.desire : 0;
 
   // Update player NPC with new axes and state
-  await playerNpcRepository.update(client, playerNpc.id, {
+  await npcRepository.update(client, playerNpc.id, {
     trust: trustValue,
     affection: affectionValue,
     desire: desireValue,
@@ -345,7 +345,7 @@ async function processSocialEffects(
     lastInteraction: gameTimeMinutes
   });
 
-  const updatedPlayerNpc: PlayerNPCView = {
+  const updatedPlayerNpc: NpcView = {
     ...playerNpc,
     trust: trustValue,
     affection: affectionValue,
@@ -395,12 +395,12 @@ export async function executeActivity(
     }
 
     // Fetch player NPC and template traits for social activities
-    let playerNpc: PlayerNPCView | undefined;
+    let playerNpc: NpcView | undefined;
     let allTraits: NPCTrait[] | undefined;
 
     if (isSocial && npcId) {
       // Get player NPC (which contains template data via JOIN)
-      const playerNpcResult = await playerNpcRepository.getById(client, npcId);
+      const playerNpcResult = await npcRepository.getById(client, npcId);
       if (!playerNpcResult) {
         throw new ActivityValidationError('NPC not found', 404);
       }
@@ -434,7 +434,7 @@ export async function executeActivity(
     let previousState: RelationshipState | undefined;
     let newState: RelationshipState | undefined;
     let discoveredTrait: ActivityResult['discoveredTrait'];
-    let updatedPlayerNpc: PlayerNPCView | undefined = playerNpc;
+    let updatedPlayerNpc: NpcView | undefined = playerNpc;
 
     // Calculate new game time (needed for last_interaction update)
     const newGameTimeMinutes = addGameMinutes(player.gameTimeMinutes, activity.timeCost + additionalTimeCost);

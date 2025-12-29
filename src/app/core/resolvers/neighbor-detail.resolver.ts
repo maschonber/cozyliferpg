@@ -5,7 +5,7 @@
  *
  * Data loading strategy:
  * - Activities: Should be loaded via APP_INITIALIZER, but we ensure they're available here as fallback
- * - PlayerNPC: Unified NPC + relationship data loaded specifically for this route
+ * - NPC: Unified NPC + relationship data loaded specifically for this route
  */
 
 import { inject } from '@angular/core';
@@ -18,7 +18,7 @@ import { GameFacade } from '../../features/game/services/game.facade';
  * Result of neighbor detail resolution
  */
 export interface NeighborDetailData {
-  playerNPCLoaded: boolean;
+  npcLoaded: boolean;
   activitiesLoaded: boolean;
   error?: string;
 }
@@ -29,22 +29,22 @@ export interface NeighborDetailData {
  */
 export const neighborDetailResolver: ResolveFn<NeighborDetailData> = (route) => {
   const facade = inject(GameFacade);
-  const playerNPCId = route.paramMap.get('id');
+  const npcId = route.paramMap.get('id');
 
-  if (!playerNPCId) {
+  if (!npcId) {
     return of({
-      playerNPCLoaded: false,
+      npcLoaded: false,
       activitiesLoaded: false,
-      error: 'No player NPC ID provided'
+      error: 'No NPC ID provided'
     });
   }
 
-  // Load player NPC and ensure activities are available (both in parallel)
+  // Load NPC and ensure activities are available (both in parallel)
   return forkJoin({
-    playerNPC: facade.loadPlayerNPCById(playerNPCId).pipe(
+    npc: facade.loadNpcById(npcId).pipe(
       map(() => true),
       catchError((error) => {
-        console.error('Failed to load player NPC:', error);
+        console.error('Failed to load NPC:', error);
         return of(false);
       })
     ),
@@ -56,8 +56,8 @@ export const neighborDetailResolver: ResolveFn<NeighborDetailData> = (route) => 
       })
     )
   }).pipe(
-    map(({ playerNPC, activities }) => ({
-      playerNPCLoaded: playerNPC,
+    map(({ npc, activities }) => ({
+      npcLoaded: npc,
       activitiesLoaded: activities
     }))
   );

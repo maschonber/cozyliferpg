@@ -92,7 +92,7 @@
     <h2>Your Neighbors</h2>
 
     <!-- Loading State -->
-    @if (playerNPCsLoading()) {
+    @if (npcsLoading()) {
       <div class="loading-container">
         <mat-spinner diameter="50"></mat-spinner>
         <p>Loading neighbors...</p>
@@ -100,15 +100,15 @@
     }
 
     <!-- Error State -->
-    @if (playerNPCsError()) {
+    @if (npcsError()) {
       <div class="error-container">
         <mat-icon color="warn">error</mat-icon>
-        <p>{{ playerNPCsError() }}</p>
+        <p>{{ npcsError() }}</p>
       </div>
     }
 
     <!-- Empty State -->
-    @if (!playerNPCsLoading() && !playerNPCsError() && playerNPCsAtCurrentLocation().length === 0) {
+    @if (!npcsLoading() && !npcsError() && npcsAtCurrentLocation().length === 0) {
       <div class="empty-state">
         <mat-icon>group</mat-icon>
         <p>No neighbors at this location.</p>
@@ -117,27 +117,27 @@
     }
 
     <!-- Neighbors List -->
-    @if (playerNPCsAtCurrentLocation().length > 0) {
+    @if (npcsAtCurrentLocation().length > 0) {
       <div class="neighbors-list">
-        @for (playerNPC of playerNPCsAtCurrentLocation(); track playerNPC.id) {
+        @for (npc of npcsAtCurrentLocation(); track npc.id) {
           <mat-card
             class="neighbor-card"
-            [class.positive]="getStateColor(playerNPC) === 'positive'"
-            [class.negative]="getStateColor(playerNPC) === 'negative'"
-            [class.neutral]="getStateColor(playerNPC) === 'neutral'"
-            (click)="onViewNeighbor(playerNPC.id)">
+            [class.positive]="getStateColor(npc) === 'positive'"
+            [class.negative]="getStateColor(npc) === 'negative'"
+            [class.neutral]="getStateColor(npc) === 'neutral'"
+            (click)="onViewNeighbor(npc.id)">
             <div class="card-layout">
               <div class="card-content">
                 <mat-card-header>
                   <mat-card-title>
-                    {{ playerNPC.name }}
+                    {{ npc.name }}
                   </mat-card-title>
                 </mat-card-header>
 
                 <mat-card-content>
                   <div class="relationship-status">
                     <div class="status-badge">
-                      {{ getStateDisplayName(playerNPC.currentState) }}
+                      {{ getStateDisplayName(npc.currentState) }}
                     </div>
                   </div>
                 </mat-card-content>
@@ -150,9 +150,9 @@
                 </mat-card-actions>
               </div>
 
-              <div class="avatar-container" [class.gender-female]="playerNPC.gender === 'female'"
-                   [class.gender-male]="playerNPC.gender === 'male'"
-                   [class.gender-other]="playerNPC.gender === 'other'">
+              <div class="avatar-container" [class.gender-female]="npc.gender === 'female'"
+                   [class.gender-male]="npc.gender === 'male'"
+                   [class.gender-other]="npc.gender === 'other'">
                 <mat-icon>person</mat-icon>
               </div>
             </div>

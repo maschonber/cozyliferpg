@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { HealthCheckResponse } from '../../shared/types';
-import playerNpcsRouter from './routes/player-npcs';
+import npcsRouter from './routes/npcs';
 import playerRouter from './routes/player';
 import activitiesRouter from './routes/activities';
 import locationsRouter from './routes/locations';
@@ -72,7 +72,7 @@ app.use('/api/emotion-sandbox', emotionSandboxRouter);
 
 // Protected routes (authentication required)
 // API Routes - all protected
-app.use('/api/player-npcs', authenticateToken, playerNpcsRouter);
+app.use('/api/npcs', authenticateToken, npcsRouter);
 app.use('/api/player', authenticateToken, playerRouter);
 app.use('/api/activities', authenticateToken, activitiesRouter);
 app.use('/api/locations', authenticateToken, locationsRouter);
@@ -85,7 +85,7 @@ app.get('/', (_req: Request, res: Response) => {
     endpoints: {
       health: '/api/health',
       auth: '/api/auth/login',
-      playerNpcs: '/api/player-npcs (protected)',
+      npcs: '/api/npcs (protected)',
       activities: '/api/activities (protected)',
       player: '/api/player (protected)',
       locations: '/api/locations (protected)'

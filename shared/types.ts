@@ -221,11 +221,11 @@ export interface NPCTemplate {
 }
 
 /**
- * Player NPC View - Unified view of an NPC for a specific player
+ * NPC View - Unified view of an NPC for a specific player
  * Combines template data with player-specific mutable data and relationship axes
- * This is the primary type returned by the /api/player-npcs endpoint
+ * This is the primary type returned by the /api/npcs endpoint
  */
-export interface PlayerNPCView {
+export interface NpcView {
   id: string;                    // player_npc id
   templateId: string;            // reference to npc_template
 
